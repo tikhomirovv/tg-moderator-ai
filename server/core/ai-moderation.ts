@@ -14,6 +14,9 @@ export async function analyzeMessage(
   rules: Rule[]
 ): Promise<AIModerationResponse> {
   try {
+    // Получаем конфигурацию
+    const config = useRuntimeConfig();
+
     // Формируем промпт для AI
     const prompt = buildAnalysisPrompt(request, rules);
 
@@ -21,13 +24,14 @@ export async function analyzeMessage(
       {
         messageLength: request.message.length,
         rulesCount: rules.length,
+        model: config.openaiModel,
       },
       "Отправка запроса к OpenAI"
     );
 
     // Отправляем запрос к OpenAI
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: config.openaiModel,
       messages: [
         {
           role: "system",
@@ -57,6 +61,7 @@ export async function analyzeMessage(
         violation_detected: result.violation_detected,
         rule_violated: result.rule_violated,
         confidence: result.confidence,
+        model: config.openaiModel,
       },
       "AI анализ завершен"
     );

@@ -6,6 +6,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Переменные только для сервера
     openaiApiKey: process.env.OPENAI_API_KEY,
+    openaiModel: process.env.OPENAI_MODEL || "gpt-4.1-nano-2025-04-14",
     mongodbUri:
       process.env.MONGODB_URI || "mongodb://localhost:27017/tg-moderator",
   },

@@ -1,31 +1,31 @@
 import { handleTelegramUpdate } from "../../../index";
+import { logger } from "../../../core/logger";
 
 export default defineEventHandler(async (event) => {
   try {
-    // Получаем ID бота из параметров маршрута
     const botId = getRouterParam(event, "botId");
+    const body = await readBody(event);
 
     if (!botId) {
       throw createError({
         statusCode: 400,
-        statusMessage: "ID бота не указан",
+        statusMessage: "Bot ID is required",
       });
     }
 
-    // Получаем тело запроса (обновление от Telegram)
-    const update = await readBody(event);
+    // Обрабатываем обновление от Telegram
+    await handleTelegramUpdate(botId, body);
 
-    // Обрабатываем обновление
-    await handleTelegramUpdate(botId, update);
-
-    // Возвращаем успешный ответ
-    return { ok: true };
+    return {
+      success: true,
+      message: "Webhook processed successfully",
+    };
   } catch (error) {
-    console.error("Ошибка обработки вебхука:", error);
+    logger.error({ error: error as Error }, "Ошибка обработки вебхука");
 
     throw createError({
       statusCode: 500,
-      statusMessage: "Ошибка обработки вебхука",
+      statusMessage: "Error processing webhook",
     });
   }
 });

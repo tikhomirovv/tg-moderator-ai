@@ -1,15 +1,17 @@
-# Telegram AI Moderator
+# Telegram AI Moderator Bot
 
-Система автоматической модерации Telegram чатов с использованием искусственного интеллекта.
+Telegram-бот модератор с искусственным интеллектом для автоматической модерации чатов на основе конфигурируемых правил.
 
-## Технологии
+## Технический стек
 
 - **Runtime**: Bun
-- **Framework**: Nuxt 4
 - **Language**: TypeScript
+- **Framework**: Nuxt 3 (SSR + API роуты)
+- **Frontend**: Vue 3 + Composition API
+- **Logging**: Pino + pino-pretty
 - **AI**: OpenAI GPT-4
-- **Logging**: Pino
-- **UI**: Vue 3 + Tailwind CSS
+- **Database**: MongoDB (с абстракцией для легкой смены)
+- **UI**: Tailwind CSS
 
 ## Быстрый старт
 
@@ -21,35 +23,26 @@ bun install
 
 ### 2. Настройка переменных окружения
 
-Скопируйте файл `env.example` в `.env` и заполните необходимые переменные:
-
-```bash
-cp env.example .env
-```
-
-Отредактируйте `.env`:
+Создайте файл `.env` на основе `.env.example`:
 
 ```env
-# Telegram Bot Tokens
-# Паттерн: TELEGRAM_BOT_TOKEN_{BOT_ID.toUpperCase()}
-TELEGRAM_BOT_TOKEN_MAIN_MODERATOR=your_main_bot_token_here
-TELEGRAM_BOT_TOKEN_GAMING_MODERATOR=your_gaming_bot_token_here
-
 # OpenAI API
 OPENAI_API_KEY=your_openai_api_key_here
+
+# MongoDB (для Docker Compose)
+MONGODB_URI=mongodb://admin:password@localhost:27017/tg-moderator?authSource=admin
 
 # Настройки приложения
 NODE_ENV=development
 ```
 
-### 3. Настройка конфигурации
+### 3. Запуск MongoDB
 
-Отредактируйте файлы конфигурации в папке `config/`:
+```bash
+docker-compose up -d
+```
 
-- `config/bots.yaml` - настройки ботов и чатов
-- `config/rules.yaml` - правила модерации
-
-### 4. Запуск в режиме разработки
+### 4. Запуск приложения
 
 ```bash
 bun run dev
@@ -57,95 +50,117 @@ bun run dev
 
 Приложение будет доступно по адресу: http://localhost:3000
 
-### 5. Настройка вебхуков
-
-После запуска приложения нужно настроить вебхуки для ваших ботов.
-Отправьте POST запрос на `/api/init` для инициализации ботов.
-
 ## Структура проекта
 
 ```
 tg-moderator-ai/
-├── server/                 # Серверная логика
-│   ├── core/              # Основные модули
-│   │   ├── bot.ts         # Класс Telegram бота
-│   │   ├── ai-moderation.ts # AI логика модерации
-│   │   ├── config.ts      # Загрузка конфигурации
-│   │   └── logger.ts      # Логирование
-│   ├── types/             # TypeScript типы
+├── server/
+│   ├── core/              # Основная логика
+│   ├── database/          # Работа с БД
+│   │   ├── models/        # Модели данных
+│   │   ├── repositories/  # Репозитории
+│   │   └── seed.ts        # Начальные данные
 │   ├── api/               # API роуты
-│   └── index.ts           # Точка входа сервера
-├── config/                # Конфигурационные файлы
-│   ├── bots.yaml          # Настройки ботов
-│   └── rules.yaml         # Правила модерации
-├── app.vue                # Главная страница
-└── nuxt.config.ts         # Конфигурация Nuxt
+│   └── types/             # TypeScript типы
+├── pages/                 # Vue страницы
+├── components/            # Vue компоненты
+├── layouts/               # Макеты страниц
+└── public/                # Статические файлы
+```
+
+## Управление ботами
+
+### Создание бота через веб-интерфейс
+
+1. Откройте http://localhost:3000/bots
+2. Нажмите "Add Bot"
+3. Заполните форму:
+   - **Bot ID**: уникальный идентификатор
+   - **Name**: название бота
+   - **Token**: токен от @BotFather
+   - **Chats**: настройки чатов
+
+### Настройка чатов
+
+Для каждого чата укажите:
+- **Chat ID**: ID чата в Telegram
+- **Name**: название чата
+- **Rules**: выберите правила модерации
+- **Warnings before ban**: количество предупреждений до бана
+- **Auto delete violations**: автоматически удалять нарушения
+
+## Управление правилами
+
+### Создание правила
+
+1. Откройте http://localhost:3000/config/rules
+2. Нажмите "Add Rule"
+3. Заполните форму:
+   - **ID**: уникальный идентификатор
+   - **Name**: название правила
+   - **Description**: описание
+   - **AI Prompt**: промпт для AI анализа
+   - **Severity**: важность (low/medium/high)
+
+### Настройка AI промпта
+
+AI промпт должен содержать четкие инструкции для анализа сообщений:
+
+```
+Определи, является ли сообщение спамом.
+Критерии: повторяющиеся сообщения, реклама без разрешения.
+Ответь: YES/NO с объяснением.
 ```
 
 ## API Endpoints
 
-- `GET /api/bots` - Список активных ботов
-- `POST /api/init` - Инициализация ботов
-- `POST /api/telegram/webhook/[botId]` - Вебхук для Telegram
+### Боты
+- `GET /api/bots` - список всех ботов
+- `POST /api/bots` - создание бота
+- `GET /api/bots/[id]` - информация о боте
+- `PUT /api/bots/[id]` - обновление бота
 
-## Конфигурация ботов
+### Правила
+- `GET /api/config/rules` - список правил
+- `PUT /api/config/rules` - обновление правил
 
-В файле `config/bots.yaml` настройте ваших ботов:
-
-```yaml
-bots:
-  - id: "main_moderator"
-    name: "Main Chat Moderator"
-    chats:
-      - chat_id: -1001234567890
-        name: "Main Community"
-        rules: ["spam", "hate_speech", "advertising"]
-        warnings_before_ban: 3
-        auto_delete_violations: true
-```
-
-## Правила модерации
-
-В файле `config/rules.yaml` определите правила:
-
-```yaml
-rules:
-  spam:
-    name: "Спам и реклама"
-    description: "Запрещены повторяющиеся сообщения, реклама без разрешения"
-    ai_prompt: |
-      Определи, является ли сообщение спамом или нежелательной рекламой.
-    severity: "medium"
-```
+### Модерация
+- `GET /api/moderation/logs` - логи модерации
 
 ## Логирование
 
-Логи сохраняются в папке `logs/`:
-- `moderation.log` - логи модерации
-- `errors.log` - ошибки
+Приложение использует Pino для структурированного логирования:
+
+- **INFO**: основные действия
+- **ERROR**: ошибки и исключения
+- **WARN**: предупреждения
+
+Логи выводятся в консоль в формате JSON.
 
 ## Развертывание
 
 ### Docker
 
-```dockerfile
-FROM oven/bun:latest
-WORKDIR /app
-COPY package.json .
-RUN bun install
-COPY . .
-RUN bun run build
-EXPOSE 3000
-CMD ["bun", "run", "start"]
+```bash
+# Сборка образа
+docker build -t tg-moderator .
+
+# Запуск
+docker run -p 3000:3000 --env-file .env tg-moderator
 ```
 
-### Переменные окружения для продакшена
+### Production
 
-Убедитесь, что все необходимые переменные окружения установлены:
-- `TELEGRAM_BOT_TOKEN_*` - токены ваших ботов
-- `OPENAI_API_KEY` - ключ OpenAI API
-- `NODE_ENV=production`
+1. Установите MongoDB
+2. Настройте переменные окружения
+3. Запустите приложение:
+   ```bash
+   bun run build
+   bun run start
+   ```
 
 ## Поддержка
 
-Для получения помощи создайте issue в репозитории проекта.
+- Документация: [SPEC.md](.docs/SPEC.md)
+- Issues: GitHub Issues
+- Обсуждения: GitHub Discussions

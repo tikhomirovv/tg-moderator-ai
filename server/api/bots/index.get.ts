@@ -1,28 +1,20 @@
-import { getActiveBots, getBotInfo } from "../../index";
+import { BotRepository } from "../../database/repositories/bot-repository";
 
 export default defineEventHandler(async (event) => {
   try {
-    const activeBots = getActiveBots();
-
-    const botsInfo = activeBots.map((botId) => {
-      const info = getBotInfo(botId);
-      return {
-        id: botId,
-        isRunning: info?.isRunning || false,
-      };
-    });
+    const botRepo = new BotRepository();
+    const bots = await botRepo.findAll();
 
     return {
       success: true,
       data: {
-        bots: botsInfo,
-        total: botsInfo.length,
+        bots: bots,
       },
     };
   } catch (error) {
     throw createError({
       statusCode: 500,
-      statusMessage: "Ошибка получения списка ботов",
+      statusMessage: "Error loading bots from database",
     });
   }
 });

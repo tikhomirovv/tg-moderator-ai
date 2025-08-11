@@ -1,5 +1,6 @@
 import { TelegramBot } from "./core/bot";
-import { loadBotsConfig, loadRulesConfig, loadBotTokens } from "./core/config";
+import { BotRepository } from "./database/repositories/bot-repository";
+import { RuleRepository } from "./database/repositories/rule-repository";
 import { logger } from "./core/logger";
 
 // Глобальное хранилище ботов
@@ -10,14 +11,29 @@ export async function initializeBots(): Promise<void> {
   try {
     logger.info("Начинаем инициализацию ботов...");
 
-    // Загружаем конфигурации
-    const botsConfig = loadBotsConfig();
-    const rulesConfig = loadRulesConfig();
-    const tokens = loadBotTokens(botsConfig.bots);
+    // Загружаем ботов из БД
+    const botRepo = new BotRepository();
+    const ruleRepo = new RuleRepository();
+
+    const botsFromDb = await botRepo.findActive();
+    const rulesFromDb = await ruleRepo.findActive();
+
+    if (botsFromDb.length === 0) {
+      logger.warn("Нет активных ботов в базе данных");
+      return;
+    }
+
+    // Получаем токены из БД
+    const botTokens = await botRepo.getActiveBotTokens();
+
+    if (botTokens.length === 0) {
+      logger.warn("Нет токенов для активных ботов в базе данных");
+      return;
+    }
 
     // Создаем и инициализируем ботов
-    for (const botConfig of botsConfig.bots) {
-      const token = tokens.find((t) => t.botId === botConfig.id);
+    for (const botConfig of botsFromDb) {
+      const token = botTokens.find((t) => t.botId === botConfig.id);
 
       if (!token) {
         logger.error(`Токен не найден для бота: ${botConfig.id}`);
@@ -38,9 +54,7 @@ export async function initializeBots(): Promise<void> {
       }
     }
 
-    logger.info(
-      `Инициализировано ${bots.size} ботов из ${botsConfig.bots.length}`
-    );
+    logger.info(`Инициализировано ${bots.size} ботов из ${botsFromDb.length}`);
   } catch (error) {
     logger.error(
       { error: error as Error },

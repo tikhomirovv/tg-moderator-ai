@@ -12,8 +12,7 @@ Telegram-бот модератор с искусственным интелле�
 - **Frontend**: Vue 3 + Composition API
 - **Logging**: Pino + pino-pretty
 - **AI**: OpenAI GPT-4
-- **Configuration**: YAML/JSON
-- **Database**: SQLite (для логов и состояния)
+- **Database**: MongoDB (с абстракцией для легкой смены)
 - **UI**: Tailwind CSS + Headless UI
 
 ## Архитектура
@@ -26,14 +25,20 @@ tg-moderator-ai/
 │   ├── core/
 │   │   ├── bot.ts              # Основной класс бота
 │   │   ├── ai-moderation.ts    # AI логика модерации
-│   │   ├── config.ts           # Конфигурация
 │   │   └── logger.ts           # Логирование
+│   ├── database/
+│   │   ├── connection.ts       # Абстракция подключения к БД
+│   │   ├── seed.ts             # Начальные данные
+│   │   ├── models/
+│   │   │   ├── bot.ts          # Модель бота
+│   │   │   └── rule.ts         # Модель правила
+│   │   └── repositories/
+│   │       ├── bot-repository.ts    # Репозиторий ботов
+│   │       └── rule-repository.ts   # Репозиторий правил
 │   ├── types/
-│   │   ├── config.ts           # Типы конфигурации
 │   │   ├── moderation.ts       # Типы модерации
 │   │   └── telegram.ts         # Типы Telegram API
 │   ├── utils/
-│   │   ├── security.ts         # Безопасность токенов
 │   │   └── helpers.ts          # Вспомогательные функции
 │   └── index.ts                # Точка входа сервера
 ├── server/api/                 # Nuxt API роуты
@@ -61,75 +66,64 @@ tg-moderator-ai/
 │   ├── ui/                     # UI компоненты
 │   ├── bots/                   # Компоненты ботов
 │   └── moderation/             # Компоненты модерации
-├── config/
-│   ├── bots.yaml               # Конфигурация ботов
-│   └── rules.yaml              # Правила модерации
 ├── logs/                       # Логи
 ├── .env.example               # Пример переменных окружения
+├── docker-compose.yml         # MongoDB контейнер
 ├── nuxt.config.ts             # Конфигурация Nuxt
 └── package.json
 ```
 
-### 2. Конфигурация
+### 2. База данных
 
-#### Структура конфигурации ботов (bots.yaml)
+#### Абстракция БД
 
-```yaml
-bots:
-  - id: "main_moderator"
-    name: "Main Chat Moderator"
-    # Автоматически ищет TELEGRAM_BOT_TOKEN_MAIN_MODERATOR
-    chats:
-      - chat_id: -1001234567890
-        name: "Main Community"
-        rules: ["spam", "hate_speech", "advertising"]
-        warnings_before_ban: 3
-        auto_delete_violations: true
-      - chat_id: -1001234567891
-        name: "Support Chat"
-        rules: ["spam", "hate_speech"]
-        warnings_before_ban: 2
-        auto_delete_violations: false
+Проект использует абстракцию для работы с базой данных, что позволяет легко сменить БД:
 
-  - id: "gaming_moderator"
-    name: "Gaming Community Moderator"
-    # Автоматически ищет TELEGRAM_BOT_TOKEN_GAMING_MODERATOR
-    chats:
-      - chat_id: -1001234567892
-        name: "Gaming Chat"
-        rules: ["spam", "hate_speech", "gaming_violations"]
-        warnings_before_ban: 2
-        auto_delete_violations: true
+```typescript
+interface DatabaseConnection {
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+  getDb(): Db;
+  isConnected(): boolean;
+}
 ```
 
-#### Структура правил (rules.yaml)
+#### Модели данных
 
-```yaml
-rules:
-  spam:
-    name: "Спам и реклама"
-    description: "Запрещены повторяющиеся сообщения, реклама без разрешения"
-    ai_prompt: |
-      Определи, является ли сообщение спамом или нежелательной рекламой.
-      Критерии: повторяющиеся сообщения, коммерческая реклама без разрешения,
-      массовые рассылки, флуд.
-    severity: "medium"
+**Бот (Bot)**:
+```typescript
+interface Bot {
+  _id?: ObjectId;
+  id: string;                    // Уникальный идентификатор
+  name: string;                  // Название бота
+  chats: Chat[];                 // Список чатов
+  is_active: boolean;            // Активен ли бот
+  created_at: Date;
+  updated_at: Date;
+}
 
-  hate_speech:
-    name: "Ненавистнические высказывания"
-    description: "Запрещены оскорбления, дискриминация, призывы к насилию"
-    ai_prompt: |
-      Определи, содержит ли сообщение ненавистнические высказывания,
-      оскорбления, дискриминацию или призывы к насилию.
-    severity: "high"
+interface Chat {
+  chat_id: number;               // ID чата в Telegram
+  name: string;                  // Название чата
+  rules: string[];               // Список правил
+  warnings_before_ban: number;   // Количество предупреждений до бана
+  auto_delete_violations: boolean; // Автоудаление нарушений
+}
+```
 
-  gaming_violations:
-    name: "Нарушения в игровых чатах"
-    description: "Спам в игровых командах, оскорбления игроков"
-    ai_prompt: |
-      Определи нарушения, специфичные для игровых чатов:
-      спам в командах, оскорбления игроков, раскрытие личной информации.
-    severity: "medium"
+**Правило (Rule)**:
+```typescript
+interface Rule {
+  _id?: ObjectId;
+  id: string;                    // Уникальный идентификатор
+  name: string;                  // Название правила
+  description: string;           // Описание
+  ai_prompt: string;             // Промпт для AI
+  severity: 'low' | 'medium' | 'high'; // Важность
+  is_active: boolean;            // Активно ли правило
+  created_at: Date;
+  updated_at: Date;
+}
 ```
 
 ### 3. Динамическая загрузка токенов и безопасность
@@ -141,43 +135,16 @@ rules:
 TELEGRAM_BOT_TOKEN_MAIN_MODERATOR=your_main_bot_token
 TELEGRAM_BOT_TOKEN_GAMING_MODERATOR=your_gaming_bot_token
 OPENAI_API_KEY=your_openai_key
+MONGODB_URI=mongodb://admin:password@localhost:27017/tg-moderator?authSource=admin
 ```
 
 #### Алгоритм загрузки токенов:
 
-1. **Чтение конфигурации** ботов из `bots.yaml`
+1. **Чтение ботов** из базы данных
 2. **Генерация имени переменной** для каждого бота: `TELEGRAM_BOT_TOKEN_{BOT_ID.toUpperCase()}`
 3. **Поиск токена** в переменных окружения
-4. **Валидация** наличия токенов для всех настроенных ботов
+4. **Валидация** наличия токенов для всех активных ботов
 5. **Запуск ботов** только при наличии всех необходимых токенов
-
-#### Реализация в коде:
-
-```typescript
-interface BotToken {
-  botId: string;
-  token: string;
-}
-
-function loadBotTokens(bots: Bot[]): BotToken[] {
-  const tokens: BotToken[] = [];
-
-  for (const bot of bots) {
-    const envKey = `TELEGRAM_BOT_TOKEN_${bot.id.toUpperCase()}`;
-    const token = process.env[envKey];
-
-    if (!token) {
-      throw new Error(`Missing token for bot ${bot.id}. Set ${envKey} environment variable.`);
-    }
-
-    tokens.push({ botId: bot.id, token });
-  }
-
-  return tokens;
-}
-```
-
-
 
 ### 4. AI Модерация
 
@@ -295,21 +262,26 @@ interface ModerationLog {
 #### Требования:
 
 - Node.js 18+ или Bun
-- SQLite для локального развертывания
+- MongoDB (локально или облачно)
 - OpenAI API ключ
 - Telegram Bot токены
 
 #### Docker поддержка:
 
-```dockerfile
-FROM oven/bun:latest
-WORKDIR /app
-COPY package.json .
-RUN bun install
-COPY . .
-RUN bun run build
-EXPOSE 3000
-CMD ["bun", "run", "start"]
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  mongodb:
+    image: mongo:8.0.12
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: tg-moderator
+    volumes:
+      - mongodb_data:/data/db
 ```
 
 #### Nuxt конфигурация (nuxt.config.ts):
@@ -322,26 +294,22 @@ export default defineNuxtConfig({
   },
   modules: [
     '@nuxtjs/tailwindcss',
-    '@pinia/nuxt'
+    '@nuxt/fonts'
   ],
   runtimeConfig: {
-    // Переменные только для сервера
-    telegramTokens: process.env,
-    openaiApiKey: process.env.OPENAI_API_KEY
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    mongodbUri: process.env.MONGODB_URI
   }
 })
 ```
 
-
-
 ## Следующие шаги
 
-1. **Инициализация Nuxt проекта** с Bun и TypeScript
-2. **Настройка базовой структуры** (папки, конфигурация)
-3. **Реализация динамической загрузки токенов** из env
-4. **Создание API роутов** для веб-интерфейса
+1. **Запуск MongoDB** через Docker Compose
+2. **Настройка переменных окружения** (.env файл)
+3. **Запуск приложения** и проверка инициализации БД
+4. **Тестирование веб-интерфейса** для управления ботами и правилами
 5. **Интеграция с Telegram Bot API** (серверная часть)
 6. **Реализация AI модерации** (OpenAI интеграция)
 7. **Система логирования** с Pino
-8. **Веб-интерфейс** (Vue компоненты, страницы)
-9. **Отладка и тестирование**
+8. **Отладка и тестирование**

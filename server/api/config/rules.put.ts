@@ -1,14 +1,34 @@
-import { writeFileSync } from "fs";
-import { stringify } from "yaml";
+import { RuleRepository } from "../../database/repositories/rule-repository";
 
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event);
     const { rules } = body;
 
-    // TODO: Validate rules structure
-    const configContent = stringify({ rules });
-    writeFileSync("./config/rules.yaml", configContent, "utf8");
+    const ruleRepo = new RuleRepository();
+
+    // Обновляем каждое правило
+    for (const rule of rules) {
+      if (rule._id) {
+        // Обновляем существующее правило
+        await ruleRepo.update(rule.id, {
+          name: rule.name,
+          description: rule.description,
+          ai_prompt: rule.ai_prompt,
+          severity: rule.severity,
+          is_active: rule.is_active,
+        });
+      } else {
+        // Создаем новое правило
+        await ruleRepo.create({
+          id: rule.id,
+          name: rule.name,
+          description: rule.description,
+          ai_prompt: rule.ai_prompt,
+          severity: rule.severity,
+        });
+      }
+    }
 
     return {
       success: true,
@@ -17,7 +37,7 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     throw createError({
       statusCode: 500,
-      statusMessage: "Error updating rules configuration",
+      statusMessage: "Error updating rules in database",
     });
   }
 });

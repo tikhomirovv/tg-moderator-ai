@@ -1,19 +1,20 @@
-import { loadRulesConfig } from "../../core/config";
+import { RuleRepository } from "../../database/repositories/rule-repository";
 
 export default defineEventHandler(async (event) => {
   try {
-    const rulesConfig = loadRulesConfig();
+    const ruleRepo = new RuleRepository();
+    const rules = await ruleRepo.findAll();
 
     return {
       success: true,
       data: {
-        rules: rulesConfig.rules,
+        rules: rules,
       },
     };
   } catch (error) {
     throw createError({
       statusCode: 500,
-      statusMessage: "Error loading rules configuration",
+      statusMessage: "Error loading rules from database",
     });
   }
 });

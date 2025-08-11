@@ -50,7 +50,8 @@ async function load() {
     const resp = await $fetch<any>("/api/moderation/logs");
     rows.value = resp?.data?.logs || [];
   } catch (error) {
-    console.error("Error loading logs:", error);
+    // В клиентской части используем более простой способ логирования
+    // или можно добавить toast уведомление
     rows.value = [];
   }
 }

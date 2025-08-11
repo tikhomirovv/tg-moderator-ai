@@ -10,6 +10,12 @@
           Add Bot
         </button>
         <button
+          @click="reloadBots"
+          class="px-3 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 text-sm"
+        >
+          Reload Bots
+        </button>
+        <button
           @click="refresh"
           class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
         >
@@ -193,6 +199,19 @@ async function createBot() {
     console.error("Error creating bot:", error);
   } finally {
     creating.value = false;
+  }
+}
+
+async function reloadBots() {
+  try {
+    await $fetch("/api/bots/reload", {
+      method: "POST",
+    });
+
+    // Перезагружаем список ботов
+    await load();
+  } catch (error) {
+    console.error("Error reloading bots:", error);
   }
 }
 

@@ -130,6 +130,102 @@
           </div>
         </div>
       </div>
+
+      <!-- Webhook Status -->
+      <div class="bg-white border rounded p-6">
+        <h3 class="text-lg font-medium mb-4">Webhook Status</h3>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium">Status</div>
+              <div class="text-sm text-gray-600">
+                <span
+                  :class="
+                    webhookStatus?.active ? 'text-green-600' : 'text-red-600'
+                  "
+                >
+                  {{ webhookStatus?.active ? "Active" : "Inactive" }}
+                </span>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button
+                @click="startWebhook"
+                :disabled="webhookStatus?.active || webhookLoading"
+                class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm disabled:opacity-50"
+              >
+                {{ webhookLoading ? "Starting..." : "Start Webhook" }}
+              </button>
+              <button
+                @click="stopWebhook"
+                :disabled="!webhookStatus?.active || webhookLoading"
+                class="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm disabled:opacity-50"
+              >
+                {{ webhookLoading ? "Stopping..." : "Stop Webhook" }}
+              </button>
+            </div>
+          </div>
+
+          <div v-if="webhookStatus?.url">
+            <div class="font-medium">Webhook URL</div>
+            <div class="text-sm text-gray-600 break-all">
+              {{ webhookStatus.url }}
+            </div>
+          </div>
+
+          <div v-if="webhookStatus?.last_update">
+            <div class="font-medium">Last Update</div>
+            <div class="text-sm text-gray-600">
+              {{ formatDate(webhookStatus.last_update) }}
+            </div>
+          </div>
+
+          <div class="bg-blue-50 border border-blue-200 rounded p-3">
+            <div class="text-sm text-blue-800">
+              <strong>How to test:</strong>
+              <ol class="list-decimal list-inside mt-2 space-y-1">
+                <li>Click "Start Webhook" to enable receiving updates</li>
+                <li>Send a message to your bot in Telegram</li>
+                <li>Check the logs below for moderation activity</li>
+                <li>Your bot will analyze messages using AI rules</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Logs -->
+      <div class="bg-white border rounded p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium">Recent Activity</h3>
+          <button
+            @click="loadLogs"
+            class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+          >
+            Refresh
+          </button>
+        </div>
+        <div v-if="logs.length > 0" class="space-y-2 max-h-64 overflow-y-auto">
+          <div
+            v-for="log in logs"
+            :key="log.id"
+            class="border rounded p-2 text-sm"
+          >
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="font-medium">{{ log.action }}</span>
+                <span class="text-gray-600"> - {{ log.message }}</span>
+              </div>
+              <div class="text-xs text-gray-500">
+                {{ formatDate(log.timestamp) }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="text-gray-500 text-center py-4">
+          No recent activity. Start webhook and send messages to see logs.
+        </div>
+      </div>
     </div>
 
     <div v-else class="text-gray-500">Bot not found</div>
@@ -274,6 +370,9 @@ const showAddChatModal = ref(false);
 const editingChat = ref<any>(null);
 const saving = ref(false);
 const availableRules = ref<any[]>([]);
+const webhookStatus = ref<any>(null);
+const webhookLoading = ref(false);
+const logs = ref<any[]>([]);
 
 const newChat = ref({
   chat_id: "",
@@ -311,6 +410,47 @@ async function loadRules() {
     availableRules.value = resp?.data?.rules || [];
   } catch (error) {
     console.error("Error loading rules:", error);
+  }
+}
+
+async function loadWebhookStatus() {
+  try {
+    const resp = await $fetch<any>(`/api/bots/${botId}/webhook/status`);
+    webhookStatus.value = resp?.data;
+  } catch (error) {
+    console.error("Error loading webhook status:", error);
+  }
+}
+
+async function startWebhook() {
+  webhookLoading.value = true;
+  try {
+    const resp = await $fetch<any>(`/api/bots/${botId}/webhook/start`, {
+      method: "POST",
+    });
+    if (resp?.data) {
+      webhookStatus.value = resp.data;
+    }
+  } catch (error) {
+    console.error("Error starting webhook:", error);
+  } finally {
+    webhookLoading.value = false;
+  }
+}
+
+async function stopWebhook() {
+  webhookLoading.value = true;
+  try {
+    const resp = await $fetch<any>(`/api/bots/${botId}/webhook/stop`, {
+      method: "POST",
+    });
+    if (resp?.data) {
+      webhookStatus.value = resp.data;
+    }
+  } catch (error) {
+    console.error("Error stopping webhook:", error);
+  } finally {
+    webhookLoading.value = false;
   }
 }
 
@@ -416,6 +556,17 @@ async function removeChat(chatId: number) {
   }
 }
 
+async function loadLogs() {
+  try {
+    const resp = await $fetch<any>(`/api/bots/${botId}/logs`);
+    logs.value = resp?.data?.logs || [];
+  } catch (error) {
+    console.error("Error loading logs:", error);
+  }
+}
+
 onMounted(loadBot);
 onMounted(loadRules);
+onMounted(loadWebhookStatus);
+onMounted(loadLogs);
 </script>

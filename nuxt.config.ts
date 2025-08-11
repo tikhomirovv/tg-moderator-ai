@@ -15,4 +15,9 @@ export default defineNuxtConfig({
   typescript: {
     strict: true,
   },
+  // Настройки для прослушивания всех интерфейсов
+  devServer: {
+    host: "0.0.0.0",
+    port: 3001,
+  },
 });

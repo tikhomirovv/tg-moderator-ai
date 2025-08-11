@@ -83,18 +83,6 @@ function buildAnalysisPrompt(
   return `
 Анализируй следующее сообщение на предмет нарушений правил чата.
 
-ПРАВИЛА ЧАТА:
-${rulesText}
-
-КОНТЕКСТ:
-- Пользователь ID: ${request.user_id}
-- Чат ID: ${request.chat_id}
-- Предыдущие предупреждения: ${request.context.user_warnings}
-- История чата: ${request.context.chat_history.slice(-3).join(", ")}
-
-СООБЩЕНИЕ ДЛЯ АНАЛИЗА:
-"${request.message}"
-
 ОТВЕТЬ В СЛЕДУЮЩЕМ ФОРМАТЕ:
 {
   "violation_detected": true/false,
@@ -104,6 +92,19 @@ ${rulesText}
 }
 
 Только JSON ответ, без дополнительного текста.
+
+ПРАВИЛА ЧАТА:
+${rulesText}
+
+
+КОНТЕКСТ:
+- Пользователь ID: ${request.user_id}
+- Чат ID: ${request.chat_id}
+- Предыдущие предупреждения: ${request.context.user_warnings}
+- История чата: ${request.context.chat_history.slice(-3).join(", ")}
+
+СООБЩЕНИЕ ДЛЯ АНАЛИЗА:
+"${request.message}"
 `;
 }
 

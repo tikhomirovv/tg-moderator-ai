@@ -20,22 +20,51 @@ export class TelegramBot {
   // Обработка входящих обновлений
   async handleUpdate(update: TelegramUpdate): Promise<void> {
     try {
+      logger.info(
+        `Получено обновление для бота ${this.botId}, update_id: ${update.update_id}`
+      );
+
       if (!update.message) {
+        logger.debug(
+          `Игнорируем обновление без сообщения: update_id=${update.update_id}`
+        );
         return; // Игнорируем обновления без сообщений
       }
 
       const message = update.message;
 
+      logger.info(
+        `Обрабатываем сообщение от пользователя ${message.from.id} в чате ${message.chat.id}`
+      );
+
       // Проверяем, что сообщение из отслеживаемого чата
       const chatConfig = this.getChatConfig(message.chat.id);
       if (!chatConfig) {
+        logger.warn(
+          `Сообщение из неотслеживаемого чата: chat_id=${message.chat.id}, bot_id=${this.botId}`
+        );
         return; // Игнорируем сообщения из неотслеживаемых чатов
       }
 
+      logger.info(
+        `Чат найден в конфигурации: ${chatConfig.name}, правил: ${
+          chatConfig.rules?.length || 0
+        }`
+      );
+
       // Проверяем, что сообщение содержит текст
       if (!message.text) {
+        logger.debug(
+          `Игнорируем сообщение без текста: message_id=${message.message_id}`
+        );
         return;
       }
+
+      logger.info(
+        `Начинаем анализ сообщения: "${message.text.substring(0, 50)}${
+          message.text.length > 50 ? "..." : ""
+        }"`
+      );
 
       // Анализируем сообщение
       await this.analyzeAndModerate(message, chatConfig);

@@ -13,8 +13,14 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    logger.info(
+      `Получен webhook для бота ${botId}, update_id: ${body.update_id}`
+    );
+
     // Обрабатываем обновление от Telegram
     await handleTelegramUpdate(botId, body);
+
+    logger.info(`Webhook успешно обработан для бота ${botId}`);
 
     return {
       success: true,

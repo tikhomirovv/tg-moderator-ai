@@ -1,4 +1,3 @@
-import { bots } from "../../../../index";
 import { logger } from "../../../../core/logger";
 import { BotRepository } from "../../../../database/repositories/bot-repository";
 import { TelegramBot } from "../../../../core/bot";
@@ -8,37 +7,22 @@ export default defineEventHandler(async (event) => {
     const botId = getRouterParam(event, "id");
     logger.info(`Attempting to start webhook for bot: ${botId}`);
 
-    let bot = bots.get(botId!);
+    // Получаем бота из БД
+    const botRepo = new BotRepository();
+    const botConfig = await botRepo.findByIdWithToken(botId!);
 
-    if (!bot) {
-      logger.warn(
-        `Bot not found in active bots: ${botId}, attempting to initialize`
-      );
+    if (!botConfig) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Bot not found in database",
+      });
+    }
 
-      // Пытаемся инициализировать бота из БД
-      const botRepo = new BotRepository();
-      const botConfig = await botRepo.findByIdWithToken(botId!);
-
-      if (!botConfig) {
-        throw createError({
-          statusCode: 404,
-          statusMessage: "Bot not found in database",
-        });
-      }
-
-      if (!botConfig.token) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: "Bot token not found in database",
-        });
-      }
-
-      // Создаем и инициализируем бота
-      bot = new TelegramBot(botConfig.token, botConfig.id, botConfig);
-      await bot.initialize();
-      bots.set(botId!, bot);
-
-      logger.info(`Bot ${botId} initialized and added to active bots`);
+    if (!botConfig.token) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Bot token not found in database",
+      });
     }
 
     logger.info(`Bot found: ${botId}, proceeding with webhook setup`);
@@ -50,7 +34,8 @@ export default defineEventHandler(async (event) => {
 
     logger.info(`Setting up webhook URL: ${webhookUrl}`);
 
-    // Устанавливаем webhook
+    // Создаем экземпляр бота и устанавливаем webhook
+    const bot = new TelegramBot(botConfig.token, botConfig.id, botConfig);
     await bot.setWebhook(webhookUrl);
 
     logger.info(`Webhook started for bot ${botId}: ${webhookUrl}`);

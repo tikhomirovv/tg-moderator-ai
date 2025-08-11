@@ -1,43 +1,9 @@
-import { bots } from "../../../../index";
 import { logger } from "../../../../core/logger";
 import { BotRepository } from "../../../../database/repositories/bot-repository";
-import { TelegramBot } from "../../../../core/bot";
 
 export default defineEventHandler(async (event) => {
   try {
     const botId = getRouterParam(event, "id");
-    let bot = bots.get(botId!);
-
-    if (!bot) {
-      logger.warn(
-        `Bot not found in active bots: ${botId}, attempting to initialize`
-      );
-
-      // Пытаемся инициализировать бота из БД
-      const botRepo = new BotRepository();
-      const botConfig = await botRepo.findByIdWithToken(botId!);
-
-      if (!botConfig) {
-        throw createError({
-          statusCode: 404,
-          statusMessage: "Bot not found in database",
-        });
-      }
-
-      if (!botConfig.token) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: "Bot token not found in database",
-        });
-      }
-
-      // Создаем и инициализируем бота
-      bot = new TelegramBot(botConfig.token, botConfig.id, botConfig);
-      await bot.initialize();
-      bots.set(botId!, bot);
-
-      logger.info(`Bot ${botId} initialized and added to active bots`);
-    }
 
     // Получаем токен из БД
     const botRepo = new BotRepository();

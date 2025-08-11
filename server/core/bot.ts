@@ -17,25 +17,6 @@ export class TelegramBot {
     this.botConfig = botConfig;
   }
 
-  // Инициализация бота
-  async initialize(): Promise<void> {
-    try {
-      logger.info(`Инициализация бота: ${this.botId}`);
-
-      // Получаем информацию о боте
-      const botInfo = await this.getBotInfo();
-      logger.info(
-        `Бот ${botInfo.first_name} (@${botInfo.username}) готов к работе`
-      );
-    } catch (error) {
-      logger.error(
-        { error: error as Error },
-        `Ошибка инициализации бота ${this.botId}`
-      );
-      throw error;
-    }
-  }
-
   // Обработка входящих обновлений
   async handleUpdate(update: TelegramUpdate): Promise<void> {
     try {

@@ -1,21 +1,8 @@
 import { BotRepository } from "../../../../database/repositories/bot-repository";
-import { bots } from "../../../../index";
 
 export default defineEventHandler(async (event) => {
   try {
     const botId = getRouterParam(event, "id");
-    const bot = bots.get(botId!);
-
-    if (!bot) {
-      return {
-        success: true,
-        data: {
-          active: false,
-          url: null,
-          last_update: null,
-        },
-      };
-    }
 
     // Получаем токен из БД
     const botRepo = new BotRepository();

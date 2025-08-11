@@ -29,6 +29,16 @@ export async function analyzeMessage(
       "Отправка запроса к OpenAI"
     );
 
+    // Логируем итоговый промпт для отладки
+    logger.info(
+      {
+        prompt: prompt,
+        rulesCount: rules.length,
+        rules: rules.map((r) => ({ name: r.name, severity: r.severity })),
+      },
+      "Итоговый промпт для AI"
+    );
+
     // Отправляем запрос к OpenAI
     const completion = await openai.chat.completions.create({
       model: config.openaiModel,
@@ -62,6 +72,7 @@ export async function analyzeMessage(
         rule_violated: result.rule_violated,
         confidence: result.confidence,
         model: config.openaiModel,
+        ai_response: response,
       },
       "AI анализ завершен"
     );
@@ -86,7 +97,9 @@ function buildAnalysisPrompt(
     .join("\n");
 
   return `
-Анализируй следующее сообщение на предмет нарушений правил чата.
+Ты - модератор чата. Твоя задача - анализировать сообщения на предмет нарушений правил.
+
+ВАЖНО: Анализируй сообщение ТОЛЬКО по переданным правилам. НЕ придумывай дополнительные правила и НЕ используй общие принципы модерации. Если правил нет или сообщение не нарушает ни одно из переданных правил - считай, что нарушений нет.
 
 ОТВЕТЬ В СЛЕДУЮЩЕМ ФОРМАТЕ:
 {
@@ -98,9 +111,8 @@ function buildAnalysisPrompt(
 
 Только JSON ответ, без дополнительного текста.
 
-ПРАВИЛА ЧАТА:
-${rulesText}
-
+ПРАВИЛА ЧАТА (${rules.length} правил):
+${rules.length > 0 ? rulesText : "Правил не настроено"}
 
 КОНТЕКСТ:
 - Пользователь ID: ${request.user_id}
@@ -110,6 +122,8 @@ ${rulesText}
 
 СООБЩЕНИЕ ДЛЯ АНАЛИЗА:
 "${request.message}"
+
+ПОМНИ: Анализируй ТОЛЬКО по переданным правилам. Если правил нет или сообщение не нарушает правила - violation_detected = false.
 `;
 }
 

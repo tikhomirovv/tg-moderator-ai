@@ -2,7 +2,9 @@ import { TelegramUpdate, TelegramMessage } from "../types/telegram";
 import { AIModerationRequest } from "../types/moderation";
 import { Bot, Chat } from "../types/config";
 import { analyzeMessage } from "./ai-moderation";
-import { logger, logModerationAction } from "./logger";
+import { logModerationAction } from "./logger";
+import { logger } from "./logger";
+import { RuleRepository } from "../database/repositories/rule-repository";
 
 export class TelegramBot {
   private token: string;
@@ -79,6 +81,14 @@ export class TelegramBot {
     chatConfig: Chat
   ): Promise<void> {
     try {
+      // Получаем правила из базы данных
+      const ruleRepo = new RuleRepository();
+      const rules = await ruleRepo.findByIds(chatConfig.rules || []);
+
+      logger.info(
+        `Загружено правил для чата ${chatConfig.name}: ${rules.length}`
+      );
+
       // Формируем запрос для AI
       const aiRequest: AIModerationRequest = {
         message: message.text!,
@@ -92,7 +102,7 @@ export class TelegramBot {
       };
 
       // Анализируем сообщение с помощью AI
-      const aiResponse = await analyzeMessage(aiRequest, []); // TODO: Передавать правила
+      const aiResponse = await analyzeMessage(aiRequest, rules);
 
       if (aiResponse.violation_detected) {
         // Нарушение обнаружено

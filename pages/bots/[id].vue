@@ -180,15 +180,50 @@
             </div>
           </div>
 
-          <div class="bg-blue-50 border border-blue-200 rounded p-3">
+          <div
+            v-if="!webhookStatus?.active"
+            class="bg-blue-50 border border-blue-200 rounded p-3"
+          >
             <div class="text-sm text-blue-800">
               <strong>How to test:</strong>
               <ol class="list-decimal list-inside mt-2 space-y-1">
+                <li>
+                  Set up HTTPS URL in your .env file (use ngrok or localtunnel
+                  for development)
+                </li>
                 <li>Click "Start Webhook" to enable receiving updates</li>
                 <li>Send a message to your bot in Telegram</li>
                 <li>Check the logs below for moderation activity</li>
                 <li>Your bot will analyze messages using AI rules</li>
               </ol>
+              <div
+                class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded"
+              >
+                <strong>⚠️ Important:</strong> Telegram requires HTTPS URLs for
+                webhooks. For development, use one of these services:
+                <ul class="list-disc list-inside mt-1 space-y-1">
+                  <li>
+                    <a
+                      href="https://ngrok.com"
+                      target="_blank"
+                      class="text-blue-600 hover:underline"
+                      >ngrok</a
+                    >
+                    - <code>ngrok http 3000</code>
+                  </li>
+                  <li>
+                    <a
+                      href="https://github.com/localtunnel/localtunnel"
+                      target="_blank"
+                      class="text-blue-600 hover:underline"
+                      >localtunnel</a
+                    >
+                    -
+                    <code>npm install -g localtunnel && lt --port 3000</code>
+                    (free)
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

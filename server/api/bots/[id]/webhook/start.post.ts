@@ -30,6 +30,15 @@ export default defineEventHandler(async (event) => {
     // Получаем базовый URL из переменной окружения
     // BASE_URL должен быть доступен из интернета для получения webhook от Telegram
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+
+    // Проверяем, что URL использует HTTPS (требование Telegram)
+    if (!baseUrl.startsWith("https://")) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: `Webhook URL must use HTTPS. Current URL: ${baseUrl}. For development, use ngrok or similar service.`,
+      });
+    }
+
     const webhookUrl = `${baseUrl}/api/telegram/webhook/${botId}`;
 
     logger.info(`Setting up webhook URL: ${webhookUrl}`);

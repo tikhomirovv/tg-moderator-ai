@@ -13,42 +13,70 @@ Telegram-бот модератор с искусственным интелле�
 - **Database**: MongoDB (с абстракцией для легкой смены)
 - **UI**: Tailwind CSS
 
-## Быстрый старт
+## 🚀 Быстрый старт
 
 ### 1. Установка зависимостей
-
 ```bash
 bun install
 ```
 
 ### 2. Настройка переменных окружения
-
-Создайте файл `.env` на основе `.env.example`:
-
-```env
-# OpenAI API
-OPENAI_API_KEY=your_openai_api_key_here
-
-# MongoDB (для Docker Compose)
-MONGODB_URI=mongodb://admin:password@localhost:27017/tg-moderator?authSource=admin
-
-# Настройки приложения
-NODE_ENV=development
+Скопируйте `.env.example` в `.env` и заполните:
+```bash
+cp .env.example .env
 ```
 
 ### 3. Запуск MongoDB
-
 ```bash
 docker-compose up -d
 ```
 
-### 4. Запуск приложения
+### 4. Настройка HTTPS для разработки (обязательно для webhook)
 
+Telegram требует HTTPS URL для webhook. Для разработки используйте ngrok или localtunnel:
+
+#### Вариант 1: ngrok
+```bash
+# Установка
+# Windows (с помощью chocolatey)
+choco install ngrok
+
+# macOS
+brew install ngrok
+
+# Linux
+# Скачайте с https://ngrok.com/download
+
+# Запуск
+ngrok http 3000
+```
+
+#### Вариант 2: localtunnel (бесплатный)
+```bash
+# Установка
+npm install -g localtunnel
+
+# Запуск
+lt --port 3000
+```
+
+#### Настройка .env:
+```bash
+# Используйте URL от ngrok или localtunnel
+BASE_URL=https://abc123.ngrok.io
+# или
+BASE_URL=https://abc123.loca.lt
+```
+
+### 5. Запуск приложения
 ```bash
 bun run dev
 ```
 
-Приложение будет доступно по адресу: http://localhost:3000
+### 6. Открытие веб-интерфейса
+Перейдите на http://localhost:3000
+
+## 📝 Настройка бота
 
 ## Структура проекта
 

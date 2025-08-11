@@ -5,6 +5,7 @@ import { analyzeMessage } from "./ai-moderation";
 import { logModerationAction } from "./logger";
 import { logger } from "./logger";
 import { RuleRepository } from "../database/repositories/rule-repository";
+import { ContextService } from "./context-service";
 
 export class TelegramBot {
   private token: string;
@@ -12,11 +13,13 @@ export class TelegramBot {
   private botConfig: Bot;
   private webhookUrl?: string;
   private isRunning = false;
+  private contextService: ContextService;
 
   constructor(token: string, botId: string, botConfig: Bot) {
     this.token = token;
     this.botId = botId;
     this.botConfig = botConfig;
+    this.contextService = new ContextService();
   }
 
   // Обработка входящих обновлений
@@ -81,12 +84,34 @@ export class TelegramBot {
     chatConfig: Chat
   ): Promise<void> {
     try {
+      // Сохраняем сообщение в базу данных
+      await this.contextService.saveMessage(
+        this.botId,
+        message.chat.id,
+        message.from.id,
+        message.message_id,
+        message.text!,
+        new Date(message.date * 1000) // Telegram date в секундах, конвертируем в миллисекунды
+      );
+
       // Получаем правила из базы данных
       const ruleRepo = new RuleRepository();
       const rules = await ruleRepo.findByIds(chatConfig.rules || []);
 
       logger.info(
         `Загружено правил для чата ${chatConfig.name}: ${rules.length}`
+      );
+
+      // Получаем контекст пользователя
+      const userContext = await this.contextService.getUserContext(
+        this.botId,
+        message.chat.id,
+        message.from.id,
+        {
+          username: message.from.username,
+          first_name: message.from.first_name,
+          last_name: message.from.last_name,
+        }
       );
 
       // Формируем запрос для AI
@@ -96,8 +121,8 @@ export class TelegramBot {
         chat_id: message.chat.id,
         rules: chatConfig.rules,
         context: {
-          user_warnings: 0, // TODO: Получать из базы данных
-          chat_history: [], // TODO: Получать из базы данных
+          user_warnings: userContext.user_warnings,
+          chat_history: userContext.chat_history,
         },
       };
 
@@ -125,7 +150,18 @@ export class TelegramBot {
     aiResponse: any
   ): Promise<void> {
     try {
-      // Логируем нарушение
+      // Обрабатываем предупреждение через ContextService
+      await this.contextService.handleWarning(
+        this.botId,
+        message.chat.id,
+        message.from.id,
+        message.message_id,
+        aiResponse.rule_violated || "unknown",
+        aiResponse.confidence,
+        aiResponse.reasoning
+      );
+
+      // Логируем нарушение (старый метод для совместимости)
       logModerationAction({
         bot_id: this.botId,
         chat_id: message.chat.id,
@@ -143,6 +179,35 @@ export class TelegramBot {
       // Удаляем сообщение если настроено
       if (chatConfig.auto_delete_violations) {
         await this.deleteMessage(message.chat.id, message.message_id);
+
+        // Обрабатываем удаление сообщения
+        await this.contextService.handleMessageDeletion(
+          this.botId,
+          message.chat.id,
+          message.message_id,
+          `Violation: ${aiResponse.rule_violated}`
+        );
+      }
+
+      // Проверяем, нужно ли забанить пользователя
+      const userContext = await this.contextService.getUserContext(
+        this.botId,
+        message.chat.id,
+        message.from.id
+      );
+
+      if (userContext.user_warnings >= chatConfig.warnings_before_ban) {
+        // Баним пользователя
+        await this.contextService.handleUserBan(
+          this.botId,
+          message.chat.id,
+          message.from.id,
+          aiResponse.rule_violated || "unknown"
+        );
+
+        logger.warn(
+          `Пользователь ${message.from.id} забанен в чате ${message.chat.id} после ${userContext.user_warnings} предупреждений`
+        );
       }
     } catch (error) {
       logger.error({ error: error as Error }, "Ошибка обработки нарушения");

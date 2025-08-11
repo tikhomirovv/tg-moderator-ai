@@ -114,19 +114,83 @@
 
       <!-- Статистика -->
       <div class="bg-white border rounded p-6">
-        <h3 class="text-lg font-medium mb-4">Statistics</h3>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium">Statistics</h3>
+          <button
+            @click="loadStatistics"
+            class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+          >
+            Refresh
+          </button>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="text-center">
-            <div class="text-2xl font-bold text-blue-600">0</div>
-            <div class="text-sm text-gray-600">Messages Processed</div>
+            <div class="text-2xl font-bold text-blue-600">
+              {{ statistics?.today?.messages_processed || 0 }}
+            </div>
+            <div class="text-sm text-gray-600">Messages Processed (Today)</div>
           </div>
           <div class="text-center">
-            <div class="text-2xl font-bold text-yellow-600">0</div>
-            <div class="text-sm text-gray-600">Warnings Issued</div>
+            <div class="text-2xl font-bold text-yellow-600">
+              {{ statistics?.today?.warnings_issued || 0 }}
+            </div>
+            <div class="text-sm text-gray-600">Warnings Issued (Today)</div>
           </div>
           <div class="text-center">
-            <div class="text-2xl font-bold text-red-600">0</div>
-            <div class="text-sm text-gray-600">Users Banned</div>
+            <div class="text-2xl font-bold text-red-600">
+              {{ statistics?.users?.banned_count || 0 }}
+            </div>
+            <div class="text-sm text-gray-600">Users Banned (Total)</div>
+          </div>
+        </div>
+
+        <!-- Дополнительная статистика -->
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-gray-50 rounded p-4">
+            <h4 class="font-medium text-gray-700 mb-2">This Week</h4>
+            <div class="space-y-1 text-sm">
+              <div class="flex justify-between">
+                <span>Total Messages:</span>
+                <span class="font-medium">{{
+                  statistics?.week?.total_messages_processed || 0
+                }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Total Warnings:</span>
+                <span class="font-medium">{{
+                  statistics?.week?.total_warnings_issued || 0
+                }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Messages Deleted:</span>
+                <span class="font-medium">{{
+                  statistics?.week?.total_messages_deleted || 0
+                }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="bg-gray-50 rounded p-4">
+            <h4 class="font-medium text-gray-700 mb-2">Users</h4>
+            <div class="space-y-1 text-sm">
+              <div class="flex justify-between">
+                <span>Active (24h):</span>
+                <span class="font-medium text-green-600">{{
+                  statistics?.users?.active_count || 0
+                }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Banned:</span>
+                <span class="font-medium text-red-600">{{
+                  statistics?.users?.banned_count || 0
+                }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Max Unique:</span>
+                <span class="font-medium">{{
+                  statistics?.week?.max_unique_users || 0
+                }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -408,6 +472,27 @@ const availableRules = ref<any[]>([]);
 const webhookStatus = ref<any>(null);
 const webhookLoading = ref(false);
 const logs = ref<any[]>([]);
+const statistics = ref<any>({
+  today: {
+    messages_processed: 0,
+    warnings_issued: 0,
+    messages_deleted: 0,
+    users_banned: 0,
+    unique_users: 0,
+  },
+  week: {
+    total_messages_processed: 0,
+    total_warnings_issued: 0,
+    total_messages_deleted: 0,
+    total_users_banned: 0,
+    max_unique_users: 0,
+    days_count: 0,
+  },
+  users: {
+    banned_count: 0,
+    active_count: 0,
+  },
+});
 
 const newChat = ref({
   chat_id: "",
@@ -503,6 +588,18 @@ async function toggleBotStatus() {
     }
   } catch (error) {
     console.error("Error updating bot status:", error);
+  }
+}
+
+async function loadStatistics() {
+  try {
+    const resp = await $fetch<any>(`/api/bots/${botId}/statistics`);
+    if (resp?.data?.statistics) {
+      statistics.value = resp.data.statistics;
+    }
+  } catch (error) {
+    console.error("Error loading statistics:", error);
+    // При ошибке оставляем дефолтные значения
   }
 }
 
@@ -604,4 +701,5 @@ onMounted(loadBot);
 onMounted(loadRules);
 onMounted(loadWebhookStatus);
 onMounted(loadLogs);
+onMounted(loadStatistics);
 </script>

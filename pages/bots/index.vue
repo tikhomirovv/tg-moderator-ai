@@ -37,12 +37,22 @@
                 >{{ bot.is_active ? "Active" : "Inactive" }}</span
               >
             </div>
+            <div class="text-xs text-gray-500">
+              Chats: {{ bot.chats?.length || 0 }}
+            </div>
           </div>
-          <NuxtLink
-            :to="`/bots/${bot.id}`"
-            class="text-blue-600 text-sm hover:underline"
-            >Details</NuxtLink
-          >
+          <div class="flex flex-col gap-1">
+            <NuxtLink
+              :to="`/bots/${bot.id}`"
+              class="text-blue-600 text-sm hover:underline"
+              >Details</NuxtLink
+            >
+            <NuxtLink
+              :to="`/bots/${bot.id}`"
+              class="text-green-600 text-sm hover:underline"
+              >Add Chat</NuxtLink
+            >
+          </div>
         </div>
       </div>
     </div>

@@ -46,7 +46,7 @@ export async function analyzeMessage(
         {
           role: "system",
           content:
-            "Ты - модератор чата. Твоя задача - анализировать сообщения на предмет нарушений правил.",
+            "You are a chat moderator. Your task is to analyze messages for rule violations. Pay attention to user context, warning history, and conversation flow.",
         },
         {
           role: "user",
@@ -92,38 +92,49 @@ function buildAnalysisPrompt(
   const rulesText = rules
     .map(
       (rule) =>
-        `- ${rule.name}: ${rule.description}\n  Критерии: ${rule.ai_prompt}`
+        `- ${rule.name}: ${rule.description}\n  Criteria: ${rule.ai_prompt}`
     )
     .join("\n");
 
   return `
-Ты - модератор чата. Твоя задача - анализировать сообщения на предмет нарушений правил.
+You are a chat moderator. Your task is to analyze messages for rule violations.
 
-ВАЖНО: Анализируй сообщение ТОЛЬКО по переданным правилам. НЕ придумывай дополнительные правила и НЕ используй общие принципы модерации. Если правил нет или сообщение не нарушает ни одно из переданных правил - считай, что нарушений нет.
+IMPORTANT: Analyze the message ONLY based on the provided rules. DO NOT invent additional rules or use general moderation principles. If there are no rules or the message does not violate any of the provided rules - consider that there are no violations.
 
-ОТВЕТЬ В СЛЕДУЮЩЕМ ФОРМАТЕ:
+PAY SPECIAL ATTENTION TO:
+- User's previous warnings count: ${request.context.user_warnings}
+- Recent chat history context: ${request.context.chat_history
+    .slice(-3)
+    .join(", ")}
+- User's behavior pattern and escalation of violations
+- Context of the conversation and whether this is a repeated offense
+
+CONTEXT ANALYSIS METHODOLOGY:
+When analyzing messages, consider:
+1. Is this user already showing problematic behavior in recent messages?
+2. Does this message continue a pattern of rule-violating communication?
+3. Given the user's warning history (${
+    request.context.user_warnings
+  } warnings), is this part of escalating problematic behavior?
+4. Does the message meaning change when viewed in context of recent conversation?
+
+RESPOND IN THE FOLLOWING FORMAT:
 {
   "violation_detected": true/false,
-  "rule_violated": "название_правила" (если есть нарушение),
+  "rule_violated": "rule_name" (if violation exists),
   "confidence": 0.0-1.0,
-  "reasoning": "объяснение решения"
+  "reasoning": "explanation of decision including context consideration"
 }
 
-Только JSON ответ, без дополнительного текста.
+JSON response only, no additional text.
 
-ПРАВИЛА ЧАТА (${rules.length} правил):
-${rules.length > 0 ? rulesText : "Правил не настроено"}
+CHAT RULES (${rules.length} rules):
+${rules.length > 0 ? rulesText : "No rules configured"}
 
-КОНТЕКСТ:
-- Пользователь ID: ${request.user_id}
-- Чат ID: ${request.chat_id}
-- Предыдущие предупреждения: ${request.context.user_warnings}
-- История чата: ${request.context.chat_history.slice(-3).join(", ")}
-
-СООБЩЕНИЕ ДЛЯ АНАЛИЗА:
+MESSAGE TO ANALYZE:
 "${request.message}"
 
-ПОМНИ: Анализируй ТОЛЬКО по переданным правилам. Если правил нет или сообщение не нарушает правила - violation_detected = false.
+REMEMBER: Analyze ONLY based on the provided rules. Consider the user's warning history and chat context when making decisions. Look for patterns that may not be obvious when viewing messages in isolation. If there are no rules or the message doesn't violate rules - violation_detected = false.
 `;
 }
 

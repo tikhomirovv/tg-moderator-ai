@@ -5,6 +5,7 @@ import { analyzeMessage } from "./ai-moderation";
 import { logModerationAction } from "./logger";
 import { logger } from "./logger";
 import { RuleRepository } from "../database/repositories/rule-repository";
+import { BotRepository } from "../database/repositories/bot-repository";
 import { ContextService } from "./context-service";
 
 export class TelegramBot {
@@ -43,7 +44,7 @@ export class TelegramBot {
       );
 
       // Проверяем, что сообщение из отслеживаемого чата
-      const chatConfig = this.getChatConfig(message.chat.id);
+      const chatConfig = await this.getChatConfig(message.chat.id);
       if (!chatConfig) {
         logger.warn(
           `Сообщение из неотслеживаемого чата: chat_id=${message.chat.id}, bot_id=${this.botId}`
@@ -100,6 +101,13 @@ export class TelegramBot {
 
       logger.info(
         `Загружено правил для чата ${chatConfig.name}: ${rules.length}`
+      );
+
+      // Отладочная информация о правилах
+      logger.info(
+        `Правила чата ${chatConfig.name} - ID: ${
+          chatConfig.rules?.join(", ") || "нет"
+        }, загружено: ${rules.length}`
       );
 
       // Получаем контекст пользователя
@@ -272,8 +280,42 @@ export class TelegramBot {
   }
 
   // Получение конфигурации чата
-  private getChatConfig(chatId: number): Chat | null {
-    return this.botConfig.chats.find((chat) => chat.chat_id === chatId) || null;
+  private async getChatConfig(chatId: number): Promise<Chat | null> {
+    try {
+      // Получаем актуальную конфигурацию бота из базы данных
+      const botRepo = new BotRepository();
+      const updatedBotConfig = await botRepo.findById(this.botId);
+
+      if (!updatedBotConfig) {
+        logger.warn(`Bot ${this.botId} not found in database`);
+        return null;
+      }
+
+      // Обновляем локальную конфигурацию
+      this.botConfig = updatedBotConfig;
+
+      // Ищем чат в обновленной конфигурации
+      const chatConfig = this.botConfig.chats.find(
+        (chat) => chat.chat_id === chatId
+      );
+
+      if (chatConfig) {
+        logger.debug(`Found chat config for ${chatId}: ${chatConfig.name}`);
+      } else {
+        logger.debug(`No chat config found for ${chatId}`);
+      }
+
+      return chatConfig || null;
+    } catch (error) {
+      logger.error(
+        { error: error as Error },
+        `Error getting chat config for ${chatId}`
+      );
+      // Возвращаем локальную конфигурацию как fallback
+      return (
+        this.botConfig.chats.find((chat) => chat.chat_id === chatId) || null
+      );
+    }
   }
 
   // Отправка сообщения

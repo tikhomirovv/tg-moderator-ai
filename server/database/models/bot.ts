@@ -3,9 +3,11 @@ import { ObjectId } from "mongodb";
 export interface Chat {
   chat_id: number;
   name: string;
-  rules: string[];
   warnings_before_ban: number;
   auto_delete_violations: boolean;
+  rules: string[];
+  // Silent режим - отключает все действия в чате
+  silent_mode: boolean; // true = только мониторинг, false = полные действия
 }
 
 export interface Bot {

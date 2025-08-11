@@ -91,6 +91,12 @@
                   {{ chat.warnings_before_ban }}, Auto-delete:
                   {{ chat.auto_delete_violations ? "Yes" : "No" }}
                 </div>
+                <div class="text-sm text-gray-600">
+                  Silent Mode:
+                  <span :class="getSilentModeClass(chat)">
+                    {{ getSilentModeText(chat) }}
+                  </span>
+                </div>
               </div>
               <div class="flex gap-2">
                 <button
@@ -398,6 +404,40 @@
             </label>
           </div>
 
+          <!-- Silent режим настройки -->
+          <div class="border-t pt-4">
+            <h4 class="font-medium text-gray-700 mb-3">Silent Mode</h4>
+
+            <div class="space-y-3">
+              <label class="flex items-center">
+                <input
+                  v-model="newChat.silent_mode"
+                  type="checkbox"
+                  class="mr-2"
+                />
+                <span class="text-sm font-medium text-gray-700"
+                  >Enable Silent Mode</span
+                >
+              </label>
+            </div>
+
+            <div class="mt-3 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+              <p class="font-medium mb-1">Silent Mode:</p>
+              <p>
+                • <strong>Enabled:</strong> Monitor only - no messages, bans, or
+                deletions
+              </p>
+              <p>
+                • <strong>Disabled:</strong> Full moderation - warnings, bans,
+                and deletions
+              </p>
+              <p>
+                • <strong>Note:</strong> All violations are still logged and
+                analyzed
+              </p>
+            </div>
+          </div>
+
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2"
               >Rules</label
@@ -500,6 +540,7 @@ const newChat = ref({
   warnings_before_ban: 3,
   auto_delete_violations: true,
   rules: [],
+  silent_mode: false, // New field for silent mode
 });
 
 function formatDate(dateString: string) {
@@ -606,11 +647,12 @@ async function loadStatistics() {
 function editChat(chat: any) {
   editingChat.value = chat;
   newChat.value = {
-    chat_id: chat.chat_id.toString(),
+    chat_id: chat.chat_id,
     name: chat.name,
     warnings_before_ban: chat.warnings_before_ban,
     auto_delete_violations: chat.auto_delete_violations,
     rules: chat.rules || [],
+    silent_mode: chat.silent_mode, // Map existing silent_mode
   };
   showAddChatModal.value = true;
 }
@@ -624,6 +666,7 @@ function closeChatModal() {
     warnings_before_ban: 3,
     auto_delete_violations: true,
     rules: [],
+    silent_mode: false, // Reset silent_mode
   };
 }
 
@@ -694,6 +737,22 @@ async function loadLogs() {
     logs.value = resp?.data?.logs || [];
   } catch (error) {
     console.error("Error loading logs:", error);
+  }
+}
+
+function getSilentModeClass(chat: any) {
+  if (chat.silent_mode) {
+    return "text-gray-600"; // Monitor only
+  } else {
+    return "text-green-600"; // Full moderation
+  }
+}
+
+function getSilentModeText(chat: any) {
+  if (chat.silent_mode) {
+    return "Monitor Only";
+  } else {
+    return "Full Moderation";
   }
 }
 

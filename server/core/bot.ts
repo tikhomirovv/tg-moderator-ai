@@ -150,31 +150,88 @@ export class TelegramBot {
     aiResponse: any
   ): Promise<void> {
     try {
-      // Обрабатываем предупреждение через ContextService
-      await this.contextService.handleWarning(
+      // Получаем актуальный контекст пользователя перед обработкой
+      const userContext = await this.contextService.getUserContext(
         this.botId,
         message.chat.id,
-        message.from.id,
-        message.message_id,
-        aiResponse.rule_violated || "unknown",
-        aiResponse.confidence,
-        aiResponse.reasoning
+        message.from.id
       );
 
-      // Логируем нарушение (старый метод для совместимости)
-      logModerationAction({
-        bot_id: this.botId,
-        chat_id: message.chat.id,
-        user_id: message.from.id,
-        message_id: message.message_id,
-        action: "warning",
-        rule_violated: aiResponse.rule_violated,
-        ai_confidence: aiResponse.confidence,
-        ai_reasoning: aiResponse.reasoning,
-      });
+      // Проверяем, нужно ли забанить пользователя
+      const shouldBan =
+        userContext.user_warnings >= chatConfig.warnings_before_ban;
 
-      // Отправляем предупреждение
-      await this.sendWarning(message, aiResponse);
+      if (shouldBan) {
+        // Баним пользователя
+        await this.contextService.handleUserBan(
+          this.botId,
+          message.chat.id,
+          message.from.id,
+          aiResponse.rule_violated || "unknown"
+        );
+
+        // Отправляем уведомление о бане
+        const banText =
+          `🚫 <b>Пользователь заблокирован!</b>\n\n` +
+          `Пользователь <b>${
+            message.from.first_name || message.from.username || message.from.id
+          }</b> ` +
+          `заблокирован за нарушение правил чата.\n` +
+          `Количество предупреждений: <b>${userContext.user_warnings}</b>\n` +
+          `Последнее нарушение: <b>${aiResponse.rule_violated}</b>`;
+
+        await this.sendInfoMessage(message.chat.id, banText);
+
+        logger.warn(
+          `Пользователь ${message.from.id} забанен в чате ${message.chat.id} после ${userContext.user_warnings} предупреждений`
+        );
+      } else {
+        // Обрабатываем предупреждение
+        await this.contextService.handleWarning(
+          this.botId,
+          message.chat.id,
+          message.from.id,
+          message.message_id,
+          aiResponse.rule_violated || "unknown",
+          aiResponse.confidence,
+          aiResponse.reasoning
+        );
+
+        // Логируем нарушение (старый метод для совместимости)
+        logModerationAction({
+          bot_id: this.botId,
+          chat_id: message.chat.id,
+          user_id: message.from.id,
+          message_id: message.message_id,
+          action: "warning",
+          rule_violated: aiResponse.rule_violated,
+          ai_confidence: aiResponse.confidence,
+          ai_reasoning: aiResponse.reasoning,
+        });
+
+        // Отправляем предупреждение с информацией о количестве до бана
+        const warningsLeft =
+          chatConfig.warnings_before_ban - userContext.user_warnings;
+        const warningText =
+          `⚠️ <b>Предупреждение!</b>\n\n` +
+          `Сообщение нарушает правила чата.\n` +
+          `Нарушение: <b>${aiResponse.rule_violated}</b>\n` +
+          `Уверенность: <b>${Math.round(
+            aiResponse.confidence * 100
+          )}%</b>\n\n` +
+          `Предупреждений: <b>${userContext.user_warnings + 1}/${
+            chatConfig.warnings_before_ban
+          }</b>\n` +
+          `До блокировки: <b>${warningsLeft - 1}</b>\n\n` +
+          `Пожалуйста, соблюдайте правила чата.`;
+
+        // Отвечаем на сообщение с нарушением
+        await this.sendMessage(
+          message.chat.id,
+          warningText,
+          message.message_id
+        );
+      }
 
       // Удаляем сообщение если настроено
       if (chatConfig.auto_delete_violations) {
@@ -188,45 +245,14 @@ export class TelegramBot {
           `Violation: ${aiResponse.rule_violated}`
         );
       }
-
-      // Проверяем, нужно ли забанить пользователя
-      const userContext = await this.contextService.getUserContext(
-        this.botId,
-        message.chat.id,
-        message.from.id
-      );
-
-      if (userContext.user_warnings >= chatConfig.warnings_before_ban) {
-        // Баним пользователя
-        await this.contextService.handleUserBan(
-          this.botId,
-          message.chat.id,
-          message.from.id,
-          aiResponse.rule_violated || "unknown"
-        );
-
-        logger.warn(
-          `Пользователь ${message.from.id} забанен в чате ${message.chat.id} после ${userContext.user_warnings} предупреждений`
-        );
-      }
     } catch (error) {
       logger.error({ error: error as Error }, "Ошибка обработки нарушения");
     }
   }
 
-  // Отправка предупреждения
-  private async sendWarning(
-    message: TelegramMessage,
-    aiResponse: any
-  ): Promise<void> {
-    const warningText =
-      `⚠️ Предупреждение!\n\n` +
-      `Сообщение нарушает правила чата.\n` +
-      `Нарушение: ${aiResponse.rule_violated}\n` +
-      `Уверенность: ${Math.round(aiResponse.confidence * 100)}%\n\n` +
-      `Пожалуйста, соблюдайте правила чата.`;
-
-    await this.sendMessage(message.chat.id, warningText);
+  // Отправка информационного сообщения (без ответа)
+  private async sendInfoMessage(chatId: number, text: string): Promise<void> {
+    await this.sendMessage(chatId, text);
   }
 
   // Получение информации о боте
@@ -251,7 +277,22 @@ export class TelegramBot {
   }
 
   // Отправка сообщения
-  private async sendMessage(chatId: number, text: string): Promise<void> {
+  private async sendMessage(
+    chatId: number,
+    text: string,
+    replyToMessageId?: number
+  ): Promise<void> {
+    const messageData: any = {
+      chat_id: chatId,
+      text: text,
+      parse_mode: "HTML",
+    };
+
+    // Если указан ID сообщения для ответа, добавляем reply_to_message_id
+    if (replyToMessageId) {
+      messageData.reply_to_message_id = replyToMessageId;
+    }
+
     const response = await fetch(
       `https://api.telegram.org/bot${this.token}/sendMessage`,
       {
@@ -259,11 +300,7 @@ export class TelegramBot {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: text,
-          parse_mode: "HTML",
-        }),
+        body: JSON.stringify(messageData),
       }
     );
 

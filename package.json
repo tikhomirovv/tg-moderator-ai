@@ -1,7 +1,25 @@
 {
-  "name": "nuxt-app",
+  "name": "tg-moderator-ai",
+  "version": "1.0.0",
+  "description": "Telegram AI Moderator Bot - автоматическая модерация чатов с помощью искусственного интеллекта",
   "type": "module",
   "private": true,
+  "license": "CC-BY-NC-4.0",
+  "author": "Valerii Tikhomirov <v.tikhomirov.dev+npm@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tikhomirovv/tg-moderator-ai"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "moderator",
+    "ai",
+    "openai",
+    "nuxt",
+    "vue",
+    "typescript"
+  ],
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",

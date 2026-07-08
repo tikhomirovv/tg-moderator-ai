@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "project-workflow": {
+      "source": "tikhomirovv/agents-knowledge",
+      "sourceType": "github",
+      "skillPath": "skills/project-workflow/SKILL.md",
+      "computedHash": "b5c6848f125f01bc55c32498f911f88aab4a5a958490fd06da91ff70dee7689c"
+    }
+  }
+}

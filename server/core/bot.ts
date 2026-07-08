@@ -2,7 +2,6 @@ import { TelegramUpdate, TelegramMessage } from "../types/telegram";
 import { AIModerationRequest } from "../types/moderation";
 import { Bot, Chat } from "../types/config";
 import { analyzeMessage } from "./ai-moderation";
-import { logModerationAction } from "./logger";
 import { logger } from "./logger";
 import { RuleRepository } from "../database/repositories/rule-repository";
 import { BotRepository } from "../database/repositories/bot-repository";
@@ -13,7 +12,6 @@ export class TelegramBot {
   private botId: string;
   private botConfig: Bot;
   private webhookUrl?: string;
-  private isRunning = false;
   private contextService: ContextService;
 
   constructor(token: string, botId: string, botConfig: Bot) {
@@ -219,18 +217,6 @@ export class TelegramBot {
           aiResponse.confidence,
           aiResponse.reasoning
         );
-
-        // Логируем нарушение (старый метод для совместимости)
-        logModerationAction({
-          bot_id: this.botId,
-          chat_id: message.chat.id,
-          user_id: message.from.id,
-          message_id: message.message_id,
-          action: "warning",
-          rule_violated: aiResponse.rule_violated,
-          ai_confidence: aiResponse.confidence,
-          ai_reasoning: aiResponse.reasoning,
-        });
 
         // Отправляем предупреждение (если не silent режим)
         if (!chatConfig.silent_mode) {
@@ -474,10 +460,5 @@ export class TelegramBot {
   // Получение информации о боте
   getBotId(): string {
     return this.botId;
-  }
-
-  // Проверка статуса бота
-  isBotRunning(): boolean {
-    return this.isRunning;
   }
 }

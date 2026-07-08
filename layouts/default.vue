@@ -21,12 +21,6 @@
           >Bots</NuxtLink
         >
         <NuxtLink
-          to="/moderation/logs"
-          class="block px-3 py-2 rounded hover:bg-gray-100"
-          active-class="bg-gray-100 font-medium"
-          >Logs</NuxtLink
-        >
-        <NuxtLink
           to="/config/rules"
           class="block px-3 py-2 rounded hover:bg-gray-100"
           active-class="bg-gray-100 font-medium"

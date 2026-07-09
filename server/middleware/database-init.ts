@@ -1,4 +1,5 @@
 import { getDatabaseConnection } from "../database/connection";
+import { runMigrations } from "../database/migrate";
 import { seedDatabase } from "../database/seed";
 import { logger } from "../core/logger";
 
@@ -11,7 +12,9 @@ export default defineEventHandler(async () => {
 
   try {
     logger.info("Initializing database...");
-    await getDatabaseConnection().connect();
+    const connection = getDatabaseConnection();
+    await connection.connect();
+    await runMigrations(connection.getDb());
     await seedDatabase();
     isInitialized = true;
     logger.info("Database initialized successfully");

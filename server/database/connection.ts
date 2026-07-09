@@ -1,10 +1,9 @@
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { logger } from "../core/logger";
 import * as schema from "./schema";
 import * as authSchema from "./auth-schema";
-import { resolveMigrationsFolder } from "./migrations-path";
+import { runMigrations } from "./migrate";
 
 export type Database = PostgresJsDatabase<typeof schema>;
 
@@ -32,11 +31,6 @@ export class PostgresConnection implements DatabaseConnection {
     try {
       this.client = postgres(this.connectionString, { max: 10 });
       this.db = drizzle(this.client, { schema: { ...schema, ...authSchema } });
-
-      await migrate(this.db, {
-        migrationsFolder: resolveMigrationsFolder(),
-      });
-
       logger.info("Connected to PostgreSQL");
     } catch (error) {
       logger.error({ error: error as Error }, "Failed to connect to PostgreSQL");
@@ -94,6 +88,7 @@ export function getDatabaseConnection(): DatabaseConnection {
 export async function initializeDatabase(): Promise<void> {
   const connection = getDatabaseConnection();
   await connection.connect();
+  await runMigrations(connection.getDb());
 }
 
 export async function closeDatabase(): Promise<void> {

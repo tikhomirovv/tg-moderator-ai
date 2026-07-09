@@ -7,6 +7,6 @@ describe("resolveMigrationsFolder", () => {
   test("finds meta/_journal.json from project root", () => {
     const folder = resolveMigrationsFolder();
     expect(existsSync(path.join(folder, "meta/_journal.json"))).toBe(true);
-    expect(folder.endsWith("server/database/migrations")).toBe(true);
+    expect(folder).toEndWith("/server/database/migrations");
   });
 });

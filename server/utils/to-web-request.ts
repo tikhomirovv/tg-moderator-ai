@@ -1,7 +1,7 @@
 import type { H3Event } from "h3";
 import { getRequestURL, getRequestHeaders, readRawBody } from "h3";
 
-export async function toWebRequest(event: H3Event): Promise<Request> {
+export async function h3EventToWebRequest(event: H3Event): Promise<Request> {
   const url = getRequestURL(event);
   const method = event.method;
   const headers = new Headers();

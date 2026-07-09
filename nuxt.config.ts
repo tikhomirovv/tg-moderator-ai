@@ -1,3 +1,9 @@
+import { cpSync, existsSync, mkdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const rootDir = dirname(fileURLToPath(import.meta.url));
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: "2025-08-11",
@@ -34,5 +40,16 @@ export default defineNuxtConfig({
   devServer: {
     host: "0.0.0.0",
     port: 3001,
+  },
+  hooks: {
+    "build:done"() {
+      const src = resolve(rootDir, "server/database/migrations");
+      const dest = resolve(rootDir, ".output/server/database/migrations");
+      if (!existsSync(src)) {
+        return;
+      }
+      mkdirSync(dirname(dest), { recursive: true });
+      cpSync(src, dest, { recursive: true });
+    },
   },
 });

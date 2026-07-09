@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
       throw createError({
         statusCode: 400,
         statusMessage:
-          "Webhook URL must use HTTPS BASE_URL. For development, use ngrok or similar service.",
+          "Webhook URL must use HTTPS BASE_URL. For development, use localtunnel (bunx localtunnel --port 3001).",
       });
     }
 

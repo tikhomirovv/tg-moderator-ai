@@ -1,11 +1,10 @@
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import postgres from "postgres";
 import { logger } from "../core/logger";
 import * as schema from "./schema";
 import * as authSchema from "./auth-schema";
+import { resolveMigrationsFolder } from "./migrations-path";
 
 export type Database = PostgresJsDatabase<typeof schema>;
 
@@ -35,10 +34,7 @@ export class PostgresConnection implements DatabaseConnection {
       this.db = drizzle(this.client, { schema: { ...schema, ...authSchema } });
 
       await migrate(this.db, {
-        migrationsFolder: path.join(
-          path.dirname(fileURLToPath(import.meta.url)),
-          "migrations"
-        ),
+        migrationsFolder: resolveMigrationsFolder(),
       });
 
       logger.info("Connected to PostgreSQL");

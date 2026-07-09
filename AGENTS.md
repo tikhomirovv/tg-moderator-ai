@@ -30,6 +30,7 @@ User → Workspace (Better Auth Organization) → bots[] → chats[] → rules[]
 - App: `bun run dev` → порт **3001** (`nuxt.config.ts`)
 - PostgreSQL на Orange Pi: `pi.home` / `192.168.0.200`, порт **54321**, db/user `tgmoderator`
 - Mailpit: `pi.home:1025`, UI `https://mail.pi.home/`
+- Dev HTTPS tunnel: **localtunnel only** — `bunx localtunnel --port 3001` → `BASE_URL=https://….loca.lt`
 - Переменные: `.env.example` → локальный `.env`
 
 ## Команды

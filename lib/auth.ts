@@ -2,7 +2,6 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { organization } from "better-auth/plugins";
 import { getDatabaseConnection } from "../server/database/connection";
-import * as domainSchema from "../server/database/schema";
 import * as authSchema from "../server/database/auth-schema";
 import { sendAuthEmail } from "../server/utils/mail";
 import { seedWorkspaceRules } from "../server/database/workspace-seed";
@@ -33,10 +32,7 @@ export function getAuth() {
       secret: getAuthSecret(),
       database: drizzleAdapter(db, {
         provider: "pg",
-        schema: {
-          ...authSchema,
-          ...domainSchema,
-        },
+        schema: authSchema,
       }),
       emailAndPassword: {
         enabled: true,

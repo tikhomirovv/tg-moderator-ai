@@ -29,7 +29,7 @@
 
 - [Bun](https://bun.sh/) (рекомендуется) или Node.js 18+
 - [Docker](https://www.docker.com/) и Docker Compose
-- [ngrok](https://ngrok.com/) или [localtunnel](https://github.com/localtunnel/localtunnel) для HTTPS в разработке
+- [localtunnel](https://github.com/localtunnel/localtunnel) для HTTPS в разработке (webhook)
 - Telegram Bot Token от [@BotFather](https://t.me/BotFather)
 
 ### 1. Клонирование и установка
@@ -61,9 +61,9 @@ OPENAI_MODEL=gpt-4.1-nano-2025-04-14
 MONGODB_URI=mongodb://admin:password@localhost:27017/tg-moderator?authSource=admin
 
 # Базовый URL для webhook (должен быть доступен из интернета)
-# Для разработки используйте ngrok: https://abc123.ngrok.io
-# Для продакшена: https://your-domain.com
-BASE_URL=https://abc123.ngrok.io
+# Dev: localtunnel — https://your-subdomain.loca.lt
+# Prod: https://your-domain.com
+BASE_URL=https://your-subdomain.loca.lt
 
 # Настройки приложения
 NODE_ENV=development
@@ -79,40 +79,19 @@ docker-compose up -d mongodb
 docker-compose ps
 ```
 
-### 4. Настройка HTTPS для разработки
+### 4. HTTPS для разработки (localtunnel)
 
-Telegram требует HTTPS URL для webhook. Для разработки используйте:
+Telegram требует HTTPS для webhook:
 
-#### Вариант 1: ngrok (рекомендуется)
 ```bash
-# Установка
-# Windows (с помощью chocolatey)
-choco install ngrok
+# В отдельном терминале (порт приложения — 3001)
+bunx localtunnel --port 3001
 
-# macOS
-brew install ngrok
-
-# Linux
-# Скачайте с https://ngrok.com/download
-
-# Запуск
-ngrok http 3001
-
-# Скопируйте HTTPS URL в .env файл
-# BASE_URL=https://abc123.ngrok.io
+# Скопируйте выданный HTTPS URL в .env:
+# BASE_URL=https://your-subdomain.loca.lt
 ```
 
-#### Вариант 2: localtunnel (бесплатный)
-```bash
-# Установка
-npm install -g localtunnel
-
-# Запуск
-lt --port 3001
-
-# Скопируйте HTTPS URL в .env файл
-# BASE_URL=https://abc123.loca.lt
-```
+Перезапустите `bun run dev` после смены `BASE_URL`.
 
 ### 5. Запуск приложения
 

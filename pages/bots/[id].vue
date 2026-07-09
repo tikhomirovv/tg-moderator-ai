@@ -53,10 +53,14 @@
               >Status</label
             >
             <div class="text-sm">
-              <span :class="bot.is_active ? 'text-green-600' : 'text-red-600'">
-                {{ bot.is_active ? "Active" : "Inactive" }}
-              </span>
+              <span :class="aggregatedStatusClass">{{ aggregatedStatusText }}</span>
             </div>
+            <p v-if="statusWarning" class="text-sm text-amber-700 mt-1">
+              {{ statusWarning }}
+            </p>
+            <p v-if="statusError" class="text-sm text-red-600 mt-1">
+              {{ statusError }}
+            </p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1"
@@ -201,38 +205,16 @@
         </div>
       </div>
 
-      <!-- Webhook Status -->
+      <!-- Webhook Status (read-only; toggled via Enable/Disable) -->
       <div class="bg-white border rounded p-6">
-        <h3 class="text-lg font-medium mb-4">Webhook Status</h3>
+        <h3 class="text-lg font-medium mb-4">Webhook</h3>
         <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="font-medium">Status</div>
-              <div class="text-sm text-gray-600">
-                <span
-                  :class="
-                    webhookStatus?.active ? 'text-green-600' : 'text-red-600'
-                  "
-                >
-                  {{ webhookStatus?.active ? "Active" : "Inactive" }}
-                </span>
-              </div>
-            </div>
-            <div class="flex gap-2">
-              <button
-                @click="startWebhook"
-                :disabled="webhookStatus?.active || webhookLoading"
-                class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm disabled:opacity-50"
-              >
-                {{ webhookLoading ? "Starting..." : "Start Webhook" }}
-              </button>
-              <button
-                @click="stopWebhook"
-                :disabled="!webhookStatus?.active || webhookLoading"
-                class="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm disabled:opacity-50"
-              >
-                {{ webhookLoading ? "Stopping..." : "Stop Webhook" }}
-              </button>
+          <div>
+            <div class="font-medium">Telegram delivery</div>
+            <div class="text-sm text-gray-600">
+              <span :class="webhookStatus?.active ? 'text-green-600' : 'text-gray-600'">
+                {{ webhookStatus?.active ? "Receiving updates" : "Not receiving updates" }}
+              </span>
             </div>
           </div>
 
@@ -251,51 +233,37 @@
           </div>
 
           <div
-            v-if="!webhookStatus?.active"
-            class="bg-blue-50 border border-blue-200 rounded p-3"
+            v-if="bot.is_active && !webhookStatus?.active"
+            class="bg-amber-50 border border-amber-200 rounded p-3 text-sm text-amber-800"
           >
-            <div class="text-sm text-blue-800">
-              <strong>How to test:</strong>
-              <ol class="list-decimal list-inside mt-2 space-y-1">
-                <li>
-                  Set up HTTPS URL in your .env file (use ngrok or localtunnel
-                  for development)
-                </li>
-                <li>Click "Start Webhook" to enable receiving updates</li>
-                <li>Send a message to your bot in Telegram</li>
-                <li>Check the logs below for moderation activity</li>
-                <li>Your bot will analyze messages using AI rules</li>
-              </ol>
-              <div
-                class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded"
-              >
-                <strong>⚠️ Important:</strong> Telegram requires HTTPS URLs for
-                webhooks. For development, use one of these services:
-                <ul class="list-disc list-inside mt-1 space-y-1">
-                  <li>
-                    <a
-                      href="https://ngrok.com"
-                      target="_blank"
-                      class="text-blue-600 hover:underline"
-                      >ngrok</a
-                    >
-                    - <code>ngrok http 3000</code>
-                  </li>
-                  <li>
-                    <a
-                      href="https://github.com/localtunnel/localtunnel"
-                      target="_blank"
-                      class="text-blue-600 hover:underline"
-                      >localtunnel</a
-                    >
-                    -
-                    <code>npm install -g localtunnel && lt --port 3000</code>
-                    (free)
-                  </li>
-                </ul>
-              </div>
-            </div>
+            Bot is enabled but webhook is not registered. Set HTTPS
+            <code>BASE_URL</code> in <code>.env</code> and enable the bot again.
           </div>
+
+          <details class="text-sm text-gray-600">
+            <summary class="cursor-pointer font-medium text-gray-700">
+              Advanced: manual webhook controls
+            </summary>
+            <p class="mt-2">
+              Prefer the Enable/Disable button above. Use these only for debugging.
+            </p>
+            <div class="flex gap-2 mt-3">
+              <button
+                @click="startWebhook"
+                :disabled="webhookStatus?.active || webhookLoading"
+                class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm disabled:opacity-50"
+              >
+                {{ webhookLoading ? "Starting..." : "Start Webhook" }}
+              </button>
+              <button
+                @click="stopWebhook"
+                :disabled="!webhookStatus?.active || webhookLoading"
+                class="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm disabled:opacity-50"
+              >
+                {{ webhookLoading ? "Stopping..." : "Stop Webhook" }}
+              </button>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -498,7 +466,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 
 const route = useRoute();
 const botId = route.params.id as string;
@@ -511,6 +479,8 @@ const saving = ref(false);
 const availableRules = ref<any[]>([]);
 const webhookStatus = ref<any>(null);
 const webhookLoading = ref(false);
+const statusWarning = ref("");
+const statusError = ref("");
 const logs = ref<any[]>([]);
 const statistics = ref<any>({
   today: {
@@ -541,6 +511,26 @@ const newChat = ref({
   auto_delete_violations: true,
   rules: [],
   silent_mode: false, // New field for silent mode
+});
+
+const aggregatedStatusText = computed(() => {
+  if (!bot.value?.is_active) {
+    return "Disabled";
+  }
+  if (webhookStatus.value?.active) {
+    return "Active — webhook OK";
+  }
+  return "Active — webhook not configured";
+});
+
+const aggregatedStatusClass = computed(() => {
+  if (!bot.value?.is_active) {
+    return "text-red-600";
+  }
+  if (webhookStatus.value?.active) {
+    return "text-green-600";
+  }
+  return "text-amber-600";
 });
 
 function formatDate(dateString: string) {
@@ -618,6 +608,9 @@ async function stopWebhook() {
 async function toggleBotStatus() {
   if (!bot.value) return;
 
+  statusWarning.value = "";
+  statusError.value = "";
+
   try {
     const resp = await $fetch<any>(`/api/bots/${botId}`, {
       method: "PUT",
@@ -627,7 +620,13 @@ async function toggleBotStatus() {
     if (resp?.data) {
       bot.value = resp.data;
     }
-  } catch (error) {
+    statusWarning.value = resp?.warning || "";
+    await loadWebhookStatus();
+  } catch (error: any) {
+    statusError.value =
+      error?.data?.statusMessage ||
+      error?.message ||
+      "Failed to update bot status";
     console.error("Error updating bot status:", error);
   }
 }

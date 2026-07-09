@@ -1,0 +1,25 @@
+---
+description: Unit tests required when changing server logic or APIs
+globs: server/**/*
+alwaysApply: false
+---
+
+# Unit tests
+
+Apply when editing `server/**` (implementation work, not docs-only).
+
+## Requirements
+
+1. **New logic** — add unit tests in `tests/` or colocated `*.test.ts` (project convention: prefer `tests/unit/` mirroring `server/`).
+2. **Changed behavior** — update existing tests in the same PR/session; do not leave stale assertions.
+3. **Before finishing** — run `bun test` (or `bun --env-file=.env test` if tests need env). Fix failures before reporting done.
+4. **Scope** — unit tests only; mock DB, LLM, Telegram. No real network in unit tests.
+
+## Bun
+
+Use Bun test runner (`bun:test`). Do not add Vitest unless the project already uses it.
+
+## Skip tests only when
+
+- Pure comment/formatting change with zero behavior change, or
+- User explicitly said no tests for this change.

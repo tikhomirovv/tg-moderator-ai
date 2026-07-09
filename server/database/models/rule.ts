@@ -1,8 +1,5 @@
-import { ObjectId } from "mongodb";
-
 export interface Rule {
-  _id?: ObjectId;
-  id: string; // Уникальный идентификатор правила
+  id: string;
   name: string;
   description: string;
   ai_prompt: string;

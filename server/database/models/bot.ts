@@ -1,21 +1,17 @@
-import { ObjectId } from "mongodb";
-
 export interface Chat {
   chat_id: number;
   name: string;
   warnings_before_ban: number;
   auto_delete_violations: boolean;
   rules: string[];
-  // Silent режим - отключает все действия в чате
-  silent_mode: boolean; // true = только мониторинг, false = полные действия
+  silent_mode: boolean;
 }
 
 export interface Bot {
-  _id?: ObjectId;
-  id: string; // Уникальный идентификатор бота
+  id: string;
   name: string;
   chats: Chat[];
-  token?: string; // Токен бота (опционально, может быть скрыт)
+  token?: string;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -37,7 +33,6 @@ export interface UpdateBotRequest {
 
 // Интерфейс для API ответов (без токена)
 export interface BotResponse {
-  _id?: ObjectId;
   id: string;
   name: string;
   chats: Chat[];

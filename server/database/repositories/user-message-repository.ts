@@ -1,29 +1,32 @@
-import { Collection } from "mongodb";
+import { and, eq, gte, lte, desc, sql } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   UserMessage,
   CreateUserMessageRequest,
-  UpdateUserMessageRequest,
 } from "../models/user-message";
+import { userMessages } from "../schema";
+import { toUserMessage } from "../mappers";
 
 export class UserMessageRepository {
-  private collection: Collection<UserMessage>;
-
-  constructor() {
-    const db = getDatabaseConnection().getDb();
-    this.collection = db.collection<UserMessage>("user_messages");
+  private get db() {
+    return getDatabaseConnection().getDb();
   }
 
   async create(messageData: CreateUserMessageRequest): Promise<UserMessage> {
-    const now = new Date();
-    const message: UserMessage = {
-      ...messageData,
-      is_deleted: false,
-      created_at: now,
-    };
+    const [row] = await this.db
+      .insert(userMessages)
+      .values({
+        botId: messageData.bot_id,
+        chatId: messageData.chat_id,
+        userId: messageData.user_id,
+        messageId: messageData.message_id,
+        text: messageData.text,
+        timestamp: messageData.timestamp,
+        isDeleted: false,
+      })
+      .returning();
 
-    const result = await this.collection.insertOne(message);
-    return { ...message, _id: result.insertedId.toString() };
+    return toUserMessage(row);
   }
 
   async findByMessageId(
@@ -31,11 +34,19 @@ export class UserMessageRepository {
     chatId: number,
     messageId: number
   ): Promise<UserMessage | null> {
-    return await this.collection.findOne({
-      bot_id: botId,
-      chat_id: chatId,
-      message_id: messageId,
-    });
+    const [row] = await this.db
+      .select()
+      .from(userMessages)
+      .where(
+        and(
+          eq(userMessages.botId, botId),
+          eq(userMessages.chatId, chatId),
+          eq(userMessages.messageId, messageId)
+        )
+      )
+      .limit(1);
+
+    return row ? toUserMessage(row) : null;
   }
 
   async getRecentMessages(
@@ -44,15 +55,20 @@ export class UserMessageRepository {
     userId: number,
     limit: number = 10
   ): Promise<UserMessage[]> {
-    return await this.collection
-      .find({
-        bot_id: botId,
-        chat_id: chatId,
-        user_id: userId,
-      })
-      .sort({ timestamp: -1 })
-      .limit(limit)
-      .toArray();
+    const rows = await this.db
+      .select()
+      .from(userMessages)
+      .where(
+        and(
+          eq(userMessages.botId, botId),
+          eq(userMessages.chatId, chatId),
+          eq(userMessages.userId, userId)
+        )
+      )
+      .orderBy(desc(userMessages.timestamp))
+      .limit(limit);
+
+    return rows.map(toUserMessage);
   }
 
   async markAsDeleted(
@@ -61,18 +77,23 @@ export class UserMessageRepository {
     messageId: number,
     reason: string
   ): Promise<boolean> {
-    const result = await this.collection.updateOne(
-      { bot_id: botId, chat_id: chatId, message_id: messageId },
-      {
-        $set: {
-          is_deleted: true,
-          deleted_at: new Date(),
-          deleted_reason: reason,
-        },
-      }
-    );
+    const updated = await this.db
+      .update(userMessages)
+      .set({
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedReason: reason,
+      })
+      .where(
+        and(
+          eq(userMessages.botId, botId),
+          eq(userMessages.chatId, chatId),
+          eq(userMessages.messageId, messageId)
+        )
+      )
+      .returning({ id: userMessages.id });
 
-    return result.modifiedCount > 0;
+    return updated.length > 0;
   }
 
   async getMessagesByDateRange(
@@ -81,17 +102,23 @@ export class UserMessageRepository {
     startDate: Date,
     endDate: Date
   ): Promise<UserMessage[]> {
-    const filter: any = {
-      bot_id: botId,
-      timestamp: { $gte: startDate, $lte: endDate },
-    };
+    const conditions = [
+      eq(userMessages.botId, botId),
+      gte(userMessages.timestamp, startDate),
+      lte(userMessages.timestamp, endDate),
+    ];
 
-    // Если chatId не 0, добавляем фильтр по чату
     if (chatId !== 0) {
-      filter.chat_id = chatId;
+      conditions.push(eq(userMessages.chatId, chatId));
     }
 
-    return await this.collection.find(filter).sort({ timestamp: -1 }).toArray();
+    const rows = await this.db
+      .select()
+      .from(userMessages)
+      .where(and(...conditions))
+      .orderBy(desc(userMessages.timestamp));
+
+    return rows.map(toUserMessage);
   }
 
   async getDeletedMessages(
@@ -99,15 +126,20 @@ export class UserMessageRepository {
     chatId: number,
     limit: number = 50
   ): Promise<UserMessage[]> {
-    return await this.collection
-      .find({
-        bot_id: botId,
-        chat_id: chatId,
-        is_deleted: true,
-      })
-      .sort({ deleted_at: -1 })
-      .limit(limit)
-      .toArray();
+    const rows = await this.db
+      .select()
+      .from(userMessages)
+      .where(
+        and(
+          eq(userMessages.botId, botId),
+          eq(userMessages.chatId, chatId),
+          eq(userMessages.isDeleted, true)
+        )
+      )
+      .orderBy(desc(userMessages.deletedAt))
+      .limit(limit);
+
+    return rows.map(toUserMessage);
   }
 
   async getMessageCount(
@@ -116,12 +148,21 @@ export class UserMessageRepository {
     startDate?: Date,
     endDate?: Date
   ): Promise<number> {
-    const filter: any = { bot_id: botId, chat_id: chatId };
+    const conditions = [
+      eq(userMessages.botId, botId),
+      eq(userMessages.chatId, chatId),
+    ];
 
     if (startDate && endDate) {
-      filter.timestamp = { $gte: startDate, $lte: endDate };
+      conditions.push(gte(userMessages.timestamp, startDate));
+      conditions.push(lte(userMessages.timestamp, endDate));
     }
 
-    return await this.collection.countDocuments(filter);
+    const [result] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(userMessages)
+      .where(and(...conditions));
+
+    return result?.count ?? 0;
   }
 }

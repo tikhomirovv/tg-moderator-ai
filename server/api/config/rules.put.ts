@@ -9,7 +9,8 @@ export default defineEventHandler(async (event) => {
 
     // Обновляем каждое правило
     for (const rule of rules) {
-      if (rule._id) {
+      const existing = await ruleRepo.findById(rule.id);
+      if (existing) {
         // Обновляем существующее правило
         await ruleRepo.update(rule.id, {
           name: rule.name,

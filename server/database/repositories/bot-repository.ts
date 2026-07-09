@@ -1,104 +1,184 @@
-import { Collection } from "mongodb";
+import { eq, inArray, and, gte, lte, desc, sql, countDistinct } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   Bot,
   CreateBotRequest,
   UpdateBotRequest,
   BotResponse,
+  Chat,
 } from "../models/bot";
+import { bots, chats, chatRules } from "../schema";
+import { toBot, toBotResponse, toChat } from "../mappers";
 
 export class BotRepository {
-  private collection: Collection<Bot>;
+  private get db() {
+    return getDatabaseConnection().getDb();
+  }
 
-  constructor() {
-    const db = getDatabaseConnection().getDb();
-    this.collection = db.collection<Bot>("bots");
+  private async loadChatsForBot(botId: string): Promise<Chat[]> {
+    const chatRows = await this.db
+      .select()
+      .from(chats)
+      .where(eq(chats.botId, botId));
+
+    if (chatRows.length === 0) {
+      return [];
+    }
+
+    const chatIds = chatRows.map((chat) => chat.id);
+    const ruleRows = await this.db
+      .select()
+      .from(chatRules)
+      .where(inArray(chatRules.chatId, chatIds));
+
+    const rulesByChatId = new Map<number, string[]>();
+    for (const row of ruleRows) {
+      const existing = rulesByChatId.get(row.chatId) ?? [];
+      existing.push(row.ruleId);
+      rulesByChatId.set(row.chatId, existing);
+    }
+
+    return chatRows.map((row) => toChat(row, rulesByChatId.get(row.id) ?? []));
+  }
+
+  private async replaceChats(botId: string, chatList: Chat[]): Promise<void> {
+    await this.db.delete(chats).where(eq(chats.botId, botId));
+
+    for (const chat of chatList) {
+      const [inserted] = await this.db
+        .insert(chats)
+        .values({
+          botId,
+          chatId: chat.chat_id,
+          name: chat.name,
+          warningsBeforeBan: chat.warnings_before_ban,
+          autoDeleteViolations: chat.auto_delete_violations,
+          silentMode: chat.silent_mode ?? false,
+        })
+        .returning({ id: chats.id });
+
+      if (chat.rules.length > 0) {
+        await this.db.insert(chatRules).values(
+          chat.rules.map((ruleId) => ({
+            chatId: inserted.id,
+            ruleId,
+          }))
+        );
+      }
+    }
   }
 
   async findAll(): Promise<BotResponse[]> {
-    const bots = await this.collection.find({}).toArray();
-    // Скрываем токены в API ответах
-    return bots.map((bot) => {
-      const { token, ...botWithoutToken } = bot;
-      return botWithoutToken as BotResponse;
-    });
+    const botRows = await this.db.select().from(bots);
+    const result: BotResponse[] = [];
+
+    for (const row of botRows) {
+      const chatList = await this.loadChatsForBot(row.id);
+      result.push(toBotResponse(row, chatList));
+    }
+
+    return result;
   }
 
   async findById(id: string): Promise<BotResponse | null> {
-    const bot = await this.collection.findOne({ id });
-    if (!bot) return null;
+    const [row] = await this.db.select().from(bots).where(eq(bots.id, id)).limit(1);
+    if (!row) return null;
 
-    // Скрываем токен в API ответе
-    const { token, ...botWithoutToken } = bot;
-    return botWithoutToken as BotResponse;
+    const chatList = await this.loadChatsForBot(row.id);
+    return toBotResponse(row, chatList);
   }
 
-  // Метод для получения бота с токеном (для внутреннего использования)
   async findByIdWithToken(id: string): Promise<Bot | null> {
-    return await this.collection.findOne({ id });
+    const [row] = await this.db.select().from(bots).where(eq(bots.id, id)).limit(1);
+    if (!row) return null;
+
+    const chatList = await this.loadChatsForBot(row.id);
+    return toBot(row, chatList);
   }
 
   async create(botData: CreateBotRequest): Promise<BotResponse> {
     const now = new Date();
-    const bot: Bot = {
-      ...botData,
-      is_active: true,
-      created_at: now,
-      updated_at: now,
-    };
+    const [row] = await this.db
+      .insert(bots)
+      .values({
+        id: botData.id,
+        name: botData.name,
+        token: botData.token,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
 
-    const result = await this.collection.insertOne(bot);
-    const createdBot = { ...bot, _id: result.insertedId };
-
-    // Скрываем токен в ответе
-    const { token, ...botWithoutToken } = createdBot;
-    return botWithoutToken as BotResponse;
+    await this.replaceChats(botData.id, botData.chats);
+    const chatList = await this.loadChatsForBot(botData.id);
+    return toBotResponse(row, chatList);
   }
 
   async update(
     id: string,
     updateData: UpdateBotRequest
   ): Promise<BotResponse | null> {
-    const updateDoc = {
-      ...updateData,
-      updated_at: new Date(),
+    const { chats: chatList, ...botFields } = updateData;
+    const updateValues: Partial<typeof bots.$inferInsert> = {
+      updatedAt: new Date(),
     };
 
-    const result = await this.collection.findOneAndUpdate(
-      { id },
-      { $set: updateDoc },
-      { returnDocument: "after" }
-    );
+    if (botFields.name !== undefined) updateValues.name = botFields.name;
+    if (botFields.token !== undefined) updateValues.token = botFields.token;
+    if (botFields.is_active !== undefined) {
+      updateValues.isActive = botFields.is_active;
+    }
 
-    if (!result) return null;
+    const [row] = await this.db
+      .update(bots)
+      .set(updateValues)
+      .where(eq(bots.id, id))
+      .returning();
 
-    // Скрываем токен в ответе
-    const { token, ...botWithoutToken } = result;
-    return botWithoutToken as BotResponse;
+    if (!row) return null;
+
+    if (chatList !== undefined) {
+      await this.replaceChats(id, chatList);
+    }
+
+    const loadedChats = await this.loadChatsForBot(id);
+    return toBotResponse(row, loadedChats);
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.collection.deleteOne({ id });
-    return result.deletedCount > 0;
+    const deleted = await this.db
+      .delete(bots)
+      .where(eq(bots.id, id))
+      .returning({ id: bots.id });
+    return deleted.length > 0;
   }
 
   async findActive(): Promise<Bot[]> {
-    // Возвращаем полные данные для инициализации ботов
-    return await this.collection.find({ is_active: true }).toArray();
+    const botRows = await this.db
+      .select()
+      .from(bots)
+      .where(eq(bots.isActive, true));
+
+    const result: Bot[] = [];
+    for (const row of botRows) {
+      const chatList = await this.loadChatsForBot(row.id);
+      result.push(toBot(row, chatList));
+    }
+    return result;
   }
 
-  // Метод для получения токенов активных ботов
   async getActiveBotTokens(): Promise<Array<{ botId: string; token: string }>> {
-    const activeBots = await this.collection
-      .find({
-        is_active: true,
-        token: { $exists: true, $ne: "" },
-      })
-      .toArray();
+    const activeBots = await this.db
+      .select()
+      .from(bots)
+      .where(and(eq(bots.isActive, true), sql`${bots.token} IS NOT NULL AND ${bots.token} <> ''`));
 
-    return activeBots.map((bot) => ({
-      botId: bot.id,
-      token: bot.token!,
-    }));
+    return activeBots
+      .filter((bot) => bot.token)
+      .map((bot) => ({
+        botId: bot.id,
+        token: bot.token!,
+      }));
   }
 }

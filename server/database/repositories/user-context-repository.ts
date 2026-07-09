@@ -1,17 +1,16 @@
-import { Collection } from "mongodb";
+import { and, eq, gte, desc, sql } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   UserContext,
   CreateUserContextRequest,
   UpdateUserContextRequest,
 } from "../models/user-context";
+import { userContexts } from "../schema";
+import { toUserContext } from "../mappers";
 
 export class UserContextRepository {
-  private collection: Collection<UserContext>;
-
-  constructor() {
-    const db = getDatabaseConnection().getDb();
-    this.collection = db.collection<UserContext>("user_context");
+  private get db() {
+    return getDatabaseConnection().getDb();
   }
 
   async findByUser(
@@ -19,26 +18,41 @@ export class UserContextRepository {
     chatId: number,
     userId: number
   ): Promise<UserContext | null> {
-    return await this.collection.findOne({
-      bot_id: botId,
-      chat_id: chatId,
-      user_id: userId,
-    });
+    const [row] = await this.db
+      .select()
+      .from(userContexts)
+      .where(
+        and(
+          eq(userContexts.botId, botId),
+          eq(userContexts.chatId, chatId),
+          eq(userContexts.userId, userId)
+        )
+      )
+      .limit(1);
+
+    return row ? toUserContext(row) : null;
   }
 
   async create(contextData: CreateUserContextRequest): Promise<UserContext> {
     const now = new Date();
-    const context: UserContext = {
-      ...contextData,
-      warnings_count: 0,
-      is_banned: false,
-      last_activity: now,
-      created_at: now,
-      updated_at: now,
-    };
+    const [row] = await this.db
+      .insert(userContexts)
+      .values({
+        botId: contextData.bot_id,
+        chatId: contextData.chat_id,
+        userId: contextData.user_id,
+        username: contextData.username,
+        firstName: contextData.first_name,
+        lastName: contextData.last_name,
+        warningsCount: 0,
+        isBanned: false,
+        lastActivity: now,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
 
-    const result = await this.collection.insertOne(context);
-    return { ...context, _id: result.insertedId.toString() };
+    return toUserContext(row);
   }
 
   async update(
@@ -47,18 +61,48 @@ export class UserContextRepository {
     userId: number,
     updateData: UpdateUserContextRequest
   ): Promise<UserContext | null> {
-    const updateDoc = {
-      ...updateData,
-      updated_at: new Date(),
+    const updateValues: Partial<typeof userContexts.$inferInsert> = {
+      updatedAt: new Date(),
     };
 
-    const result = await this.collection.findOneAndUpdate(
-      { bot_id: botId, chat_id: chatId, user_id: userId },
-      { $set: updateDoc },
-      { returnDocument: "after" }
-    );
+    if (updateData.warnings_count !== undefined) {
+      updateValues.warningsCount = updateData.warnings_count;
+    }
+    if (updateData.is_banned !== undefined) {
+      updateValues.isBanned = updateData.is_banned;
+    }
+    if (updateData.banned_at !== undefined) {
+      updateValues.bannedAt = updateData.banned_at;
+    }
+    if (updateData.banned_by !== undefined) {
+      updateValues.bannedBy = updateData.banned_by;
+    }
+    if (updateData.last_activity !== undefined) {
+      updateValues.lastActivity = updateData.last_activity;
+    }
+    if (updateData.username !== undefined) {
+      updateValues.username = updateData.username;
+    }
+    if (updateData.first_name !== undefined) {
+      updateValues.firstName = updateData.first_name;
+    }
+    if (updateData.last_name !== undefined) {
+      updateValues.lastName = updateData.last_name;
+    }
 
-    return result;
+    const [row] = await this.db
+      .update(userContexts)
+      .set(updateValues)
+      .where(
+        and(
+          eq(userContexts.botId, botId),
+          eq(userContexts.chatId, chatId),
+          eq(userContexts.userId, userId)
+        )
+      )
+      .returning();
+
+    return row ? toUserContext(row) : null;
   }
 
   async incrementWarnings(
@@ -66,19 +110,24 @@ export class UserContextRepository {
     chatId: number,
     userId: number
   ): Promise<UserContext | null> {
-    const result = await this.collection.findOneAndUpdate(
-      { bot_id: botId, chat_id: chatId, user_id: userId },
-      {
-        $inc: { warnings_count: 1 },
-        $set: {
-          last_activity: new Date(),
-          updated_at: new Date(),
-        },
-      },
-      { returnDocument: "after" }
-    );
+    const now = new Date();
+    const [row] = await this.db
+      .update(userContexts)
+      .set({
+        warningsCount: sql`${userContexts.warningsCount} + 1`,
+        lastActivity: now,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(userContexts.botId, botId),
+          eq(userContexts.chatId, chatId),
+          eq(userContexts.userId, userId)
+        )
+      )
+      .returning();
 
-    return result;
+    return row ? toUserContext(row) : null;
   }
 
   async banUser(
@@ -87,21 +136,26 @@ export class UserContextRepository {
     userId: number,
     ruleId: string
   ): Promise<UserContext | null> {
-    const result = await this.collection.findOneAndUpdate(
-      { bot_id: botId, chat_id: chatId, user_id: userId },
-      {
-        $set: {
-          is_banned: true,
-          banned_at: new Date(),
-          banned_by: ruleId,
-          last_activity: new Date(),
-          updated_at: new Date(),
-        },
-      },
-      { returnDocument: "after" }
-    );
+    const now = new Date();
+    const [row] = await this.db
+      .update(userContexts)
+      .set({
+        isBanned: true,
+        bannedAt: now,
+        bannedBy: ruleId,
+        lastActivity: now,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(userContexts.botId, botId),
+          eq(userContexts.chatId, chatId),
+          eq(userContexts.userId, userId)
+        )
+      )
+      .returning();
 
-    return result;
+    return row ? toUserContext(row) : null;
   }
 
   async getOrCreate(
@@ -120,7 +174,6 @@ export class UserContextRepository {
         ...userInfo,
       });
     } else if (userInfo) {
-      // Обновляем информацию о пользователе если она изменилась
       context =
         (await this.update(botId, chatId, userId, {
           ...userInfo,
@@ -132,13 +185,18 @@ export class UserContextRepository {
   }
 
   async getBannedUsers(botId: string, chatId: number): Promise<UserContext[]> {
-    return await this.collection
-      .find({
-        bot_id: botId,
-        chat_id: chatId,
-        is_banned: true,
-      })
-      .toArray();
+    const rows = await this.db
+      .select()
+      .from(userContexts)
+      .where(
+        and(
+          eq(userContexts.botId, botId),
+          eq(userContexts.chatId, chatId),
+          eq(userContexts.isBanned, true)
+        )
+      );
+
+    return rows.map(toUserContext);
   }
 
   async getActiveUsers(
@@ -147,17 +205,27 @@ export class UserContextRepository {
     hours: number = 24
   ): Promise<UserContext[]> {
     const cutoffDate = new Date(Date.now() - hours * 60 * 60 * 1000);
-    return await this.collection
-      .find({
-        bot_id: botId,
-        chat_id: chatId,
-        last_activity: { $gte: cutoffDate },
-        is_banned: false,
-      })
-      .toArray();
+    const rows = await this.db
+      .select()
+      .from(userContexts)
+      .where(
+        and(
+          eq(userContexts.botId, botId),
+          eq(userContexts.chatId, chatId),
+          gte(userContexts.lastActivity, cutoffDate),
+          eq(userContexts.isBanned, false)
+        )
+      );
+
+    return rows.map(toUserContext);
   }
 
   async getAllUsersByBot(botId: string): Promise<UserContext[]> {
-    return await this.collection.find({ bot_id: botId }).toArray();
+    const rows = await this.db
+      .select()
+      .from(userContexts)
+      .where(eq(userContexts.botId, botId));
+
+    return rows.map(toUserContext);
   }
 }

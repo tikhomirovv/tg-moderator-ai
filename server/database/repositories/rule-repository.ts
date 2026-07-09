@@ -1,64 +1,96 @@
-import { Collection } from "mongodb";
+import { eq, inArray } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import { Rule, CreateRuleRequest, UpdateRuleRequest } from "../models/rule";
+import { rules } from "../schema";
+import { toRule } from "../mappers";
 
 export class RuleRepository {
-  private collection: Collection<Rule>;
-
-  constructor() {
-    const db = getDatabaseConnection().getDb();
-    this.collection = db.collection<Rule>("rules");
+  private get db() {
+    return getDatabaseConnection().getDb();
   }
 
   async findAll(): Promise<Rule[]> {
-    return await this.collection.find({}).toArray();
+    const rows = await this.db.select().from(rules);
+    return rows.map(toRule);
   }
 
   async findById(id: string): Promise<Rule | null> {
-    return await this.collection.findOne({ id });
+    const [row] = await this.db.select().from(rules).where(eq(rules.id, id)).limit(1);
+    return row ? toRule(row) : null;
   }
 
   async create(ruleData: CreateRuleRequest): Promise<Rule> {
     const now = new Date();
-    const rule: Rule = {
-      ...ruleData,
-      is_active: true,
-      created_at: now,
-      updated_at: now,
-    };
+    const [row] = await this.db
+      .insert(rules)
+      .values({
+        id: ruleData.id,
+        name: ruleData.name,
+        description: ruleData.description,
+        aiPrompt: ruleData.ai_prompt,
+        severity: ruleData.severity,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
 
-    const result = await this.collection.insertOne(rule);
-    return { ...rule, _id: result.insertedId };
+    return toRule(row);
   }
 
   async update(
     id: string,
     updateData: UpdateRuleRequest
   ): Promise<Rule | null> {
-    const updateDoc = {
-      ...updateData,
-      updated_at: new Date(),
+    const updateValues: Partial<typeof rules.$inferInsert> = {
+      updatedAt: new Date(),
     };
 
-    const result = await this.collection.findOneAndUpdate(
-      { id },
-      { $set: updateDoc },
-      { returnDocument: "after" }
-    );
+    if (updateData.name !== undefined) updateValues.name = updateData.name;
+    if (updateData.description !== undefined) {
+      updateValues.description = updateData.description;
+    }
+    if (updateData.ai_prompt !== undefined) {
+      updateValues.aiPrompt = updateData.ai_prompt;
+    }
+    if (updateData.severity !== undefined) {
+      updateValues.severity = updateData.severity;
+    }
+    if (updateData.is_active !== undefined) {
+      updateValues.isActive = updateData.is_active;
+    }
 
-    return result;
+    const [row] = await this.db
+      .update(rules)
+      .set(updateValues)
+      .where(eq(rules.id, id))
+      .returning();
+
+    return row ? toRule(row) : null;
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.collection.deleteOne({ id });
-    return result.deletedCount > 0;
+    const deleted = await this.db
+      .delete(rules)
+      .where(eq(rules.id, id))
+      .returning({ id: rules.id });
+    return deleted.length > 0;
   }
 
   async findActive(): Promise<Rule[]> {
-    return await this.collection.find({ is_active: true }).toArray();
+    const rows = await this.db
+      .select()
+      .from(rules)
+      .where(eq(rules.isActive, true));
+    return rows.map(toRule);
   }
 
   async findByIds(ids: string[]): Promise<Rule[]> {
-    return await this.collection.find({ id: { $in: ids } }).toArray();
+    if (ids.length === 0) return [];
+    const rows = await this.db
+      .select()
+      .from(rules)
+      .where(inArray(rules.id, ids));
+    return rows.map(toRule);
   }
 }

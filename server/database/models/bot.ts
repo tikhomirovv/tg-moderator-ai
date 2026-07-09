@@ -14,6 +14,7 @@ export interface Bot {
   token?: string;
   workspace_id: string;
   is_active: boolean;
+  webhook_secret?: string | null;
   created_at: Date;
   updated_at: Date;
 }

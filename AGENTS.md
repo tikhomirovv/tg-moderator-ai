@@ -14,7 +14,7 @@ User → Workspace (Better Auth Organization) → bots[] → chats[] → rules[]
 
 Правила — в workspace; применяются **на чат** (у одного бота в разных чатах — разные наборы).
 
-Публичный endpoint без session: `POST /api/telegram/webhook/*` (Telegram).
+Публичный endpoint без session: `POST /api/telegram/webhook/*` (Telegram). Защита: per-bot `webhook_secret` в БД + заголовок `X-Telegram-Bot-Api-Secret-Token`.
 
 ## Стек
 

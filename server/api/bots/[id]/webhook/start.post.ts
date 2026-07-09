@@ -1,13 +1,16 @@
 import { logger } from "../../../../core/logger";
+import { BotRepository } from "../../../../database/repositories/bot-repository";
 import { getBotForWorkspace } from "../../../../utils/bots";
-import { TelegramBot } from "../../../../core/bot";
+import {
+  buildWebhookUrl,
+  getWebhookBaseUrl,
+  telegramSetWebhook,
+} from "../../../../utils/telegram-webhook";
+import { generateWebhookSecret } from "../../../../utils/webhook-auth";
 
 export default defineEventHandler(async (event) => {
   try {
     const botId = getRouterParam(event, "id");
-    logger.info(`Attempting to start webhook for bot: ${botId}`);
-
-    // Получаем бота из БД
     const workspaceId = getWorkspaceId(event);
     const botConfig = await getBotForWorkspace(botId!, workspaceId);
 
@@ -18,27 +21,29 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    logger.info(`Bot found: ${botId}, proceeding with webhook setup`);
-
-    // Получаем базовый URL из переменной окружения
-    // BASE_URL должен быть доступен из интернета для получения webhook от Telegram
-    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-
-    // Проверяем, что URL использует HTTPS (требование Telegram)
-    if (!baseUrl.startsWith("https://")) {
+    const baseUrl = getWebhookBaseUrl();
+    if (!baseUrl) {
       throw createError({
         statusCode: 400,
-        statusMessage: `Webhook URL must use HTTPS. Current URL: ${baseUrl}. For development, use ngrok or similar service.`,
+        statusMessage:
+          "Webhook URL must use HTTPS BASE_URL. For development, use ngrok or similar service.",
       });
     }
 
-    const webhookUrl = `${baseUrl}/api/telegram/webhook/${botId}`;
+    const botRepo = new BotRepository();
+    const webhookSecret =
+      botConfig.webhook_secret ?? generateWebhookSecret();
+    if (!botConfig.webhook_secret) {
+      await botRepo.setWebhookSecret(botId!, webhookSecret);
+    }
 
-    logger.info(`Setting up webhook URL: ${webhookUrl}`);
-
-    // Создаем экземпляр бота и устанавливаем webhook
-    const bot = new TelegramBot(botConfig.token, botConfig.id, botConfig);
-    await bot.setWebhook(webhookUrl);
+    const webhookUrl = buildWebhookUrl(baseUrl, botId!);
+    await telegramSetWebhook(
+      botConfig.token,
+      webhookUrl,
+      fetch,
+      webhookSecret
+    );
 
     logger.info(`Webhook started for bot ${botId}: ${webhookUrl}`);
 
@@ -53,15 +58,10 @@ export default defineEventHandler(async (event) => {
     };
   } catch (error) {
     logger.error(
-      {
-        error: error as Error,
-        botId: getRouterParam(event, "id"),
-        baseUrl: process.env.BASE_URL || "http://localhost:3000",
-      },
+      { error: error as Error, botId: getRouterParam(event, "id") },
       "Error starting webhook"
     );
 
-    // Возвращаем более детальную ошибку
     throw createError({
       statusCode: 500,
       statusMessage: `Error starting webhook: ${

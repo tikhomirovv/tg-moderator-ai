@@ -60,6 +60,7 @@ export function toBot(row: BotRow, chats: DbChat[]): import("./models/bot").Bot 
     token: row.token ?? undefined,
     workspace_id: row.workspaceId,
     is_active: row.isActive,
+    webhook_secret: row.webhookSecret,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
   };

@@ -7,6 +7,7 @@ import {
   getWebhookBaseUrl,
   telegramSetWebhook,
 } from "./utils/telegram-webhook";
+import { generateWebhookSecret } from "./utils/webhook-auth";
 
 export function isBotEligibleForUpdates(
   bot: Pick<Bot, "is_active" | "token"> | null | undefined
@@ -109,7 +110,18 @@ export async function setupWebhooks(baseUrl?: string): Promise<void> {
 
       try {
         const webhookUrl = buildWebhookUrl(resolvedBaseUrl, botConfig.id);
-        await telegramSetWebhook(botConfig.token, webhookUrl);
+        const webhookSecret =
+          botConfig.webhook_secret ?? generateWebhookSecret();
+        if (!botConfig.webhook_secret) {
+          await botRepo.setWebhookSecret(botConfig.id, webhookSecret);
+        }
+
+        await telegramSetWebhook(
+          botConfig.token,
+          webhookUrl,
+          fetch,
+          webhookSecret
+        );
         logger.info(`Webhook set for bot ${botConfig.id}: ${webhookUrl}`);
       } catch (error) {
         logger.error(

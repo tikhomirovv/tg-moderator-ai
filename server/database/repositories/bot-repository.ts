@@ -158,6 +158,26 @@ export class BotRepository {
     return toBotResponse(row, loadedChats);
   }
 
+  async findWebhookSecret(id: string): Promise<string | null> {
+    const [row] = await this.db
+      .select({ webhookSecret: bots.webhookSecret })
+      .from(bots)
+      .where(eq(bots.id, id))
+      .limit(1);
+
+    return row?.webhookSecret ?? null;
+  }
+
+  async setWebhookSecret(id: string, secret: string): Promise<void> {
+    await this.db
+      .update(bots)
+      .set({
+        webhookSecret: secret,
+        updatedAt: new Date(),
+      })
+      .where(eq(bots.id, id));
+  }
+
   async delete(id: string, workspaceId: string): Promise<boolean> {
     const deleted = await this.db
       .delete(bots)

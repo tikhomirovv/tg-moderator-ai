@@ -2,8 +2,9 @@ import { RuleRepository } from "../../database/repositories/rule-repository";
 
 export default defineEventHandler(async (event) => {
   try {
+    const workspaceId = getWorkspaceId(event);
     const ruleRepo = new RuleRepository();
-    const rules = await ruleRepo.findAll();
+    const rules = await ruleRepo.findAll(workspaceId);
 
     return {
       success: true,

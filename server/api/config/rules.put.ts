@@ -4,15 +4,13 @@ export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event);
     const { rules } = body;
-
+    const workspaceId = getWorkspaceId(event);
     const ruleRepo = new RuleRepository();
 
-    // Обновляем каждое правило
     for (const rule of rules) {
-      const existing = await ruleRepo.findById(rule.id);
+      const existing = await ruleRepo.findById(rule.id, workspaceId);
       if (existing) {
-        // Обновляем существующее правило
-        await ruleRepo.update(rule.id, {
+        await ruleRepo.update(rule.id, workspaceId, {
           name: rule.name,
           description: rule.description,
           ai_prompt: rule.ai_prompt,
@@ -20,8 +18,7 @@ export default defineEventHandler(async (event) => {
           is_active: rule.is_active,
         });
       } else {
-        // Создаем новое правило
-        await ruleRepo.create({
+        await ruleRepo.create(workspaceId, {
           id: rule.id,
           name: rule.name,
           description: rule.description,

@@ -5,6 +5,9 @@ import {
   getDatabaseConnection,
   initializeDatabase,
 } from "../../server/database/connection";
+import { organization } from "../../server/database/auth-schema";
+
+export const TEST_WORKSPACE_ID = "test-workspace";
 
 export async function setupTestDatabase() {
   await initializeDatabase();
@@ -25,9 +28,31 @@ export async function resetDatabase() {
       user_contexts,
       chat_statistics,
       bots,
-      rules
+      rules,
+      invitation,
+      member,
+      session,
+      account,
+      verification,
+      organization,
+      "user"
     RESTART IDENTITY CASCADE
   `);
+}
+
+export async function seedTestWorkspace() {
+  const db = getDatabaseConnection().getDb();
+  const now = new Date();
+
+  await db
+    .insert(organization)
+    .values({
+      id: TEST_WORKSPACE_ID,
+      name: "Test Workspace",
+      slug: "test-workspace",
+      createdAt: now,
+    })
+    .onConflictDoNothing();
 }
 
 export function useTestDatabase() {
@@ -37,6 +62,7 @@ export function useTestDatabase() {
 
   beforeEach(async () => {
     await resetDatabase();
+    await seedTestWorkspace();
   });
 
   afterAll(async () => {

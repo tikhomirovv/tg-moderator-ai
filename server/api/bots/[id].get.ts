@@ -3,9 +3,10 @@ import { BotRepository } from "../../database/repositories/bot-repository";
 export default defineEventHandler(async (event) => {
   try {
     const botId = getRouterParam(event, "id");
+    const workspaceId = getWorkspaceId(event);
     const botRepo = new BotRepository();
 
-    const bot = await botRepo.findById(botId!);
+    const bot = await botRepo.findById(botId!, workspaceId);
 
     if (!bot) {
       throw createError({

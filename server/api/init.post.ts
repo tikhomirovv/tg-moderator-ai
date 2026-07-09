@@ -3,11 +3,12 @@ import { RuleRepository } from "../database/repositories/rule-repository";
 
 export default defineEventHandler(async (event) => {
   try {
+    const workspaceId = getWorkspaceId(event);
     const botRepo = new BotRepository();
     const ruleRepo = new RuleRepository();
 
-    const bots = await botRepo.findAll();
-    const rules = await ruleRepo.findAll();
+    const bots = await botRepo.findAll(workspaceId);
+    const rules = await ruleRepo.findAll(workspaceId);
 
     return {
       success: true,

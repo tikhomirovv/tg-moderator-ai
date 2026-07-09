@@ -95,7 +95,10 @@ export class TelegramBot {
 
       // Получаем правила из базы данных
       const ruleRepo = new RuleRepository();
-      const rules = await ruleRepo.findByIds(chatConfig.rules || []);
+      const rules = await ruleRepo.findByIds(
+        chatConfig.rules || [],
+        this.botConfig.workspace_id
+      );
 
       logger.info(
         `Загружено правил для чата ${chatConfig.name}: ${rules.length}`

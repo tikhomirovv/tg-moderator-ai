@@ -5,9 +5,10 @@ export default defineEventHandler(async (event) => {
   try {
     const botId = getRouterParam(event, "id");
     const body = (await readBody(event)) as UpdateBotRequest;
+    const workspaceId = getWorkspaceId(event);
     const botRepo = new BotRepository();
 
-    const bot = await botRepo.update(botId!, body);
+    const bot = await botRepo.update(botId!, workspaceId, body);
 
     if (!bot) {
       throw createError({

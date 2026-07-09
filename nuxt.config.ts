@@ -10,6 +10,11 @@ export default defineNuxtConfig({
     databaseUrl:
       process.env.DATABASE_URL ||
       "postgresql://tgmoderator:tgmoderator@localhost:5432/tgmoderator",
+    betterAuthSecret: process.env.BETTER_AUTH_SECRET,
+    betterAuthUrl: process.env.BETTER_AUTH_URL || "http://localhost:3001",
+  },
+  routeRules: {
+    "/api/auth/**": { cors: true },
   },
   nitro: {
     preset: "node-server",

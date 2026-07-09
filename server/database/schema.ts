@@ -14,6 +14,7 @@ import {
   index,
   primaryKey,
 } from "drizzle-orm/pg-core";
+import { organization } from "./auth-schema";
 
 export const severityEnum = pgEnum("severity", ["low", "medium", "high"]);
 export const actionTypeEnum = pgEnum("action_type", [
@@ -22,25 +23,43 @@ export const actionTypeEnum = pgEnum("action_type", [
   "ban",
 ]);
 
-export const rules = pgTable("rules", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  aiPrompt: text("ai_prompt").notNull(),
-  severity: severityEnum("severity").notNull(),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const rules = pgTable(
+  "rules",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    aiPrompt: text("ai_prompt").notNull(),
+    severity: severityEnum("severity").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("rules_workspace_id_unique").on(table.workspaceId, table.id),
+  ]
+);
 
-export const bots = pgTable("bots", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  name: text("name").notNull(),
+export const bots = pgTable(
+  "bots",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
   token: text("token"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+  },
+  (table) => [
+    uniqueIndex("bots_workspace_id_unique").on(table.workspaceId, table.id),
+  ]
+);
 
 export const chats = pgTable(
   "chats",

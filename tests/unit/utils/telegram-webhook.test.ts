@@ -31,6 +31,27 @@ describe("telegram-webhook utils", () => {
     );
   });
 
+  test("telegramSetWebhook sends secret_token when provided", async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchFn = async (url: string, init?: RequestInit) => {
+      calls.push({ url, init });
+      return new Response(JSON.stringify({ ok: true }));
+    };
+
+    await telegramSetWebhook(
+      "token-1",
+      "https://example.com/api/telegram/webhook/bot-1",
+      fetchFn,
+      "secret-abc"
+    );
+
+    expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({
+      url: "https://example.com/api/telegram/webhook/bot-1",
+      allowed_updates: ["message", "edited_message"],
+      secret_token: "secret-abc",
+    });
+  });
+
   test("telegramSetWebhook calls Telegram API", async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = [];
     const fetchFn = async (url: string, init?: RequestInit) => {

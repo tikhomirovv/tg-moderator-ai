@@ -8,6 +8,7 @@ import {
   telegramSetWebhook,
   type TelegramFetch,
 } from "./telegram-webhook";
+import { generateWebhookSecret } from "./webhook-auth";
 
 export class BotLifecycleError extends Error {
   constructor(
@@ -74,7 +75,18 @@ export async function enableBot(
 
   try {
     const webhookUrl = buildWebhookUrl(baseUrl, botId);
-    await telegramSetWebhook(current.token, webhookUrl, fetchFn);
+    const webhookSecret =
+      current.webhook_secret ?? generateWebhookSecret();
+    if (!current.webhook_secret) {
+      await botRepo.setWebhookSecret(botId, webhookSecret);
+    }
+
+    await telegramSetWebhook(
+      current.token,
+      webhookUrl,
+      fetchFn,
+      webhookSecret
+    );
     logger.info(`Webhook set for bot ${botId}: ${webhookUrl}`);
     return { bot: updated, webhookRegistered: true };
   } catch (error) {

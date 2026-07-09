@@ -51,8 +51,9 @@ export const bots = pgTable(
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-  token: text("token"),
-  isActive: boolean("is_active").notNull().default(true),
+    token: text("token"),
+    webhookSecret: text("webhook_secret"),
+    isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

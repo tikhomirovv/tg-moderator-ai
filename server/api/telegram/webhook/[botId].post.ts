@@ -1,5 +1,6 @@
 import { handleTelegramUpdate } from "../../../index";
 import { logger } from "../../../core/logger";
+import { assertValidTelegramWebhook } from "../../../utils/telegram-webhook-auth";
 
 export default defineEventHandler(async (event) => {
   try {
@@ -13,21 +14,41 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    const secretToken = getHeader(event, "x-telegram-bot-api-secret-token");
+
+    try {
+      await assertValidTelegramWebhook(botId, secretToken);
+    } catch (error) {
+      logger.warn(
+        { botId, hasSecretHeader: Boolean(secretToken) },
+        "Rejected suspicious Telegram webhook request"
+      );
+      throw error;
+    }
+
     logger.info(
-      `Получен webhook для бота ${botId}, update_id: ${body.update_id}`
+      `Received webhook for bot ${botId}, update_id: ${body.update_id}`
     );
 
-    // Обрабатываем обновление от Telegram
     await handleTelegramUpdate(botId, body);
 
-    logger.info(`Webhook успешно обработан для бота ${botId}`);
+    logger.info(`Webhook processed for bot ${botId}`);
 
     return {
       success: true,
       message: "Webhook processed successfully",
     };
   } catch (error) {
-    logger.error({ error: error as Error }, "Ошибка обработки вебхука");
+    if (
+      error &&
+      typeof error === "object" &&
+      "statusCode" in error &&
+      (error as { statusCode?: number }).statusCode === 403
+    ) {
+      throw error;
+    }
+
+    logger.error({ error: error as Error }, "Webhook processing failed");
 
     throw createError({
       statusCode: 500,

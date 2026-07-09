@@ -15,17 +15,24 @@ export function buildWebhookUrl(baseUrl: string, botId: string): string {
 export async function telegramSetWebhook(
   token: string,
   url: string,
-  fetchFn: TelegramFetch = fetch
+  fetchFn: TelegramFetch = fetch,
+  secretToken?: string
 ): Promise<void> {
+  const body: Record<string, unknown> = {
+    url,
+    allowed_updates: ["message", "edited_message"],
+  };
+
+  if (secretToken) {
+    body.secret_token = secretToken;
+  }
+
   const response = await fetchFn(
     `https://api.telegram.org/bot${token}/setWebhook`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        url,
-        allowed_updates: ["message", "edited_message"],
-      }),
+      body: JSON.stringify(body),
     }
   );
 

@@ -54,7 +54,7 @@ export async function getBotInfo(
 ): Promise<{ id: string; isRunning: boolean } | null> {
   try {
     const botRepo = new BotRepository();
-    const bot = await botRepo.findById(botId);
+    const bot = await botRepo.findByIdWithToken(botId);
 
     if (!bot) {
       return null;

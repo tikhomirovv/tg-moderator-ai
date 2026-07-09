@@ -68,8 +68,11 @@ export class BotRepository {
     }
   }
 
-  async findAll(): Promise<BotResponse[]> {
-    const botRows = await this.db.select().from(bots);
+  async findAll(workspaceId: string): Promise<BotResponse[]> {
+    const botRows = await this.db
+      .select()
+      .from(bots)
+      .where(eq(bots.workspaceId, workspaceId));
     const result: BotResponse[] = [];
 
     for (const row of botRows) {
@@ -80,8 +83,12 @@ export class BotRepository {
     return result;
   }
 
-  async findById(id: string): Promise<BotResponse | null> {
-    const [row] = await this.db.select().from(bots).where(eq(bots.id, id)).limit(1);
+  async findById(id: string, workspaceId: string): Promise<BotResponse | null> {
+    const [row] = await this.db
+      .select()
+      .from(bots)
+      .where(and(eq(bots.id, id), eq(bots.workspaceId, workspaceId)))
+      .limit(1);
     if (!row) return null;
 
     const chatList = await this.loadChatsForBot(row.id);
@@ -96,12 +103,16 @@ export class BotRepository {
     return toBot(row, chatList);
   }
 
-  async create(botData: CreateBotRequest): Promise<BotResponse> {
+  async create(
+    workspaceId: string,
+    botData: CreateBotRequest
+  ): Promise<BotResponse> {
     const now = new Date();
     const [row] = await this.db
       .insert(bots)
       .values({
         id: botData.id,
+        workspaceId,
         name: botData.name,
         token: botData.token,
         isActive: true,
@@ -117,6 +128,7 @@ export class BotRepository {
 
   async update(
     id: string,
+    workspaceId: string,
     updateData: UpdateBotRequest
   ): Promise<BotResponse | null> {
     const { chats: chatList, ...botFields } = updateData;
@@ -133,7 +145,7 @@ export class BotRepository {
     const [row] = await this.db
       .update(bots)
       .set(updateValues)
-      .where(eq(bots.id, id))
+      .where(and(eq(bots.id, id), eq(bots.workspaceId, workspaceId)))
       .returning();
 
     if (!row) return null;
@@ -146,10 +158,10 @@ export class BotRepository {
     return toBotResponse(row, loadedChats);
   }
 
-  async delete(id: string): Promise<boolean> {
+  async delete(id: string, workspaceId: string): Promise<boolean> {
     const deleted = await this.db
       .delete(bots)
-      .where(eq(bots.id, id))
+      .where(and(eq(bots.id, id), eq(bots.workspaceId, workspaceId)))
       .returning({ id: bots.id });
     return deleted.length > 0;
   }

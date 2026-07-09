@@ -1,5 +1,5 @@
 import { logger } from "../../../../core/logger";
-import { BotRepository } from "../../../../database/repositories/bot-repository";
+import { getBotForWorkspace } from "../../../../utils/bots";
 import { TelegramBot } from "../../../../core/bot";
 
 export default defineEventHandler(async (event) => {
@@ -8,15 +8,8 @@ export default defineEventHandler(async (event) => {
     logger.info(`Attempting to start webhook for bot: ${botId}`);
 
     // Получаем бота из БД
-    const botRepo = new BotRepository();
-    const botConfig = await botRepo.findByIdWithToken(botId!);
-
-    if (!botConfig) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: "Bot not found in database",
-      });
-    }
+    const workspaceId = getWorkspaceId(event);
+    const botConfig = await getBotForWorkspace(botId!, workspaceId);
 
     if (!botConfig.token) {
       throw createError({

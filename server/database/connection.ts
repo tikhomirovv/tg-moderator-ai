@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import postgres from "postgres";
 import { logger } from "../core/logger";
 import * as schema from "./schema";
+import * as authSchema from "./auth-schema";
 
 export type Database = PostgresJsDatabase<typeof schema>;
 
@@ -31,7 +32,7 @@ export class PostgresConnection implements DatabaseConnection {
 
     try {
       this.client = postgres(this.connectionString, { max: 10 });
-      this.db = drizzle(this.client, { schema });
+      this.db = drizzle(this.client, { schema: { ...schema, ...authSchema } });
 
       await migrate(this.db, {
         migrationsFolder: path.join(

@@ -12,6 +12,7 @@ export interface Bot {
   name: string;
   chats: Chat[];
   token?: string;
+  workspace_id: string;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;

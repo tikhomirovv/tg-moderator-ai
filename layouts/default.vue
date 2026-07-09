@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-screen flex bg-gray-100">
-    <!-- Sidebar -->
     <aside
       class="w-64 bg-white border-r border-gray-200 hidden md:flex md:flex-col"
     >
@@ -30,34 +29,24 @@
       <div class="p-4 text-xs text-gray-500 border-t">v0.1.0</div>
     </aside>
 
-    <!-- Main -->
     <div class="flex-1 flex flex-col min-w-0">
-      <!-- Top bar -->
       <header
         class="h-16 bg-white border-b flex items-center justify-between px-4"
       >
         <div class="flex items-center gap-3">
-          <button
-            class="md:hidden p-2 rounded hover:bg-gray-100"
-            aria-label="Open menu"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              class="w-6 h-6"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M3.75 5.25a.75.75 0 0 1 .75-.75h15a.75.75 0 0 1 0 1.5h-15a.75.75 0 0 1-.75-.75ZM3.75 12a.75.75 0 0 1 .75-.75h15a.75.75 0 0 1 0 1.5h-15A.75.75 0 0 1 3.75 12Zm0 6.75a.75.75 0 0 1 .75-.75h15a.75.75 0 0 1 0 1.5h-15a.75.75 0 0 1-.75-.75Z"
-                clip-rule="evenodd"
-              />
-            </svg>
-          </button>
           <h1 class="text-lg font-semibold">Telegram AI Moderator</h1>
         </div>
-        <div class="text-sm text-gray-500">
-          Status: <span class="text-green-600">Online</span>
+        <div class="flex items-center gap-4 text-sm">
+          <span v-if="session?.user" class="text-gray-600">
+            {{ session.user.email }}
+          </span>
+          <button
+            v-if="session"
+            class="text-red-600 hover:underline"
+            @click="signOut"
+          >
+            Sign out
+          </button>
         </div>
       </header>
 
@@ -65,9 +54,44 @@
         <slot />
       </main>
     </div>
+
+    <WorkspaceModal v-model="showWorkspaceModal" />
   </div>
 </template>
 
 <script setup lang="ts">
-// Default layout for CRM UI
+import { authClient } from "~/lib/auth-client";
+
+const { data: session } = await authClient.useSession(useFetch);
+const showWorkspaceModal = ref(false);
+
+async function ensureWorkspace() {
+  if (!session.value?.user?.emailVerified) {
+    return;
+  }
+
+  const { data: organizations } = await authClient.organization.list();
+  const activeId = session.value.session.activeOrganizationId;
+
+  if (!organizations?.length) {
+    showWorkspaceModal.value = true;
+    return;
+  }
+
+  if (!activeId && organizations[0]?.id) {
+    await authClient.organization.setActive({
+      organizationId: organizations[0].id,
+    });
+    await reloadNuxtApp();
+  }
+}
+
+onMounted(() => {
+  ensureWorkspace();
+});
+
+async function signOut() {
+  await authClient.signOut();
+  await navigateTo("/login");
+}
 </script>

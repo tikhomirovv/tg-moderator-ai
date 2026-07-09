@@ -1,22 +1,19 @@
 import { logger } from "../../../../core/logger";
-import { BotRepository } from "../../../../database/repositories/bot-repository";
+import { getBotForWorkspace } from "../../../../utils/bots";
 
 export default defineEventHandler(async (event) => {
   try {
     const botId = getRouterParam(event, "id");
+    const workspaceId = getWorkspaceId(event);
+    const botWithToken = await getBotForWorkspace(botId!, workspaceId);
 
-    // Получаем токен из БД
-    const botRepo = new BotRepository();
-    const botWithToken = await botRepo.findByIdWithToken(botId!);
-
-    if (!botWithToken?.token) {
+    if (!botWithToken.token) {
       throw createError({
         statusCode: 400,
         statusMessage: "Bot token not found in database",
       });
     }
 
-    // Удаляем webhook
     const response = await fetch(
       `https://api.telegram.org/bot${botWithToken.token}/deleteWebhook`
     );

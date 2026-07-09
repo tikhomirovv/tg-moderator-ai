@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { RuleRepository } from "../../../server/database/repositories/rule-repository";
-import { useTestDatabase } from "../../helpers/database";
+import { TEST_WORKSPACE_ID, useTestDatabase } from "../../helpers/database";
 
 describe("RuleRepository", () => {
   useTestDatabase();
 
   test("creates and finds rules", async () => {
     const repo = new RuleRepository();
-    const created = await repo.create({
+    const created = await repo.create(TEST_WORKSPACE_ID, {
       id: "spam",
       name: "Spam",
       description: "No spam",
@@ -18,16 +18,16 @@ describe("RuleRepository", () => {
     expect(created.id).toBe("spam");
     expect(created.is_active).toBe(true);
 
-    const found = await repo.findById("spam");
+    const found = await repo.findById("spam", TEST_WORKSPACE_ID);
     expect(found?.name).toBe("Spam");
 
-    const active = await repo.findActive();
+    const active = await repo.findActive(TEST_WORKSPACE_ID);
     expect(active).toHaveLength(1);
   });
 
   test("updates rule fields", async () => {
     const repo = new RuleRepository();
-    await repo.create({
+    await repo.create(TEST_WORKSPACE_ID, {
       id: "ads",
       name: "Ads",
       description: "No ads",
@@ -35,7 +35,7 @@ describe("RuleRepository", () => {
       severity: "low",
     });
 
-    const updated = await repo.update("ads", {
+    const updated = await repo.update("ads", TEST_WORKSPACE_ID, {
       name: "Advertising",
       is_active: false,
     });

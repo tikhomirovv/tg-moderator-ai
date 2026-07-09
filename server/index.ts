@@ -1,7 +1,18 @@
 import { TelegramBot } from "./core/bot";
 import { BotRepository } from "./database/repositories/bot-repository";
-import { RuleRepository } from "./database/repositories/rule-repository";
+import type { Bot } from "./database/models/bot";
 import { logger } from "./core/logger";
+import {
+  buildWebhookUrl,
+  getWebhookBaseUrl,
+  telegramSetWebhook,
+} from "./utils/telegram-webhook";
+
+export function isBotEligibleForUpdates(
+  bot: Pick<Bot, "is_active" | "token"> | null | undefined
+): bot is Pick<Bot, "is_active" | "token"> & { token: string; is_active: true } {
+  return Boolean(bot?.token && bot.is_active);
+}
 
 // Обработка обновления от Telegram
 export async function handleTelegramUpdate(
@@ -18,12 +29,15 @@ export async function handleTelegramUpdate(
       return;
     }
 
-    if (!botConfig.token) {
-      logger.warn(`Bot ${botId} has no token`);
+    if (!isBotEligibleForUpdates(botConfig)) {
+      if (botConfig && !botConfig.is_active) {
+        logger.info(`Bot ${botId} is inactive, ignoring update`);
+      } else if (botConfig && !botConfig.token) {
+        logger.warn(`Bot ${botId} has no token`);
+      }
       return;
     }
 
-    // Создаем экземпляр бота для обработки этого сообщения
     const bot = new TelegramBot(botConfig.token, botConfig.id, botConfig);
 
     // Обрабатываем обновление
@@ -74,8 +88,14 @@ export async function getBotInfo(
 }
 
 // Установка вебхуков для всех ботов
-export async function setupWebhooks(baseUrl: string): Promise<void> {
-  logger.info("Настройка вебхуков для ботов...");
+export async function setupWebhooks(baseUrl?: string): Promise<void> {
+  const resolvedBaseUrl = baseUrl ?? getWebhookBaseUrl();
+  if (!resolvedBaseUrl) {
+    logger.warn("Skipping webhook setup: HTTPS BASE_URL is not configured");
+    return;
+  }
+
+  logger.info("Setting up webhooks for active bots...");
 
   try {
     const botRepo = new BotRepository();
@@ -88,14 +108,13 @@ export async function setupWebhooks(baseUrl: string): Promise<void> {
       }
 
       try {
-        const bot = new TelegramBot(botConfig.token, botConfig.id, botConfig);
-        const webhookUrl = `${baseUrl}/api/telegram/webhook/${botConfig.id}`;
-        await bot.setWebhook(webhookUrl);
+        const webhookUrl = buildWebhookUrl(resolvedBaseUrl, botConfig.id);
+        await telegramSetWebhook(botConfig.token, webhookUrl);
         logger.info(`Webhook set for bot ${botConfig.id}: ${webhookUrl}`);
       } catch (error) {
         logger.error(
           { error: error as Error },
-          `Ошибка установки вебхука для бота ${botConfig.id}`
+          `Failed to set webhook for bot ${botConfig.id}`
         );
       }
     }

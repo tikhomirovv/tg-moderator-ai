@@ -1,47 +1,52 @@
-import OpenAI from "openai";
+import type OpenAI from "openai";
 import { AIModerationRequest, AIModerationResponse } from "../types/moderation";
 import { Rule } from "../types/config";
 import { logger } from "./logger";
+import {
+  createLlmClient,
+  loadLlmConfig,
+  resolveLlmModel,
+  type LlmProviderConfig,
+} from "./llm-provider";
 
-// Инициализация OpenAI клиента
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+type AnalyzeMessageOptions = {
+  client?: OpenAI;
+  model?: string;
+  config?: LlmProviderConfig;
+};
 
-// Функция для анализа сообщения с помощью AI
 export async function analyzeMessage(
   request: AIModerationRequest,
-  rules: Rule[]
+  rules: Rule[],
+  options: AnalyzeMessageOptions = {}
 ): Promise<AIModerationResponse> {
   try {
-    // Получаем конфигурацию
-    const config = useRuntimeConfig();
-
-    // Формируем промпт для AI
+    const config = options.config ?? loadLlmConfig();
+    const model = options.model ?? resolveLlmModel(config);
+    const client = options.client ?? createLlmClient(config);
     const prompt = buildAnalysisPrompt(request, rules);
 
     logger.debug(
       {
         messageLength: request.message.length,
         rulesCount: rules.length,
-        model: config.openaiModel,
+        model,
+        provider: config.provider,
       },
-      "Отправка запроса к OpenAI"
+      "Sending moderation request to LLM"
     );
 
-    // Логируем итоговый промпт для отладки
     logger.info(
       {
-        prompt: prompt,
+        prompt,
         rulesCount: rules.length,
         rules: rules.map((r) => ({ name: r.name, severity: r.severity })),
       },
-      "Итоговый промпт для AI"
+      "Final LLM moderation prompt"
     );
 
-    // Отправляем запрос к OpenAI
-    const completion = await openai.chat.completions.create({
-      model: config.openaiModel,
+    const completion = await client.chat.completions.create({
+      model,
       messages: [
         {
           role: "system",
@@ -53,17 +58,16 @@ export async function analyzeMessage(
           content: prompt,
         },
       ],
-      temperature: 0.1, // Низкая температура для более консистентных результатов
+      temperature: 0.1,
       max_tokens: 500,
     });
 
     const response = completion.choices[0]?.message?.content;
 
     if (!response) {
-      throw new Error("Пустой ответ от OpenAI");
+      throw new Error("Empty response from LLM");
     }
 
-    // Парсим ответ AI
     const result = parseAIResponse(response);
 
     logger.info(
@@ -71,20 +75,19 @@ export async function analyzeMessage(
         violation_detected: result.violation_detected,
         rule_violated: result.rule_violated,
         confidence: result.confidence,
-        model: config.openaiModel,
+        model,
         ai_response: response,
       },
-      "AI анализ завершен"
+      "LLM moderation analysis completed"
     );
 
     return result;
   } catch (error) {
-    logger.error({ error: error as Error }, "Ошибка AI анализа");
-    throw new Error("Не удалось проанализировать сообщение");
+    logger.error({ error: error as Error }, "LLM moderation analysis failed");
+    throw new Error("Failed to analyze message");
   }
 }
 
-// Формирование промпта для AI
 function buildAnalysisPrompt(
   request: AIModerationRequest,
   rules: Rule[]
@@ -138,13 +141,11 @@ REMEMBER: Analyze ONLY based on the provided rules. Consider the user's warning 
 `;
 }
 
-// Парсинг ответа AI
 function parseAIResponse(response: string): AIModerationResponse {
   try {
-    // Извлекаем JSON из ответа
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error("JSON не найден в ответе");
+      throw new Error("JSON not found in LLM response");
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
@@ -153,19 +154,18 @@ function parseAIResponse(response: string): AIModerationResponse {
       violation_detected: Boolean(parsed.violation_detected),
       rule_violated: parsed.rule_violated || undefined,
       confidence: Math.max(0, Math.min(1, Number(parsed.confidence) || 0)),
-      reasoning: parsed.reasoning || "Нет объяснения",
+      reasoning: parsed.reasoning || "No explanation",
     };
   } catch (error) {
     logger.error(
       { error: error as Error, response },
-      "Ошибка парсинга ответа AI"
+      "Failed to parse LLM response"
     );
 
-    // Возвращаем безопасный ответ
     return {
       violation_detected: false,
       confidence: 0,
-      reasoning: "Ошибка парсинга ответа AI",
+      reasoning: "Failed to parse LLM response",
     };
   }
 }

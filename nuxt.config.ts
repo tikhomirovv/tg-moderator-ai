@@ -5,8 +5,10 @@ export default defineNuxtConfig({
   modules: ["@nuxtjs/tailwindcss", "@nuxt/fonts"],
   runtimeConfig: {
     // Переменные только для сервера
-    openaiApiKey: process.env.OPENAI_API_KEY,
-    openaiModel: process.env.OPENAI_MODEL || "gpt-4.1-nano-2025-04-14",
+    llmApiKey: process.env.LLM_API_KEY,
+    llmBaseUrl: process.env.LLM_BASE_URL,
+    llmModel: process.env.LLM_MODEL || "gpt-4.1-nano-2025-04-14",
+    llmProvider: process.env.LLM_PROVIDER || "openai",
     databaseUrl:
       process.env.DATABASE_URL ||
       "postgresql://tgmoderator:tgmoderator@localhost:5432/tgmoderator",

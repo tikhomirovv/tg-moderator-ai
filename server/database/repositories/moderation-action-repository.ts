@@ -1,29 +1,37 @@
-import { Collection } from "mongodb";
+import { and, eq, gte, lte, desc, countDistinct, sql } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   ModerationAction,
   CreateModerationActionRequest,
 } from "../models/moderation-action";
+import { moderationActions } from "../schema";
+import { toModerationAction } from "../mappers";
 
 export class ModerationActionRepository {
-  private collection: Collection<ModerationAction>;
-
-  constructor() {
-    const db = getDatabaseConnection().getDb();
-    this.collection = db.collection<ModerationAction>("moderation_actions");
+  private get db() {
+    return getDatabaseConnection().getDb();
   }
 
   async create(
     actionData: CreateModerationActionRequest
   ): Promise<ModerationAction> {
-    const now = new Date();
-    const action: ModerationAction = {
-      ...actionData,
-      created_at: now,
-    };
+    const [row] = await this.db
+      .insert(moderationActions)
+      .values({
+        botId: actionData.bot_id,
+        chatId: actionData.chat_id,
+        userId: actionData.user_id,
+        messageId: actionData.message_id,
+        actionType: actionData.action_type,
+        ruleViolated: actionData.rule_violated,
+        aiConfidence: actionData.ai_confidence,
+        aiReasoning: actionData.ai_reasoning,
+        timestamp: actionData.timestamp,
+        moderatorBotId: actionData.moderator_bot_id,
+      })
+      .returning();
 
-    const result = await this.collection.insertOne(action);
-    return { ...action, _id: result.insertedId.toString() };
+    return toModerationAction(row);
   }
 
   async getRecentActions(
@@ -31,14 +39,19 @@ export class ModerationActionRepository {
     chatId: number,
     limit: number = 50
   ): Promise<ModerationAction[]> {
-    return await this.collection
-      .find({
-        bot_id: botId,
-        chat_id: chatId,
-      })
-      .sort({ timestamp: -1 })
-      .limit(limit)
-      .toArray();
+    const rows = await this.db
+      .select()
+      .from(moderationActions)
+      .where(
+        and(
+          eq(moderationActions.botId, botId),
+          eq(moderationActions.chatId, chatId)
+        )
+      )
+      .orderBy(desc(moderationActions.timestamp))
+      .limit(limit);
+
+    return rows.map(toModerationAction);
   }
 
   async getActionsByUser(
@@ -47,15 +60,20 @@ export class ModerationActionRepository {
     userId: number,
     limit: number = 20
   ): Promise<ModerationAction[]> {
-    return await this.collection
-      .find({
-        bot_id: botId,
-        chat_id: chatId,
-        user_id: userId,
-      })
-      .sort({ timestamp: -1 })
-      .limit(limit)
-      .toArray();
+    const rows = await this.db
+      .select()
+      .from(moderationActions)
+      .where(
+        and(
+          eq(moderationActions.botId, botId),
+          eq(moderationActions.chatId, chatId),
+          eq(moderationActions.userId, userId)
+        )
+      )
+      .orderBy(desc(moderationActions.timestamp))
+      .limit(limit);
+
+    return rows.map(toModerationAction);
   }
 
   async getActionsByType(
@@ -64,15 +82,20 @@ export class ModerationActionRepository {
     actionType: "warning" | "delete" | "ban",
     limit: number = 50
   ): Promise<ModerationAction[]> {
-    return await this.collection
-      .find({
-        bot_id: botId,
-        chat_id: chatId,
-        action_type: actionType,
-      })
-      .sort({ timestamp: -1 })
-      .limit(limit)
-      .toArray();
+    const rows = await this.db
+      .select()
+      .from(moderationActions)
+      .where(
+        and(
+          eq(moderationActions.botId, botId),
+          eq(moderationActions.chatId, chatId),
+          eq(moderationActions.actionType, actionType)
+        )
+      )
+      .orderBy(desc(moderationActions.timestamp))
+      .limit(limit);
+
+    return rows.map(toModerationAction);
   }
 
   async getActionsByDateRange(
@@ -81,17 +104,23 @@ export class ModerationActionRepository {
     startDate: Date,
     endDate: Date
   ): Promise<ModerationAction[]> {
-    const filter: any = {
-      bot_id: botId,
-      timestamp: { $gte: startDate, $lte: endDate },
-    };
+    const conditions = [
+      eq(moderationActions.botId, botId),
+      gte(moderationActions.timestamp, startDate),
+      lte(moderationActions.timestamp, endDate),
+    ];
 
-    // Если chatId не 0, добавляем фильтр по чату
     if (chatId !== 0) {
-      filter.chat_id = chatId;
+      conditions.push(eq(moderationActions.chatId, chatId));
     }
 
-    return await this.collection.find(filter).sort({ timestamp: -1 }).toArray();
+    const rows = await this.db
+      .select()
+      .from(moderationActions)
+      .where(and(...conditions))
+      .orderBy(desc(moderationActions.timestamp));
+
+    return rows.map(toModerationAction);
   }
 
   async getActionCount(
@@ -101,28 +130,39 @@ export class ModerationActionRepository {
     startDate?: Date,
     endDate?: Date
   ): Promise<number> {
-    const filter: any = { bot_id: botId, chat_id: chatId };
+    const conditions = [
+      eq(moderationActions.botId, botId),
+      eq(moderationActions.chatId, chatId),
+    ];
 
     if (actionType) {
-      filter.action_type = actionType;
+      conditions.push(eq(moderationActions.actionType, actionType));
     }
-
     if (startDate && endDate) {
-      filter.timestamp = { $gte: startDate, $lte: endDate };
+      conditions.push(gte(moderationActions.timestamp, startDate));
+      conditions.push(lte(moderationActions.timestamp, endDate));
     }
 
-    return await this.collection.countDocuments(filter);
+    const [result] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(moderationActions)
+      .where(and(...conditions));
+
+    return result?.count ?? 0;
   }
 
   async getActionsByBot(
     botId: string,
     limit: number = 50
   ): Promise<ModerationAction[]> {
-    return await this.collection
-      .find({ bot_id: botId })
-      .sort({ timestamp: -1 })
-      .limit(limit)
-      .toArray();
+    const rows = await this.db
+      .select()
+      .from(moderationActions)
+      .where(eq(moderationActions.botId, botId))
+      .orderBy(desc(moderationActions.timestamp))
+      .limit(limit);
+
+    return rows.map(toModerationAction);
   }
 
   async getUniqueUsersWithActions(
@@ -131,13 +171,21 @@ export class ModerationActionRepository {
     startDate?: Date,
     endDate?: Date
   ): Promise<number> {
-    const filter: any = { bot_id: botId, chat_id: chatId };
+    const conditions = [
+      eq(moderationActions.botId, botId),
+      eq(moderationActions.chatId, chatId),
+    ];
 
     if (startDate && endDate) {
-      filter.timestamp = { $gte: startDate, $lte: endDate };
+      conditions.push(gte(moderationActions.timestamp, startDate));
+      conditions.push(lte(moderationActions.timestamp, endDate));
     }
 
-    const result = await this.collection.distinct("user_id", filter);
-    return result.length;
+    const [result] = await this.db
+      .select({ count: countDistinct(moderationActions.userId) })
+      .from(moderationActions)
+      .where(and(...conditions));
+
+    return Number(result?.count ?? 0);
   }
 }

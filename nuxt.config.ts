@@ -7,11 +7,18 @@ export default defineNuxtConfig({
     // Переменные только для сервера
     openaiApiKey: process.env.OPENAI_API_KEY,
     openaiModel: process.env.OPENAI_MODEL || "gpt-4.1-nano-2025-04-14",
-    mongodbUri:
-      process.env.MONGODB_URI || "mongodb://localhost:27017/tg-moderator",
+    databaseUrl:
+      process.env.DATABASE_URL ||
+      "postgresql://tgmoderator:tgmoderator@localhost:5432/tgmoderator",
   },
   nitro: {
     preset: "node-server",
+    serverAssets: [
+      {
+        baseName: "database-migrations",
+        dir: "./server/database/migrations",
+      },
+    ],
   },
   typescript: {
     strict: true,

@@ -1,18 +1,23 @@
-import { MongoClient, Db } from "mongodb";
+import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import postgres from "postgres";
 import { logger } from "../core/logger";
+import * as schema from "./schema";
 
-// Абстракция для работы с базой данных
+export type Database = PostgresJsDatabase<typeof schema>;
+
 export interface DatabaseConnection {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
-  getDb(): Db;
+  getDb(): Database;
   isConnected(): boolean;
 }
 
-// MongoDB реализация
-export class MongoDBConnection implements DatabaseConnection {
-  private client: MongoClient | null = null;
-  private db: Db | null = null;
+export class PostgresConnection implements DatabaseConnection {
+  private client: ReturnType<typeof postgres> | null = null;
+  private db: Database | null = null;
   private connectionString: string;
 
   constructor(connectionString: string) {
@@ -20,28 +25,38 @@ export class MongoDBConnection implements DatabaseConnection {
   }
 
   async connect(): Promise<void> {
-    try {
-      this.client = new MongoClient(this.connectionString);
-      await this.client.connect();
-      this.db = this.client.db();
+    if (this.client) {
+      return;
+    }
 
-      logger.info("Connected to MongoDB");
+    try {
+      this.client = postgres(this.connectionString, { max: 10 });
+      this.db = drizzle(this.client, { schema });
+
+      await migrate(this.db, {
+        migrationsFolder: path.join(
+          path.dirname(fileURLToPath(import.meta.url)),
+          "migrations"
+        ),
+      });
+
+      logger.info("Connected to PostgreSQL");
     } catch (error) {
-      logger.error({ error: error as Error }, "Failed to connect to MongoDB");
+      logger.error({ error: error as Error }, "Failed to connect to PostgreSQL");
       throw error;
     }
   }
 
   async disconnect(): Promise<void> {
     if (this.client) {
-      await this.client.close();
+      await this.client.end({ timeout: 5 });
       this.client = null;
       this.db = null;
-      logger.info("Disconnected from MongoDB");
+      logger.info("Disconnected from PostgreSQL");
     }
   }
 
-  getDb(): Db {
+  getDb(): Database {
     if (!this.db) {
       throw new Error("Database not connected");
     }
@@ -53,15 +68,28 @@ export class MongoDBConnection implements DatabaseConnection {
   }
 }
 
-// Глобальный экземпляр подключения
 let dbConnection: DatabaseConnection | null = null;
+
+function getConnectionString(): string {
+  if (process.env.DATABASE_URL) {
+    return process.env.DATABASE_URL;
+  }
+
+  try {
+    const config = useRuntimeConfig();
+    if (config.databaseUrl) {
+      return config.databaseUrl;
+    }
+  } catch {
+    // Outside Nuxt runtime (e.g. bun test)
+  }
+
+  return "postgresql://tgmoderator:tgmoderator@localhost:5432/tgmoderator";
+}
 
 export function getDatabaseConnection(): DatabaseConnection {
   if (!dbConnection) {
-    const config = useRuntimeConfig();
-    const connectionString =
-      config.mongodbUri || "mongodb://localhost:27017/tg-moderator";
-    dbConnection = new MongoDBConnection(connectionString);
+    dbConnection = new PostgresConnection(getConnectionString());
   }
   return dbConnection;
 }

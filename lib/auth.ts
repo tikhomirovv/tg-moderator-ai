@@ -52,6 +52,49 @@ export function getAuth() {
           },
         },
       },
+      session: {
+        cookieCache: {
+          enabled: true,
+          maxAge: 5 * 60,
+        },
+      },
+      rateLimit: {
+        enabled: true,
+        window: 60,
+        max: 100,
+        storage: "memory",
+        customRules: {
+          "/sign-in/email": { window: 60, max: 10 },
+          "/sign-up/email": { window: 60, max: 5 },
+        },
+      },
+      databaseHooks: {
+        session: {
+          create: {
+            after: async (session) => {
+              logger.info(
+                { userId: session.userId, sessionId: session.id },
+                "Auth session created"
+              );
+            },
+          },
+          delete: {
+            after: async (session) => {
+              logger.info(
+                { userId: session.userId, sessionId: session.id },
+                "Auth session deleted"
+              );
+            },
+          },
+        },
+        user: {
+          update: {
+            after: async (user) => {
+              logger.info({ userId: user.id }, "User profile updated");
+            },
+          },
+        },
+      },
       emailAndPassword: {
         enabled: true,
         requireEmailVerification: true,

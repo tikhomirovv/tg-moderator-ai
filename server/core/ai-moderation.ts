@@ -15,6 +15,48 @@ type AnalyzeMessageOptions = {
   config?: LlmProviderConfig;
 };
 
+export function buildModerationSystemPrompt(): string {
+  return `You are a chat moderator. Analyze messages for violations using ONLY the rules provided in the user message.
+
+Rules:
+- Use only the listed rules. Do not invent additional rules or apply general moderation heuristics.
+- If there are no rules, or the message does not violate any listed rule, set violation_detected to false.
+- Consider user_warnings and chat_history when judging patterns and escalation.
+- When analyzing context, ask whether the message continues prior problematic behavior or changes meaning in conversation.
+
+Respond with JSON only, no extra text:
+{
+  "violation_detected": true/false,
+  "rule_violated": "rule_id" (if violation exists),
+  "confidence": 0.0-1.0,
+  "reasoning": "brief explanation including context"
+}`;
+}
+
+export function buildModerationUserPrompt(
+  request: AIModerationRequest,
+  rules: Rule[]
+): string {
+  const rulesText = rules
+    .map(
+      (rule) =>
+        `- ${rule.name}: ${rule.description}\n  Criteria: ${rule.ai_prompt}`
+    )
+    .join("\n");
+
+  const recentHistory = request.context.chat_history.slice(-3).join(", ");
+
+  return `USER CONTEXT:
+- Previous warnings: ${request.context.user_warnings}
+- Recent chat history: ${recentHistory || "(none)"}
+
+CHAT RULES (${rules.length}):
+${rules.length > 0 ? rulesText : "No rules configured"}
+
+MESSAGE TO ANALYZE:
+"${request.message}"`;
+}
+
 export async function analyzeMessage(
   request: AIModerationRequest,
   rules: Rule[],
@@ -24,7 +66,8 @@ export async function analyzeMessage(
     const config = options.config ?? loadLlmConfig();
     const model = options.model ?? resolveLlmModel(config);
     const client = options.client ?? createLlmClient(config);
-    const prompt = buildAnalysisPrompt(request, rules);
+    const systemPrompt = buildModerationSystemPrompt();
+    const userPrompt = buildModerationUserPrompt(request, rules);
 
     logger.debug(
       {
@@ -38,7 +81,8 @@ export async function analyzeMessage(
 
     logger.info(
       {
-        prompt,
+        systemPrompt,
+        userPrompt,
         rulesCount: rules.length,
         rules: rules.map((r) => ({ name: r.name })),
       },
@@ -50,12 +94,11 @@ export async function analyzeMessage(
       messages: [
         {
           role: "system",
-          content:
-            "You are a chat moderator. Your task is to analyze messages for rule violations. Pay attention to user context, warning history, and conversation flow.",
+          content: systemPrompt,
         },
         {
           role: "user",
-          content: prompt,
+          content: userPrompt,
         },
       ],
       temperature: 0.1,
@@ -86,59 +129,6 @@ export async function analyzeMessage(
     logger.error({ error: error as Error }, "LLM moderation analysis failed");
     throw new Error("Failed to analyze message");
   }
-}
-
-function buildAnalysisPrompt(
-  request: AIModerationRequest,
-  rules: Rule[]
-): string {
-  const rulesText = rules
-    .map(
-      (rule) =>
-        `- ${rule.name}: ${rule.description}\n  Criteria: ${rule.ai_prompt}`
-    )
-    .join("\n");
-
-  return `
-You are a chat moderator. Your task is to analyze messages for rule violations.
-
-IMPORTANT: Analyze the message ONLY based on the provided rules. DO NOT invent additional rules or use general moderation principles. If there are no rules or the message does not violate any of the provided rules - consider that there are no violations.
-
-PAY SPECIAL ATTENTION TO:
-- User's previous warnings count: ${request.context.user_warnings}
-- Recent chat history context: ${request.context.chat_history
-    .slice(-3)
-    .join(", ")}
-- User's behavior pattern and escalation of violations
-- Context of the conversation and whether this is a repeated offense
-
-CONTEXT ANALYSIS METHODOLOGY:
-When analyzing messages, consider:
-1. Is this user already showing problematic behavior in recent messages?
-2. Does this message continue a pattern of rule-violating communication?
-3. Given the user's warning history (${
-    request.context.user_warnings
-  } warnings), is this part of escalating problematic behavior?
-4. Does the message meaning change when viewed in context of recent conversation?
-
-RESPOND IN THE FOLLOWING FORMAT:
-{
-  "violation_detected": true/false,
-  "rule_violated": "rule_name" (if violation exists),
-  "confidence": 0.0-1.0,
-  "reasoning": "explanation of decision including context consideration"
-}
-
-JSON response only, no additional text.
-
-CHAT RULES (${rules.length} rules):
-${rules.length > 0 ? rulesText : "No rules configured"}
-
-MESSAGE TO ANALYZE:
-"${request.message}"
-
-REMEMBER: Analyze ONLY based on the provided rules. Consider the user's warning history and chat context when making decisions. Look for patterns that may not be obvious when viewing messages in isolation. If there are no rules or the message doesn't violate rules - violation_detected = false.
-`;
 }
 
 function parseAIResponse(response: string): AIModerationResponse {

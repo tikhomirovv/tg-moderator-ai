@@ -118,8 +118,7 @@ interface Rule {
   id: string;                    // Уникальный идентификатор
   name: string;                  // Название правила
   description: string;           // Описание
-  ai_prompt: string;             // Промпт для AI
-  severity: 'low' | 'medium' | 'high'; // Важность
+  ai_prompt: string;             // Violation criteria for LLM (what counts as a breach)
   is_active: boolean;            // Активно ли правило
   created_at: Date;
   updated_at: Date;

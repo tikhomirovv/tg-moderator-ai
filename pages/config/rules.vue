@@ -28,10 +28,14 @@
           <h3 class="font-medium">{{ rule.name }}</h3>
         </div>
         <p class="text-sm text-gray-600 mb-2">{{ rule.description }}</p>
+        <label class="block text-xs font-medium text-gray-700 mb-1"
+          >Rule criteria</label
+        >
         <textarea
           v-model="rule.ai_prompt"
           class="w-full border rounded p-2 text-sm"
           rows="4"
+          placeholder="Violation criteria, e.g. repeated ads, commercial links without permission"
         ></textarea>
       </div>
     </div>
@@ -86,13 +90,17 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1"
-              >AI Prompt</label
+              >Rule criteria</label
             >
+            <p class="text-xs text-gray-500 mb-1">
+              Describe what counts as a violation. Moderation instructions for
+              the AI are applied automatically on the server.
+            </p>
             <textarea
               v-model="newRule.ai_prompt"
               class="w-full border rounded px-3 py-2"
               rows="4"
-              placeholder="Instructions for AI analysis..."
+              placeholder="e.g. Commercial ads, referral links, mass identical messages"
               required
             ></textarea>
           </div>

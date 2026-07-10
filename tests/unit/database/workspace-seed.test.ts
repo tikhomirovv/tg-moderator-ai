@@ -19,6 +19,12 @@ describe("seedWorkspaceRules", () => {
       "hate_speech",
       "spam",
     ]);
+
+    for (const rule of rules) {
+      expect(rule.ai_prompt.toLowerCase()).not.toContain("определи");
+      expect(rule.ai_prompt.toLowerCase()).not.toContain("прочитай");
+      expect(rule.ai_prompt.toLowerCase()).not.toContain("проверь");
+    }
   });
 
   test("creates the same library rule ids in different workspaces", async () => {

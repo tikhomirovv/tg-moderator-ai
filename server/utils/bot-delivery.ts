@@ -1,15 +1,15 @@
-import type { BotResponse } from "../../database/models/bot";
-import { BotRepository } from "../../database/repositories/bot-repository";
+import type { BotResponse } from "../database/models/bot";
+import { BotRepository } from "../database/repositories/bot-repository";
 import { logger } from "../core/logger";
 import {
   evaluateDeliveryHealth,
   type BotDeliveryHealth,
-} from "../../utils/bot-delivery-health";
+} from "./bot-delivery-health";
 import {
   buildWebhookUrl,
   getWebhookBaseUrl,
   telegramGetWebhookInfo,
-} from "../../utils/telegram-webhook";
+} from "./telegram-webhook";
 
 export async function getBotDeliveryHealthForWorkspace(
   botId: string,

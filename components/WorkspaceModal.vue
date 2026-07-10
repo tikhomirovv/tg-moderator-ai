@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import { authClient } from "~/lib/auth-client";
+import { buildWorkspaceSlug } from "~/lib/workspace-slug";
 
 const open = defineModel<boolean>({ required: true });
 
@@ -42,20 +43,19 @@ const name = ref("");
 const loading = ref(false);
 const error = ref("");
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 48);
-}
-
 async function createWorkspace() {
   loading.value = true;
   error.value = "";
 
-  const slug = slugify(name.value) || `ws-${Date.now()}`;
+  const { data: session } = await authClient.getSession();
+  const userId = session?.user?.id;
+  if (!userId) {
+    loading.value = false;
+    error.value = "Not signed in";
+    return;
+  }
+
+  const slug = buildWorkspaceSlug(userId, name.value);
   const { data, error: createError } = await authClient.organization.create({
     name: name.value.trim(),
     slug,

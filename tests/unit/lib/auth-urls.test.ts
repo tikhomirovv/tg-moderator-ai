@@ -4,6 +4,7 @@ import {
   getAuthBaseUrl,
   getEmailVerificationCallbackUrl,
 } from "../../../lib/auth";
+import { AUTH_OK_PATH } from "../../../lib/auth-constants";
 
 const originalEnv = {
   BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
@@ -48,5 +49,9 @@ describe("auth URL helpers", () => {
     delete process.env.NUXT_PUBLIC_SITE_URL;
 
     expect(getAuthBaseUrl()).toBe("http://localhost:3001");
+  });
+
+  test("AUTH_OK_PATH points to Better Auth built-in health route", () => {
+    expect(AUTH_OK_PATH).toBe("/api/auth/ok");
   });
 });

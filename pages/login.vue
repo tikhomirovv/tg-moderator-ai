@@ -63,6 +63,12 @@
       </form>
 
       <p class="text-sm text-gray-600">
+        <NuxtLink to="/forgot-password" class="text-blue-600 hover:underline"
+          >Forgot password?</NuxtLink
+        >
+      </p>
+
+      <p class="text-sm text-gray-600">
         No account?
         <NuxtLink to="/register" class="text-blue-600 hover:underline"
           >Register</NuxtLink

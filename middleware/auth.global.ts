@@ -1,7 +1,7 @@
 import { fetchAuthSession } from "~/lib/fetch-auth-session";
 
 export default defineNuxtRouteMiddleware(async (to) => {
-  const publicPaths = ["/login", "/register"];
+  const publicPaths = ["/login", "/register", "/forgot-password", "/reset-password"];
 
   if (publicPaths.some((path) => to.path.startsWith(path))) {
     return;

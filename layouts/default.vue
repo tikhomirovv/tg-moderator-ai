@@ -53,6 +53,14 @@
           </span>
         </div>
         <div class="flex items-center gap-4 text-sm">
+          <button
+            v-if="session?.user"
+            type="button"
+            class="text-blue-600 hover:underline"
+            @click="showInviteModal = true"
+          >
+            Invite member
+          </button>
           <span v-if="session?.user" class="text-gray-600">
             {{ session.user.email }}
           </span>
@@ -75,6 +83,7 @@
       v-model="showWorkspaceModal"
       @created="onWorkspaceCreated"
     />
+    <InviteMemberModal v-model="showInviteModal" />
   </div>
 </template>
 
@@ -88,6 +97,7 @@ const { data: session, refresh: refreshSession } = await useAsyncData(
   () => fetchAuthSession()
 );
 const showWorkspaceModal = ref(false);
+const showInviteModal = ref(false);
 const workspaceSwitcher = ref<{ reload: () => Promise<void> } | null>(null);
 const currentWorkspaceName = ref("");
 

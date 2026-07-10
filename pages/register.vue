@@ -61,6 +61,7 @@
 
 <script setup lang="ts">
 import { authClient } from "~/lib/auth-client";
+import { formatAuthError } from "~/lib/auth-errors";
 
 definePageMeta({
   layout: false,
@@ -87,7 +88,7 @@ async function signUp() {
   loading.value = false;
 
   if (signUpError) {
-    error.value = signUpError.message || "Registration failed";
+    error.value = formatAuthError(signUpError, "Registration failed");
     return;
   }
 

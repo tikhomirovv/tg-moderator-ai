@@ -1,10 +1,28 @@
 <template>
-  <div class="p-8">
-    <h1 class="text-3xl font-bold text-blue-600">Telegram AI Moderator</h1>
-    <p class="mt-4 text-gray-600">Главная страница работает!</p>
-  </div>
+  <div />
 </template>
 
 <script setup lang="ts">
-// Упрощенная главная страница
+import { fetchAuthSession } from "~/lib/fetch-auth-session";
+import { fetchUserWorkspaces } from "~/lib/fetch-workspaces";
+import { resolveWorkspaceSlug } from "~/lib/workspace-resolve";
+import { workspaceRoutes } from "~/lib/workspace-routes";
+
+const session = await fetchAuthSession();
+
+if (!session?.user) {
+  await navigateTo("/login", { replace: true });
+} else if (!session.user.emailVerified) {
+  await navigateTo("/login?verify=required", { replace: true });
+} else {
+  const workspaces = await fetchUserWorkspaces();
+  const targetSlug = resolveWorkspaceSlug(
+    workspaces,
+    session.session.activeOrganizationId
+  );
+
+  if (targetSlug) {
+    await navigateTo(workspaceRoutes.home(targetSlug), { replace: true });
+  }
+}
 </script>

@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1783602609106,
+      "when": 1783660477597,
       "tag": "0000_init",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1783605784166,
-      "tag": "0001_webhook_secret",
       "breakpoints": true
     }
   ]

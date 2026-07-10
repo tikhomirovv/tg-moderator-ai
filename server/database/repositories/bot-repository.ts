@@ -41,7 +41,11 @@ export class BotRepository {
     return chatRows.map((row) => toChat(row, rulesByChatId.get(row.id) ?? []));
   }
 
-  private async replaceChats(botId: string, chatList: Chat[]): Promise<void> {
+  private async replaceChats(
+    botId: string,
+    workspaceId: string,
+    chatList: Chat[]
+  ): Promise<void> {
     await this.db.delete(chats).where(eq(chats.botId, botId));
 
     for (const chat of chatList) {
@@ -61,6 +65,7 @@ export class BotRepository {
         await this.db.insert(chatRules).values(
           chat.rules.map((ruleId) => ({
             chatId: inserted.id,
+            workspaceId,
             ruleId,
           }))
         );
@@ -121,7 +126,7 @@ export class BotRepository {
       })
       .returning();
 
-    await this.replaceChats(botData.id, botData.chats);
+    await this.replaceChats(botData.id, workspaceId, botData.chats);
     const chatList = await this.loadChatsForBot(botData.id);
     return toBotResponse(row, chatList);
   }
@@ -151,7 +156,7 @@ export class BotRepository {
     if (!row) return null;
 
     if (chatList !== undefined) {
-      await this.replaceChats(id, chatList);
+      await this.replaceChats(id, workspaceId, chatList);
     }
 
     const loadedChats = await this.loadChatsForBot(id);

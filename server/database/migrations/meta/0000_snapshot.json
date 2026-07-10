@@ -1,5 +1,5 @@
 {
-  "id": "a55a0239-b0e9-4c07-81aa-b553a06b0aec",
+  "id": "b5f019f2-c602-446c-9fc7-0d8c4b035115",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -28,6 +28,12 @@
         },
         "token": {
           "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "webhook_secret": {
+          "name": "webhook_secret",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -108,6 +114,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "rule_id": {
           "name": "rule_id",
           "type": "varchar(64)",
@@ -130,14 +142,16 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "chat_rules_rule_id_rules_id_fk": {
-          "name": "chat_rules_rule_id_rules_id_fk",
+        "chat_rules_workspace_id_rule_id_rules_workspace_id_id_fk": {
+          "name": "chat_rules_workspace_id_rule_id_rules_workspace_id_id_fk",
           "tableFrom": "chat_rules",
           "tableTo": "rules",
           "columnsFrom": [
+            "workspace_id",
             "rule_id"
           ],
           "columnsTo": [
+            "workspace_id",
             "id"
           ],
           "onDelete": "cascade",
@@ -551,7 +565,7 @@
         "id": {
           "name": "id",
           "type": "varchar(64)",
-          "primaryKey": true,
+          "primaryKey": false,
           "notNull": true
         },
         "workspace_id": {
@@ -607,29 +621,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "rules_workspace_id_unique": {
-          "name": "rules_workspace_id_unique",
-          "columns": [
-            {
-              "expression": "workspace_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "rules_workspace_id_organization_id_fk": {
           "name": "rules_workspace_id_organization_id_fk",
@@ -645,7 +637,15 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "rules_workspace_id_id_pk": {
+          "name": "rules_workspace_id_id_pk",
+          "columns": [
+            "workspace_id",
+            "id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},

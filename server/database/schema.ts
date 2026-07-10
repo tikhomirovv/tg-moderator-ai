@@ -13,6 +13,7 @@ import {
   uniqueIndex,
   index,
   primaryKey,
+  foreignKey,
 } from "drizzle-orm/pg-core";
 import { organization } from "./auth-schema";
 
@@ -26,7 +27,7 @@ export const actionTypeEnum = pgEnum("action_type", [
 export const rules = pgTable(
   "rules",
   {
-    id: varchar("id", { length: 64 }).primaryKey(),
+    id: varchar("id", { length: 64 }).notNull(),
     workspaceId: text("workspace_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
@@ -38,9 +39,7 @@ export const rules = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [
-    uniqueIndex("rules_workspace_id_unique").on(table.workspaceId, table.id),
-  ]
+  (table) => [primaryKey({ columns: [table.workspaceId, table.id] })]
 );
 
 export const bots = pgTable(
@@ -88,11 +87,16 @@ export const chatRules = pgTable(
     chatId: integer("chat_id")
       .notNull()
       .references(() => chats.id, { onDelete: "cascade" }),
-    ruleId: varchar("rule_id", { length: 64 })
-      .notNull()
-      .references(() => rules.id, { onDelete: "cascade" }),
+    workspaceId: text("workspace_id").notNull(),
+    ruleId: varchar("rule_id", { length: 64 }).notNull(),
   },
-  (table) => [primaryKey({ columns: [table.chatId, table.ruleId] })]
+  (table) => [
+    primaryKey({ columns: [table.chatId, table.ruleId] }),
+    foreignKey({
+      columns: [table.workspaceId, table.ruleId],
+      foreignColumns: [rules.workspaceId, rules.id],
+    }).onDelete("cascade"),
+  ]
 );
 
 export const moderationActions = pgTable(

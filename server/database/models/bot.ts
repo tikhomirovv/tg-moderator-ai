@@ -39,6 +39,8 @@ export interface BotResponse {
   name: string;
   chats: Chat[];
   is_active: boolean;
+  delivery_status?: "healthy" | "disabled" | "degraded" | "unavailable";
+  delivery_message?: string;
   created_at: Date;
   updated_at: Date;
 }

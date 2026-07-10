@@ -55,11 +55,8 @@
             <div class="text-sm">
               <span :class="aggregatedStatusClass">{{ aggregatedStatusText }}</span>
             </div>
-            <p v-if="statusWarning" class="text-sm text-amber-700 mt-1">
-              {{ statusWarning }}
-            </p>
-            <p v-if="statusError" class="text-sm text-red-600 mt-1">
-              {{ statusError }}
+            <p v-if="deliveryProblemMessage" class="text-sm text-red-600 mt-1">
+              {{ deliveryProblemMessage }}
             </p>
           </div>
           <div>
@@ -205,68 +202,6 @@
         </div>
       </div>
 
-      <!-- Webhook Status (read-only; toggled via Enable/Disable) -->
-      <div class="bg-white border rounded p-6">
-        <h3 class="text-lg font-medium mb-4">Webhook</h3>
-        <div class="space-y-4">
-          <div>
-            <div class="font-medium">Telegram delivery</div>
-            <div class="text-sm text-gray-600">
-              <span :class="webhookStatus?.active ? 'text-green-600' : 'text-gray-600'">
-                {{ webhookStatus?.active ? "Receiving updates" : "Not receiving updates" }}
-              </span>
-            </div>
-          </div>
-
-          <div v-if="webhookStatus?.url">
-            <div class="font-medium">Webhook URL</div>
-            <div class="text-sm text-gray-600 break-all">
-              {{ webhookStatus.url }}
-            </div>
-          </div>
-
-          <div v-if="webhookStatus?.last_update">
-            <div class="font-medium">Last Update</div>
-            <div class="text-sm text-gray-600">
-              {{ formatDate(webhookStatus.last_update) }}
-            </div>
-          </div>
-
-          <div
-            v-if="bot.is_active && !webhookStatus?.active"
-            class="bg-amber-50 border border-amber-200 rounded p-3 text-sm text-amber-800"
-          >
-            Bot is enabled but webhook is not registered. Set HTTPS
-            <code>BASE_URL</code> in <code>.env</code> and enable the bot again.
-          </div>
-
-          <details class="text-sm text-gray-600">
-            <summary class="cursor-pointer font-medium text-gray-700">
-              Advanced: manual webhook controls
-            </summary>
-            <p class="mt-2">
-              Prefer the Enable/Disable button above. Use these only for debugging.
-            </p>
-            <div class="flex gap-2 mt-3">
-              <button
-                @click="startWebhook"
-                :disabled="webhookStatus?.active || webhookLoading"
-                class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm disabled:opacity-50"
-              >
-                {{ webhookLoading ? "Starting..." : "Start Webhook" }}
-              </button>
-              <button
-                @click="stopWebhook"
-                :disabled="!webhookStatus?.active || webhookLoading"
-                class="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm disabled:opacity-50"
-              >
-                {{ webhookLoading ? "Stopping..." : "Stop Webhook" }}
-              </button>
-            </div>
-          </details>
-        </div>
-      </div>
-
       <!-- Recent Logs -->
       <div class="bg-white border rounded p-6">
         <div class="flex items-center justify-between mb-4">
@@ -296,7 +231,7 @@
           </div>
         </div>
         <div v-else class="text-gray-500 text-center py-4">
-          No recent activity. Start webhook and send messages to see logs.
+          No recent activity. Send messages to the bot to see logs here.
         </div>
       </div>
     </div>
@@ -479,9 +414,6 @@ const showAddChatModal = ref(false);
 const editingChat = ref<any>(null);
 const saving = ref(false);
 const availableRules = ref<any[]>([]);
-const webhookStatus = ref<any>(null);
-const webhookLoading = ref(false);
-const statusWarning = ref("");
 const statusError = ref("");
 const logs = ref<any[]>([]);
 const statistics = ref<any>({
@@ -516,23 +448,30 @@ const newChat = ref({
 });
 
 const aggregatedStatusText = computed(() => {
-  if (!bot.value?.is_active) {
-    return "Disabled";
-  }
-  if (webhookStatus.value?.active) {
-    return "Active — webhook OK";
-  }
-  return "Active — webhook not configured";
+  const status = bot.value?.delivery_status;
+  if (status === "healthy") return "Working";
+  if (status === "disabled") return "Disabled";
+  if (status === "degraded" || status === "unavailable") return "Problem";
+  return "Unknown";
 });
 
 const aggregatedStatusClass = computed(() => {
-  if (!bot.value?.is_active) {
-    return "text-red-600";
-  }
-  if (webhookStatus.value?.active) {
+  const status = bot.value?.delivery_status;
+  if (status === "healthy") {
     return "text-green-600";
   }
-  return "text-amber-600";
+  if (status === "disabled") {
+    return "text-gray-600";
+  }
+  return "text-red-600";
+});
+
+const deliveryProblemMessage = computed(() => {
+  const status = bot.value?.delivery_status;
+  if (status === "degraded" || status === "unavailable") {
+    return bot.value?.delivery_message;
+  }
+  return "";
 });
 
 function formatDate(dateString: string) {
@@ -566,51 +505,9 @@ async function loadRules() {
   }
 }
 
-async function loadWebhookStatus() {
-  try {
-    const resp = await $fetch<any>(`/api/bots/${botId}/webhook/status`);
-    webhookStatus.value = resp?.data;
-  } catch (error) {
-    console.error("Error loading webhook status:", error);
-  }
-}
-
-async function startWebhook() {
-  webhookLoading.value = true;
-  try {
-    const resp = await $fetch<any>(`/api/bots/${botId}/webhook/start`, {
-      method: "POST",
-    });
-    if (resp?.data) {
-      webhookStatus.value = resp.data;
-    }
-  } catch (error) {
-    console.error("Error starting webhook:", error);
-  } finally {
-    webhookLoading.value = false;
-  }
-}
-
-async function stopWebhook() {
-  webhookLoading.value = true;
-  try {
-    const resp = await $fetch<any>(`/api/bots/${botId}/webhook/stop`, {
-      method: "POST",
-    });
-    if (resp?.data) {
-      webhookStatus.value = resp.data;
-    }
-  } catch (error) {
-    console.error("Error stopping webhook:", error);
-  } finally {
-    webhookLoading.value = false;
-  }
-}
-
 async function toggleBotStatus() {
   if (!bot.value) return;
 
-  statusWarning.value = "";
   statusError.value = "";
 
   try {
@@ -622,8 +519,6 @@ async function toggleBotStatus() {
     if (resp?.data) {
       bot.value = resp.data;
     }
-    statusWarning.value = resp?.warning || "";
-    await loadWebhookStatus();
   } catch (error: any) {
     statusError.value =
       error?.data?.statusMessage ||
@@ -759,7 +654,6 @@ function getSilentModeText(chat: any) {
 
 onMounted(loadBot);
 onMounted(loadRules);
-onMounted(loadWebhookStatus);
 onMounted(loadLogs);
 onMounted(loadStatistics);
 </script>

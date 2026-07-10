@@ -2,12 +2,8 @@ import { TelegramBot } from "./core/bot";
 import { BotRepository } from "./database/repositories/bot-repository";
 import type { Bot } from "./database/models/bot";
 import { logger } from "./core/logger";
-import {
-  buildWebhookUrl,
-  getWebhookBaseUrl,
-  telegramSetWebhook,
-} from "./utils/telegram-webhook";
-import { generateWebhookSecret } from "./utils/webhook-auth";
+import { reconcileBotWebhook } from "./utils/bot-lifecycle";
+import { getWebhookBaseUrl } from "./utils/telegram-webhook";
 
 export function isBotEligibleForUpdates(
   bot: Pick<Bot, "is_active" | "token"> | null | undefined
@@ -88,7 +84,7 @@ export async function getBotInfo(
   }
 }
 
-// Установка вебхуков для всех ботов
+// Reconcile webhooks for all active bots on startup
 export async function setupWebhooks(baseUrl?: string): Promise<void> {
   const resolvedBaseUrl = baseUrl ?? getWebhookBaseUrl();
   if (!resolvedBaseUrl) {
@@ -96,7 +92,7 @@ export async function setupWebhooks(baseUrl?: string): Promise<void> {
     return;
   }
 
-  logger.info("Setting up webhooks for active bots...");
+  logger.info("Reconciling webhooks for active bots...");
 
   try {
     const botRepo = new BotRepository();
@@ -108,27 +104,7 @@ export async function setupWebhooks(baseUrl?: string): Promise<void> {
         continue;
       }
 
-      try {
-        const webhookUrl = buildWebhookUrl(resolvedBaseUrl, botConfig.id);
-        const webhookSecret =
-          botConfig.webhook_secret ?? generateWebhookSecret();
-        if (!botConfig.webhook_secret) {
-          await botRepo.setWebhookSecret(botConfig.id, webhookSecret);
-        }
-
-        await telegramSetWebhook(
-          botConfig.token,
-          webhookUrl,
-          fetch,
-          webhookSecret
-        );
-        logger.info(`Webhook set for bot ${botConfig.id}: ${webhookUrl}`);
-      } catch (error) {
-        logger.error(
-          { error: error as Error },
-          `Failed to set webhook for bot ${botConfig.id}`
-        );
-      }
+      await reconcileBotWebhook(botConfig.id, botConfig);
     }
   } catch (error) {
     logger.error({ error: error as Error }, "Error setting up webhooks");

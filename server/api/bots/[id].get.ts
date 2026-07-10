@@ -1,4 +1,8 @@
 import { BotRepository } from "../../database/repositories/bot-repository";
+import {
+  getBotDeliveryHealthForWorkspace,
+  withDeliveryHealth,
+} from "../../utils/bot-delivery";
 
 export default defineEventHandler(async (event) => {
   try {
@@ -15,9 +19,11 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    const health = await getBotDeliveryHealthForWorkspace(botId!, workspaceId);
+
     return {
       success: true,
-      data: bot,
+      data: withDeliveryHealth(bot, health),
     };
   } catch (error) {
     throw createError({

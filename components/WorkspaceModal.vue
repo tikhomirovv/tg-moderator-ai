@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import { authClient } from "~/lib/auth-client";
+import { formatAuthError } from "~/lib/auth-errors";
 import { reserveWorkspaceSlugForCreate } from "~/lib/workspace-slug-client";
 
 const open = defineModel<boolean>({ required: true });
@@ -74,7 +75,7 @@ async function createWorkspace() {
 
   if (createError || !data?.id) {
     loading.value = false;
-    error.value = createError?.message || "Failed to create workspace";
+    error.value = formatAuthError(createError, "Failed to create workspace");
     return;
   }
 

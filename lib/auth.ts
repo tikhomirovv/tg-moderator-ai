@@ -81,6 +81,8 @@ export function getAuth() {
           allowUserToCreateOrganization: async (user) =>
             user.emailVerified === true,
           organizationLimit: 10,
+          // Cap members per workspace (Better Auth default is 100).
+          membershipLimit: 50,
           organizationHooks: {
             afterCreateOrganization: async ({ organization: org }) => {
               void seedWorkspaceRules(org.id).catch((error) => {

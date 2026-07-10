@@ -28,7 +28,6 @@ export class InMemoryRuleRepository {
       name: ruleData.name,
       description: ruleData.description,
       ai_prompt: ruleData.ai_prompt,
-      severity: ruleData.severity,
       is_active: true,
       created_at: now,
       updated_at: now,
@@ -52,7 +51,6 @@ export class InMemoryRuleRepository {
       name: updateData.name ?? existing.name,
       description: updateData.description ?? existing.description,
       ai_prompt: updateData.ai_prompt ?? existing.ai_prompt,
-      severity: updateData.severity ?? existing.severity,
       is_active: updateData.is_active ?? existing.is_active,
       updated_at: new Date(),
     };

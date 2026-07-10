@@ -40,7 +40,7 @@ export async function analyzeMessage(
       {
         prompt,
         rulesCount: rules.length,
-        rules: rules.map((r) => ({ name: r.name, severity: r.severity })),
+        rules: rules.map((r) => ({ name: r.name })),
       },
       "Final LLM moderation prompt"
     );

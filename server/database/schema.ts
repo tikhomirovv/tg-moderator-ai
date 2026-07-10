@@ -17,7 +17,6 @@ import {
 } from "drizzle-orm/pg-core";
 import { organization } from "./auth-schema";
 
-export const severityEnum = pgEnum("severity", ["low", "medium", "high"]);
 export const actionTypeEnum = pgEnum("action_type", [
   "warning",
   "delete",
@@ -34,7 +33,6 @@ export const rules = pgTable(
     name: text("name").notNull(),
     description: text("description").notNull(),
     aiPrompt: text("ai_prompt").notNull(),
-    severity: severityEnum("severity").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

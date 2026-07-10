@@ -35,12 +35,9 @@ describe("analyzeMessage", () => {
       },
       [
         {
-          id: "spam",
           name: "Spam",
           description: "No spam",
           ai_prompt: "detect spam",
-          severity: "medium",
-          is_active: true,
         },
       ],
       {

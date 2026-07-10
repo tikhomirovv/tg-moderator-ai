@@ -10,7 +10,6 @@ describe("RuleRepository", () => {
       name: "Spam",
       description: "No spam",
       ai_prompt: "detect spam",
-      severity: "medium",
     });
 
     expect(created.id).toBe("spam");
@@ -30,7 +29,6 @@ describe("RuleRepository", () => {
       name: "Ads",
       description: "No ads",
       ai_prompt: "detect ads",
-      severity: "low",
     });
 
     const updated = await repo.update("ads", TEST_WORKSPACE_ID, {

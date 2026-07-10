@@ -14,7 +14,6 @@ export default defineEventHandler(async (event) => {
           name: rule.name,
           description: rule.description,
           ai_prompt: rule.ai_prompt,
-          severity: rule.severity,
           is_active: rule.is_active,
         });
       } else {
@@ -23,7 +22,6 @@ export default defineEventHandler(async (event) => {
           name: rule.name,
           description: rule.description,
           ai_prompt: rule.ai_prompt,
-          severity: rule.severity,
         });
       }
     }

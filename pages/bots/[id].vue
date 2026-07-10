@@ -435,7 +435,9 @@
             </div>
             <div v-else class="text-sm text-gray-500">
               No rules available.
-              <NuxtLink to="/config/rules" class="text-blue-600 hover:underline"
+              <NuxtLink
+                to="/config/rules"
+                class="text-blue-600 hover:underline"
                 >Create rules first</NuxtLink
               >
             </div>

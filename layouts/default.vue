@@ -6,6 +6,15 @@
       <div class="h-16 flex items-center px-4 border-b">
         <span class="text-lg font-semibold">TG Moderator</span>
       </div>
+
+      <div class="p-4 border-b">
+        <WorkspaceSwitcher
+          ref="workspaceSwitcher"
+          :current-workspace-id="currentWorkspaceId"
+          @create-workspace="showWorkspaceModal = true"
+        />
+      </div>
+
       <nav class="flex-1 p-4 space-y-1">
         <NuxtLink
           to="/"
@@ -26,6 +35,7 @@
           >Rules</NuxtLink
         >
       </nav>
+
       <div class="p-4 text-xs text-gray-500 border-t">v0.1.0</div>
     </aside>
 
@@ -35,6 +45,12 @@
       >
         <div class="flex items-center gap-3">
           <h1 class="text-lg font-semibold">Telegram AI Moderator</h1>
+          <span
+            v-if="currentWorkspaceName"
+            class="text-sm text-gray-500 hidden sm:inline"
+          >
+            / {{ currentWorkspaceName }}
+          </span>
         </div>
         <div class="flex items-center gap-4 text-sm">
           <span v-if="session?.user" class="text-gray-600">
@@ -55,39 +71,81 @@
       </main>
     </div>
 
-    <WorkspaceModal v-model="showWorkspaceModal" />
+    <WorkspaceModal
+      v-model="showWorkspaceModal"
+      @created="onWorkspaceCreated"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { authClient } from "~/lib/auth-client";
+import { fetchUserWorkspaces } from "~/lib/fetch-workspaces";
 
 const { data: session } = await authClient.useSession(useFetch);
 const showWorkspaceModal = ref(false);
+const workspaceSwitcher = ref<{ reload: () => Promise<void> } | null>(null);
+const currentWorkspaceName = ref("");
 
-async function ensureWorkspace() {
-  if (!session.value?.user?.emailVerified) {
+const currentWorkspaceId = computed(
+  () => session.value?.session?.activeOrganizationId ?? undefined
+);
+
+async function refreshWorkspaceName() {
+  const workspaceId = currentWorkspaceId.value;
+  if (!workspaceId) {
+    currentWorkspaceName.value = "";
     return;
   }
 
-  const { data: organizations } = await authClient.organization.list();
-  const activeId = session.value.session.activeOrganizationId;
+  const workspaces = await fetchUserWorkspaces();
+  currentWorkspaceName.value =
+    workspaces.find((workspace) => workspace.id === workspaceId)?.name ?? "";
+}
 
-  if (!organizations?.length) {
+async function ensureWorkspace() {
+  const { data: currentSession } = await authClient.getSession();
+
+  if (!currentSession?.user?.emailVerified) {
+    return;
+  }
+
+  const workspaces = await fetchUserWorkspaces();
+
+  if (!workspaces.length) {
     showWorkspaceModal.value = true;
     return;
   }
 
-  if (!activeId && organizations[0]?.id) {
+  const activeId = currentSession.session.activeOrganizationId;
+  if (!activeId && workspaces[0]?.id) {
     await authClient.organization.setActive({
-      organizationId: organizations[0].id,
+      organizationId: workspaces[0].id,
     });
-    await reloadNuxtApp();
+    await authClient.getSession();
   }
+
+  await refreshWorkspaceName();
+}
+
+async function onWorkspaceCreated() {
+  await workspaceSwitcher.value?.reload();
+  await refreshWorkspaceName();
+  await refreshNuxtApp();
 }
 
 onMounted(() => {
-  ensureWorkspace();
+  void ensureWorkspace();
+});
+
+watch(currentWorkspaceId, () => {
+  void refreshWorkspaceName();
+});
+
+watch(showWorkspaceModal, (isOpen) => {
+  if (!isOpen) {
+    void ensureWorkspace();
+  }
 });
 
 async function signOut() {

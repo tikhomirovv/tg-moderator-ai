@@ -1,6 +1,7 @@
 import { TelegramUpdate, TelegramMessage } from "../types/telegram";
+import { Bot as DbBot } from "../database/models/bot";
 import { AIModerationRequest } from "../types/moderation";
-import { Bot, Chat } from "../types/config";
+import { Bot, Chat as ConfigChat } from "../types/config";
 import { analyzeMessage } from "./ai-moderation";
 import { logger } from "./logger";
 import { RuleRepository } from "../database/repositories/rule-repository";
@@ -11,13 +12,19 @@ export class TelegramBot {
   private token: string;
   private botId: string;
   private botConfig: Bot;
+  private workspaceId: string;
   private webhookUrl?: string;
   private contextService: ContextService;
 
-  constructor(token: string, botId: string, botConfig: Bot) {
+  constructor(token: string, botId: string, botConfig: DbBot) {
     this.token = token;
     this.botId = botId;
-    this.botConfig = botConfig;
+    this.workspaceId = botConfig.workspace_id;
+    this.botConfig = {
+      id: botConfig.id,
+      name: botConfig.name,
+      chats: botConfig.chats,
+    };
     this.contextService = new ContextService();
   }
 
@@ -44,8 +51,9 @@ export class TelegramBot {
       // Проверяем, что сообщение из отслеживаемого чата
       const chatConfig = await this.getChatConfig(message.chat.id);
       if (!chatConfig) {
+        const chatLabel = this.describeTelegramChat(message.chat);
         logger.warn(
-          `Сообщение из неотслеживаемого чата: chat_id=${message.chat.id}, bot_id=${this.botId}`
+          `Сообщение из неотслеживаемого чата: chat_id=${message.chat.id}, chat=${chatLabel}, bot_id=${this.botId}`
         );
         return; // Игнорируем сообщения из неотслеживаемых чатов
       }
@@ -80,7 +88,7 @@ export class TelegramBot {
   // Анализ и модерация сообщения
   private async analyzeAndModerate(
     message: TelegramMessage,
-    chatConfig: Chat
+    chatConfig: ConfigChat
   ): Promise<void> {
     try {
       // Сохраняем сообщение в базу данных
@@ -97,7 +105,7 @@ export class TelegramBot {
       const ruleRepo = new RuleRepository();
       const rules = await ruleRepo.findByIds(
         chatConfig.rules || [],
-        this.botConfig.workspace_id
+        this.workspaceId
       );
 
       logger.info(
@@ -155,7 +163,7 @@ export class TelegramBot {
   // Обработка нарушения
   private async handleViolation(
     message: TelegramMessage,
-    chatConfig: Chat,
+    chatConfig: ConfigChat,
     aiResponse: any
   ): Promise<void> {
     try {
@@ -290,19 +298,23 @@ export class TelegramBot {
   }
 
   // Получение конфигурации чата
-  private async getChatConfig(chatId: number): Promise<Chat | null> {
+  private async getChatConfig(chatId: number): Promise<ConfigChat | null> {
     try {
-      // Получаем актуальную конфигурацию бота из базы данных
+      // Webhook path has no session — bot id is globally unique in DB.
       const botRepo = new BotRepository();
-      const updatedBotConfig = await botRepo.findById(this.botId);
+      const updatedBotConfig = await botRepo.findByIdWithToken(this.botId);
 
       if (!updatedBotConfig) {
         logger.warn(`Bot ${this.botId} not found in database`);
         return null;
       }
 
-      // Обновляем локальную конфигурацию
-      this.botConfig = updatedBotConfig;
+      this.workspaceId = updatedBotConfig.workspace_id;
+      this.botConfig = {
+        id: updatedBotConfig.id,
+        name: updatedBotConfig.name,
+        chats: updatedBotConfig.chats,
+      };
 
       // Ищем чат в обновленной конфигурации
       const chatConfig = this.botConfig.chats.find(
@@ -326,6 +338,13 @@ export class TelegramBot {
         this.botConfig.chats.find((chat) => chat.chat_id === chatId) || null
       );
     }
+  }
+
+  private describeTelegramChat(chat: TelegramMessage["chat"]) {
+    const title = chat.title?.trim();
+    const username = chat.username ? `@${chat.username}` : null;
+    const parts = [title, username, chat.type].filter(Boolean);
+    return parts.join(" · ") || "unknown";
   }
 
   // Отправка сообщения

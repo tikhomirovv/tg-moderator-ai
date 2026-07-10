@@ -1,13 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { BotRepository } from "../../../server/database/repositories/bot-repository";
-import { RuleRepository } from "../../../server/database/repositories/rule-repository";
-import { TEST_WORKSPACE_ID, useTestDatabase } from "../../helpers/database";
+import { InMemoryBotRepository } from "../../helpers/in-memory-bot-repository";
+import { InMemoryRuleRepository } from "../../helpers/in-memory-rule-repository";
+import { TEST_WORKSPACE_ID } from "../../helpers/constants";
 
 describe("BotRepository", () => {
-  useTestDatabase();
-
   test("creates bot with chats and per-chat rules", async () => {
-    const ruleRepo = new RuleRepository();
+    const ruleRepo = new InMemoryRuleRepository();
     await ruleRepo.create(TEST_WORKSPACE_ID, {
       id: "spam",
       name: "Spam",
@@ -23,7 +21,7 @@ describe("BotRepository", () => {
       severity: "high",
     });
 
-    const botRepo = new BotRepository();
+    const botRepo = new InMemoryBotRepository();
     const created = await botRepo.create(TEST_WORKSPACE_ID, {
       id: "mod-bot",
       name: "Moderator",
@@ -62,7 +60,7 @@ describe("BotRepository", () => {
   });
 
   test("replaces chats on update", async () => {
-    const botRepo = new BotRepository();
+    const botRepo = new InMemoryBotRepository();
     await botRepo.create(TEST_WORKSPACE_ID, {
       id: "replace-bot",
       name: "Replace",
@@ -96,7 +94,7 @@ describe("BotRepository", () => {
   });
 
   test("does not return bot from another workspace", async () => {
-    const botRepo = new BotRepository();
+    const botRepo = new InMemoryBotRepository();
     await botRepo.create(TEST_WORKSPACE_ID, {
       id: "scoped-bot",
       name: "Scoped",

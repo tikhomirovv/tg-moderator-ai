@@ -35,9 +35,13 @@
 
 <script setup lang="ts">
 import { authClient } from "~/lib/auth-client";
-import { buildWorkspaceSlug } from "~/lib/workspace-slug";
+import { reserveWorkspaceSlugForCreate } from "~/lib/workspace-slug-client";
 
 const open = defineModel<boolean>({ required: true });
+
+const emit = defineEmits<{
+  created: [];
+}>();
 
 const name = ref("");
 const loading = ref(false);
@@ -48,14 +52,21 @@ async function createWorkspace() {
   error.value = "";
 
   const { data: session } = await authClient.getSession();
-  const userId = session?.user?.id;
-  if (!userId) {
+  if (!session?.user) {
     loading.value = false;
     error.value = "Not signed in";
     return;
   }
 
-  const slug = buildWorkspaceSlug(userId, name.value);
+  let slug: string;
+  try {
+    slug = await reserveWorkspaceSlugForCreate(name.value);
+  } catch {
+    loading.value = false;
+    error.value = "Failed to reserve workspace slug";
+    return;
+  }
+
   const { data, error: createError } = await authClient.organization.create({
     name: name.value.trim(),
     slug,
@@ -71,8 +82,11 @@ async function createWorkspace() {
     organizationId: data.id,
   });
 
+  await authClient.getSession();
+
   loading.value = false;
   open.value = false;
-  await reloadNuxtApp();
+  name.value = "";
+  emit("created");
 }
 </script>

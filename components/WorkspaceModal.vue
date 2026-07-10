@@ -78,10 +78,6 @@ async function createWorkspace() {
     return;
   }
 
-  await authClient.organization.setActive({
-    organizationId: data.id,
-  });
-
   await authClient.getSession();
 
   loading.value = false;

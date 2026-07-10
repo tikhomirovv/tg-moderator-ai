@@ -3,6 +3,7 @@ import {
   buildVerificationUrl,
   getAuthBaseUrl,
   getEmailVerificationCallbackUrl,
+  getPasswordResetRedirectUrl,
 } from "../../../lib/auth";
 import { AUTH_OK_PATH } from "../../../lib/auth-constants";
 
@@ -53,5 +54,12 @@ describe("auth URL helpers", () => {
 
   test("AUTH_OK_PATH points to Better Auth built-in health route", () => {
     expect(AUTH_OK_PATH).toBe("/api/auth/ok");
+  });
+
+  test("getPasswordResetRedirectUrl is absolute", () => {
+    process.env.BETTER_AUTH_URL = "https://app.example.com";
+    expect(getPasswordResetRedirectUrl()).toBe(
+      "https://app.example.com/reset-password"
+    );
   });
 });

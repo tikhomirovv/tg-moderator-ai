@@ -16,6 +16,10 @@ export function getAuthBaseUrl() {
   );
 }
 
+export function getPasswordResetRedirectUrl() {
+  return `${getAuthBaseUrl().replace(/\/$/, "")}/reset-password`;
+}
+
 export function getEmailVerificationCallbackUrl() {
   return `${getAuthBaseUrl().replace(/\/$/, "")}/login?verified=1`;
 }
@@ -99,6 +103,7 @@ export function getAuth() {
         enabled: true,
         requireEmailVerification: true,
         minPasswordLength: 8,
+        revokeSessionsOnPasswordReset: true,
         sendResetPassword: async ({ user, url }) => {
           queueAuthEmail({
             to: user.email,

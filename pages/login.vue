@@ -122,6 +122,9 @@ async function signIn() {
   loading.value = true;
   error.value = "";
 
+  const redirect =
+    typeof route.query.redirect === "string" ? route.query.redirect : undefined;
+
   const { error: signInError } = await authClient.signIn.email({
     email: email.value,
     password: password.value,
@@ -131,6 +134,11 @@ async function signIn() {
 
   if (signInError) {
     error.value = formatAuthError(signInError, "Sign in failed");
+    return;
+  }
+
+  if (redirect && redirect.startsWith("/")) {
+    await navigateTo(redirect);
     return;
   }
 

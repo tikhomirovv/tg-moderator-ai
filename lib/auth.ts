@@ -20,6 +20,10 @@ export function getPasswordResetRedirectUrl() {
   return `${getAuthBaseUrl().replace(/\/$/, "")}/reset-password`;
 }
 
+export function buildInvitationAcceptUrl(invitationId: string) {
+  return `${getAuthBaseUrl().replace(/\/$/, "")}/accept-invitation/${invitationId}`;
+}
+
 export function getEmailVerificationCallbackUrl() {
   return `${getAuthBaseUrl().replace(/\/$/, "")}/login?verified=1`;
 }
@@ -131,6 +135,14 @@ export function getAuth() {
           organizationLimit: 10,
           // Cap members per workspace (Better Auth default is 100).
           membershipLimit: 50,
+          async sendInvitationEmail(data) {
+            const inviteLink = buildInvitationAcceptUrl(data.id);
+            queueAuthEmail({
+              to: data.email,
+              subject: `Invitation to join ${data.organization.name}`,
+              html: `<p>${data.inviter.user.name} invited you to join <strong>${data.organization.name}</strong>.</p><p><a href="${inviteLink}">Accept invitation</a></p><p>Or copy this link: ${inviteLink}</p>`,
+            });
+          },
           organizationHooks: {
             afterCreateOrganization: async ({ organization: org }) => {
               void seedWorkspaceRules(org.id).catch((error) => {

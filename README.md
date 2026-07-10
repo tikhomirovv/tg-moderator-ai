@@ -208,6 +208,16 @@ docker-compose logs -f
 docker-compose logs mongodb
 ```
 
+## 🚢 Production deploy (Docker + GHCR)
+
+CI publishes images to `ghcr.io/tikhomirovv/tg-moderator-ai` on push to `master` and tags `v*`.
+
+- **Guide:** [deploy/README.md](deploy/README.md)
+- **Compose example (Traefik):** [deploy/compose.example.yml](deploy/compose.example.yml)
+- **Local build:** `make docker-build`
+
+Container startup applies DB migrations, then registers webhooks for active bots. Health: `GET /api/health` → `{"ok":true}`.
+
 ## 📄 Лицензия
 
 Этот проект распространяется под лицензией [Creative Commons Attribution-NonCommercial 4.0 International](LICENSE).

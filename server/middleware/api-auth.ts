@@ -15,6 +15,10 @@ export default defineEventHandler(async (event) => {
     return;
   }
 
+  if (path === "/api/health") {
+    return;
+  }
+
   const { workspaceId, session, user } = await requireWorkspaceSession(event);
   event.context.workspaceId = workspaceId;
   event.context.authSession = session;

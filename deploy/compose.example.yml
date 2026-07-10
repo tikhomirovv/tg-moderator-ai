@@ -1,0 +1,32 @@
+# Production deployment example (Traefik + GHCR image)
+#
+# 1. Copy to your server: deploy/compose.example.yml → compose.yml
+# 2. Create .env next to compose.yml (never commit secrets)
+# 3. Ensure external Docker network `traefik` exists
+# 4. docker compose up -d
+
+services:
+  app:
+    image: ghcr.io/tikhomirovv/tg-moderator-ai:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Container listens on 3000; Traefik routes HTTPS to this port
+      PORT: "3000"
+      HOST: "0.0.0.0"
+    networks:
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.tg-moderator.rule=Host(`moderator.example.com`)
+      - traefik.http.routers.tg-moderator.entrypoints=websecure
+      - traefik.http.routers.tg-moderator.tls.certresolver=letsencrypt
+      - traefik.http.services.tg-moderator.loadbalancer.server.port=3000
+      # Optional Traefik healthcheck (requires Traefik v3+ service healthcheck support):
+      # - traefik.http.services.tg-moderator.loadbalancer.healthcheck.path=/api/health
+      # - traefik.http.services.tg-moderator.loadbalancer.healthcheck.interval=30s
+
+networks:
+  traefik:
+    external: true

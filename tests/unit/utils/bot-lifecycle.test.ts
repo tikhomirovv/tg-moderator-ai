@@ -4,6 +4,7 @@ import {
   BotLifecycleError,
   disableBot,
   enableBot,
+  reconcileBotWebhook,
 } from "../../../server/utils/bot-lifecycle";
 import { InMemoryBotRepository } from "../../helpers/in-memory-bot-repository";
 import { TEST_WORKSPACE_ID } from "../../helpers/constants";
@@ -122,5 +123,37 @@ describe("bot lifecycle", () => {
 
     const stored = await botRepo.findById("rollback-bot", TEST_WORKSPACE_ID);
     expect(stored?.is_active).toBe(false);
+  });
+
+  test("reconcile re-registers webhook when Telegram URL mismatches", async () => {
+    process.env.BASE_URL = "https://example.com";
+
+    const fetchCalls: string[] = [];
+    const fetchFn = async (url: string) => {
+      fetchCalls.push(url);
+      if (url.includes("getWebhookInfo")) {
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            result: {
+              url: "https://old.example.com/api/telegram/webhook/reconcile-bot",
+            },
+          })
+        );
+      }
+      return new Response(JSON.stringify({ ok: true }));
+    };
+
+    await reconcileBotWebhook(
+      "reconcile-bot",
+      {
+        token: "secret",
+        webhook_secret: "whsec",
+        is_active: true,
+      },
+      { fetchFn }
+    );
+
+    expect(fetchCalls.some((url) => url.includes("setWebhook"))).toBe(true);
   });
 });

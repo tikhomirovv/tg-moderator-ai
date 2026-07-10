@@ -5,6 +5,17 @@ import {
   disableBot,
   enableBot,
 } from "../../utils/bot-lifecycle";
+import {
+  getBotDeliveryHealthForWorkspace,
+  withDeliveryHealth,
+} from "../../utils/bot-delivery";
+
+function buildBotResponse(
+  bot: NonNullable<Awaited<ReturnType<BotRepository["findById"]>>>,
+  health: Awaited<ReturnType<typeof getBotDeliveryHealthForWorkspace>>
+) {
+  return withDeliveryHealth(bot, health);
+}
 
 export default defineEventHandler(async (event) => {
   try {
@@ -29,10 +40,13 @@ export default defineEventHandler(async (event) => {
 
         const { is_active: _ignored, ...rest } = body;
         if (Object.keys(rest).length === 0) {
+          const health = await getBotDeliveryHealthForWorkspace(
+            botId!,
+            workspaceId
+          );
           return {
             success: true,
-            data: lifecycle.bot,
-            webhook: { registered: lifecycle.webhookRegistered },
+            data: buildBotResponse(lifecycle.bot, health),
             warning: lifecycle.warning,
             message: body.is_active
               ? "Bot enabled successfully"
@@ -41,10 +55,13 @@ export default defineEventHandler(async (event) => {
         }
 
         const bot = await botRepo.update(botId!, workspaceId, rest);
+        const health = await getBotDeliveryHealthForWorkspace(
+          botId!,
+          workspaceId
+        );
         return {
           success: true,
-          data: bot,
-          webhook: { registered: lifecycle.webhookRegistered },
+          data: bot ? buildBotResponse(bot, health) : lifecycle.bot,
           warning: lifecycle.warning,
           message: "Bot updated successfully",
         };
@@ -60,9 +77,11 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    const health = await getBotDeliveryHealthForWorkspace(botId!, workspaceId);
+
     return {
       success: true,
-      data: bot,
+      data: buildBotResponse(bot, health),
       message: "Bot updated successfully",
     };
   } catch (error) {

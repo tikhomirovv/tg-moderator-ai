@@ -1,5 +1,12 @@
 export type TelegramFetch = typeof fetch;
 
+export type TelegramWebhookInfo = {
+  url?: string;
+  last_error_date?: number;
+  last_error_message?: string;
+  pending_update_count?: number;
+};
+
 export function getWebhookBaseUrl(): string | null {
   const baseUrl = process.env.BASE_URL?.trim();
   if (!baseUrl || !baseUrl.startsWith("https://")) {
@@ -54,4 +61,25 @@ export async function telegramDeleteWebhook(
   if (!data.ok) {
     throw new Error(data.description || "Failed to delete webhook");
   }
+}
+
+export async function telegramGetWebhookInfo(
+  token: string,
+  fetchFn: TelegramFetch = fetch
+): Promise<TelegramWebhookInfo> {
+  const response = await fetchFn(
+    `https://api.telegram.org/bot${token}/getWebhookInfo`
+  );
+
+  const data = (await response.json()) as {
+    ok: boolean;
+    description?: string;
+    result?: TelegramWebhookInfo;
+  };
+
+  if (!data.ok || !data.result) {
+    throw new Error(data.description || "Failed to get webhook info");
+  }
+
+  return data.result;
 }

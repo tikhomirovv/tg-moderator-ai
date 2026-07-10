@@ -24,7 +24,6 @@ export interface Rule {
   name: string;
   description: string;
   ai_prompt: string;
-  severity: "low" | "medium" | "high";
 }
 
 export interface RulesConfig {

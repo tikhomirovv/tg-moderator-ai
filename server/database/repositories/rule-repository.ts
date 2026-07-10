@@ -39,7 +39,6 @@ export class RuleRepository {
         name: ruleData.name,
         description: ruleData.description,
         aiPrompt: ruleData.ai_prompt,
-        severity: ruleData.severity,
         isActive: true,
         createdAt: now,
         updatedAt: now,
@@ -64,9 +63,6 @@ export class RuleRepository {
     }
     if (updateData.ai_prompt !== undefined) {
       updateValues.aiPrompt = updateData.ai_prompt;
-    }
-    if (updateData.severity !== undefined) {
-      updateValues.severity = updateData.severity;
     }
     if (updateData.is_active !== undefined) {
       updateValues.isActive = updateData.is_active;

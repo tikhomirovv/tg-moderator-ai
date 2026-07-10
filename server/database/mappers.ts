@@ -20,7 +20,6 @@ export function toRule(row: RuleRow): Rule {
     name: row.name,
     description: row.description,
     ai_prompt: row.aiPrompt,
-    severity: row.severity,
     is_active: row.isActive,
     created_at: row.createdAt,
     updated_at: row.updatedAt,

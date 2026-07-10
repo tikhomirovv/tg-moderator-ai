@@ -26,9 +26,6 @@
       >
         <div class="flex items-center justify-between mb-2">
           <h3 class="font-medium">{{ rule.name }}</h3>
-          <span class="text-xs px-2 py-0.5 rounded bg-gray-100">{{
-            rule.severity
-          }}</span>
         </div>
         <p class="text-sm text-gray-600 mb-2">{{ rule.description }}</p>
         <textarea
@@ -89,21 +86,6 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Severity</label
-            >
-            <select
-              v-model="newRule.severity"
-              class="w-full border rounded px-3 py-2"
-              required
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
               >AI Prompt</label
             >
             <textarea
@@ -148,7 +130,6 @@ const newRule = ref({
   id: "",
   name: "",
   description: "",
-  severity: "medium",
   ai_prompt: "",
 });
 
@@ -197,7 +178,6 @@ async function createRule() {
       id: "",
       name: "",
       description: "",
-      severity: "medium",
       ai_prompt: "",
     };
     showAddModal.value = false;

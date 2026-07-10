@@ -11,14 +11,12 @@ describe("BotRepository", () => {
       name: "Spam",
       description: "No spam",
       ai_prompt: "detect spam",
-      severity: "medium",
     });
     await ruleRepo.create(TEST_WORKSPACE_ID, {
       id: "hate_speech",
       name: "Hate",
       description: "No hate",
       ai_prompt: "detect hate",
-      severity: "high",
     });
 
     const botRepo = new InMemoryBotRepository();

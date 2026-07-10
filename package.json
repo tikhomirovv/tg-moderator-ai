@@ -28,7 +28,7 @@
     "postinstall": "nuxt prepare",
     "test": "bun test",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "bun --env-file=.env scripts/db-migrate.ts"
   },
   "dependencies": {
     "@nuxt/fonts": "0.11.4",

@@ -1,0 +1,3 @@
+# Project lives on ExFAT (/Volumes/D) — default hardlink/clonefile install fails there.
+[install]
+backend = "copyfile"

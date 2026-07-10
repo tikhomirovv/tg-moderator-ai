@@ -5,6 +5,7 @@ import { getDatabaseConnection } from "../server/database/connection";
 import * as authSchema from "../server/database/auth-schema";
 import { sendAuthEmail } from "../server/utils/mail";
 import { seedWorkspaceRules } from "../server/database/workspace-seed";
+import { getTrustedAuthOrigins } from "../server/utils/auth-origins";
 
 function getAuthBaseUrl() {
   return (
@@ -67,7 +68,7 @@ export function getAuth() {
           },
         }),
       ],
-      trustedOrigins: [getAuthBaseUrl()],
+      trustedOrigins: getTrustedAuthOrigins(getAuthBaseUrl()),
     });
   }
   return authInstance;

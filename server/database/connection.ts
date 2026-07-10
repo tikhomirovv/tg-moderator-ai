@@ -29,7 +29,11 @@ export class PostgresConnection implements DatabaseConnection {
     }
 
     try {
-      this.client = postgres(this.connectionString, { max: 10 });
+      this.client = postgres(this.connectionString, {
+        max: 10,
+        // Postgres NOTICE on repeated migrate (schema/table already exists) — not actionable.
+        onnotice: () => {},
+      });
       this.db = drizzle(this.client, { schema: { ...schema, ...authSchema } });
       logger.info("Connected to PostgreSQL");
     } catch (error) {

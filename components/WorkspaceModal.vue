@@ -40,7 +40,7 @@ import { reserveWorkspaceSlugForCreate } from "~/lib/workspace-slug-client";
 const open = defineModel<boolean>({ required: true });
 
 const emit = defineEmits<{
-  created: [workspaceSlug: string];
+  created: [];
 }>();
 
 const name = ref("");
@@ -63,7 +63,7 @@ async function createWorkspace() {
     slug = await reserveWorkspaceSlugForCreate(name.value);
   } catch {
     loading.value = false;
-    error.value = "Failed to reserve workspace URL";
+    error.value = "Failed to reserve workspace slug";
     return;
   }
 
@@ -87,6 +87,6 @@ async function createWorkspace() {
   loading.value = false;
   open.value = false;
   name.value = "";
-  emit("created", data.slug ?? slug);
+  emit("created");
 }
 </script>

@@ -24,11 +24,11 @@
         type="button"
         class="w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
         :class="
-          workspace.slug === currentWorkspaceSlug
+          workspace.id === currentWorkspaceId
             ? 'bg-blue-50 text-blue-700 font-medium'
             : 'text-gray-700'
         "
-        @click="switchWorkspace(workspace.slug)"
+        @click="switchWorkspace(workspace.id)"
       >
         {{ workspace.name }}
       </button>
@@ -42,59 +42,45 @@
       >
         + Create workspace
       </button>
-
-      <NuxtLink
-        v-if="currentWorkspaceSlug"
-        :to="workspaceRoutes.settings(currentWorkspaceSlug)"
-        class="block px-3 py-2 text-sm text-gray-500 hover:bg-gray-100"
-        @click="open = false"
-      >
-        Workspace settings
-      </NuxtLink>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { authClient } from "~/lib/auth-client";
 import { fetchUserWorkspaces, type WorkspaceSummary } from "~/lib/fetch-workspaces";
-import { findWorkspaceBySlug } from "~/lib/workspace-resolve";
-import { replaceWorkspaceInPath, workspaceRoutes } from "~/lib/workspace-routes";
-import { syncActiveWorkspaceSlug } from "~/lib/sync-active-workspace";
 
 const props = defineProps<{
-  currentWorkspaceSlug?: string;
+  currentWorkspaceId?: string;
 }>();
 
 const emit = defineEmits<{
   createWorkspace: [];
 }>();
 
-const route = useRoute();
 const open = ref(false);
 const workspaces = ref<WorkspaceSummary[]>([]);
 
-const currentWorkspaceSlug = computed(
-  () =>
-    props.currentWorkspaceSlug ?? (route.params.slug as string | undefined)
-);
+const currentWorkspaceId = computed(() => props.currentWorkspaceId);
 
 const currentWorkspace = computed(() =>
-  findWorkspaceBySlug(workspaces.value, currentWorkspaceSlug.value ?? "")
+  workspaces.value.find((workspace) => workspace.id === currentWorkspaceId.value)
 );
 
 async function loadWorkspaces() {
   workspaces.value = await fetchUserWorkspaces();
 }
 
-async function switchWorkspace(workspaceSlug: string) {
-  if (workspaceSlug === currentWorkspaceSlug.value) {
+async function switchWorkspace(workspaceId: string) {
+  if (workspaceId === currentWorkspaceId.value) {
     open.value = false;
     return;
   }
 
-  await syncActiveWorkspaceSlug(workspaceSlug);
+  await authClient.organization.setActive({ organizationId: workspaceId });
+  await authClient.getSession();
   open.value = false;
-  await navigateTo(replaceWorkspaceInPath(route.fullPath, workspaceSlug));
+  await refreshNuxtApp();
 }
 
 function openCreateModal() {
@@ -106,12 +92,9 @@ onMounted(() => {
   void loadWorkspaces();
 });
 
-watch(
-  () => route.params.slug,
-  () => {
-    void loadWorkspaces();
-  }
-);
+watch(currentWorkspaceId, () => {
+  void loadWorkspaces();
+});
 
 defineExpose({
   reload: loadWorkspaces,

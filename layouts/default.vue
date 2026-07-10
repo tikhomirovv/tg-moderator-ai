@@ -7,29 +7,29 @@
         <span class="text-lg font-semibold">TG Moderator</span>
       </div>
 
-      <div v-if="routes" class="p-4 border-b">
+      <div class="p-4 border-b">
         <WorkspaceSwitcher
           ref="workspaceSwitcher"
-          :current-workspace-slug="routes.slug"
+          :current-workspace-id="currentWorkspaceId"
           @create-workspace="showWorkspaceModal = true"
         />
       </div>
 
-      <nav v-if="routes" class="flex-1 p-4 space-y-1">
+      <nav class="flex-1 p-4 space-y-1">
         <NuxtLink
-          :to="routes.home"
+          to="/"
           class="block px-3 py-2 rounded hover:bg-gray-100"
           active-class="bg-gray-100 font-medium"
           >Dashboard</NuxtLink
         >
         <NuxtLink
-          :to="routes.bots"
+          to="/bots"
           class="block px-3 py-2 rounded hover:bg-gray-100"
           active-class="bg-gray-100 font-medium"
           >Bots</NuxtLink
         >
         <NuxtLink
-          :to="routes.rules"
+          to="/config/rules"
           class="block px-3 py-2 rounded hover:bg-gray-100"
           active-class="bg-gray-100 font-medium"
           >Rules</NuxtLink
@@ -53,11 +53,11 @@
           </span>
         </div>
         <div class="flex items-center gap-4 text-sm">
-          <span v-if="session.data?.user" class="text-gray-600">
-            {{ session.data.user.email }}
+          <span v-if="session?.user" class="text-gray-600">
+            {{ session.user.email }}
           </span>
           <button
-            v-if="session.data"
+            v-if="session"
             class="text-red-600 hover:underline"
             @click="signOut"
           >
@@ -81,45 +81,32 @@
 <script setup lang="ts">
 import { authClient } from "~/lib/auth-client";
 import { fetchUserWorkspaces } from "~/lib/fetch-workspaces";
-import {
-  findWorkspaceBySlug,
-  resolveWorkspaceSlug,
-} from "~/lib/workspace-resolve";
-import { workspaceRoutes } from "~/lib/workspace-routes";
-import { syncActiveWorkspaceSlug } from "~/lib/sync-active-workspace";
 
-const session = authClient.useSession();
-const routes = useWorkspaceRoutes();
-const route = useRoute();
+const { data: session } = await authClient.useSession(useFetch);
 const showWorkspaceModal = ref(false);
 const workspaceSwitcher = ref<{ reload: () => Promise<void> } | null>(null);
 const currentWorkspaceName = ref("");
 
+const currentWorkspaceId = computed(
+  () => session.value?.session?.activeOrganizationId ?? undefined
+);
+
 async function refreshWorkspaceName() {
-  const workspaceSlug = routes.value?.slug;
-  if (!workspaceSlug) {
+  const workspaceId = currentWorkspaceId.value;
+  if (!workspaceId) {
     currentWorkspaceName.value = "";
     return;
   }
 
   const workspaces = await fetchUserWorkspaces();
   currentWorkspaceName.value =
-    findWorkspaceBySlug(workspaces, workspaceSlug)?.name ?? "";
+    workspaces.find((workspace) => workspace.id === workspaceId)?.name ?? "";
 }
 
 async function ensureWorkspace() {
   const { data: currentSession } = await authClient.getSession();
 
   if (!currentSession?.user?.emailVerified) {
-    return;
-  }
-
-  if (
-    route.path.startsWith("/w-") &&
-    typeof route.params.slug === "string"
-  ) {
-    await syncActiveWorkspaceSlug(route.params.slug);
-    await refreshWorkspaceName();
     return;
   }
 
@@ -130,32 +117,30 @@ async function ensureWorkspace() {
     return;
   }
 
-  const targetSlug = resolveWorkspaceSlug(
-    workspaces,
-    currentSession.session.activeOrganizationId
-  );
-
-  if (targetSlug) {
-    await navigateTo(workspaceRoutes.home(targetSlug), { replace: true });
+  const activeId = currentSession.session.activeOrganizationId;
+  if (!activeId && workspaces[0]?.id) {
+    await authClient.organization.setActive({
+      organizationId: workspaces[0].id,
+    });
+    await authClient.getSession();
   }
+
+  await refreshWorkspaceName();
 }
 
-async function onWorkspaceCreated(workspaceSlug: string) {
+async function onWorkspaceCreated() {
   await workspaceSwitcher.value?.reload();
   await refreshWorkspaceName();
-  await navigateTo(workspaceRoutes.home(workspaceSlug), { replace: true });
+  await refreshNuxtApp();
 }
 
 onMounted(() => {
   void ensureWorkspace();
 });
 
-watch(
-  () => route.params.slug,
-  () => {
-    void refreshWorkspaceName();
-  }
-);
+watch(currentWorkspaceId, () => {
+  void refreshWorkspaceName();
+});
 
 watch(showWorkspaceModal, (isOpen) => {
   if (!isOpen) {

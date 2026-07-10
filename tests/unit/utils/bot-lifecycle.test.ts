@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { BotRepository } from "../../../server/database/repositories/bot-repository";
+import type { BotRepository } from "../../../server/database/repositories/bot-repository";
 import {
   BotLifecycleError,
   disableBot,
   enableBot,
 } from "../../../server/utils/bot-lifecycle";
-import { TEST_WORKSPACE_ID, useTestDatabase } from "../../helpers/database";
+import { InMemoryBotRepository } from "../../helpers/in-memory-bot-repository";
+import { TEST_WORKSPACE_ID } from "../../helpers/constants";
 
 const originalBaseUrl = process.env.BASE_URL;
 
@@ -17,11 +18,13 @@ afterEach(() => {
   }
 });
 
-describe("bot lifecycle", () => {
-  useTestDatabase();
+function asBotRepository(repo: InMemoryBotRepository): BotRepository {
+  return repo as unknown as BotRepository;
+}
 
+describe("bot lifecycle", () => {
   test("disable removes webhook and sets bot inactive", async () => {
-    const botRepo = new BotRepository();
+    const botRepo = new InMemoryBotRepository();
     await botRepo.create(TEST_WORKSPACE_ID, {
       id: "disable-bot",
       name: "Disable me",
@@ -36,6 +39,7 @@ describe("bot lifecycle", () => {
     };
 
     const result = await disableBot("disable-bot", TEST_WORKSPACE_ID, {
+      botRepo: asBotRepository(botRepo),
       fetchFn,
     });
 
@@ -50,7 +54,7 @@ describe("bot lifecycle", () => {
   test("enable sets webhook when BASE_URL is HTTPS", async () => {
     process.env.BASE_URL = "https://example.com";
 
-    const botRepo = new BotRepository();
+    const botRepo = new InMemoryBotRepository();
     await botRepo.create(TEST_WORKSPACE_ID, {
       id: "enable-bot",
       name: "Enable me",
@@ -63,6 +67,7 @@ describe("bot lifecycle", () => {
       new Response(JSON.stringify({ ok: true }));
 
     const result = await enableBot("enable-bot", TEST_WORKSPACE_ID, {
+      botRepo: asBotRepository(botRepo),
       fetchFn,
     });
 
@@ -74,7 +79,7 @@ describe("bot lifecycle", () => {
   test("enable without HTTPS BASE_URL keeps bot active with warning", async () => {
     delete process.env.BASE_URL;
 
-    const botRepo = new BotRepository();
+    const botRepo = new InMemoryBotRepository();
     await botRepo.create(TEST_WORKSPACE_ID, {
       id: "warn-bot",
       name: "Warn me",
@@ -84,6 +89,7 @@ describe("bot lifecycle", () => {
     await botRepo.update("warn-bot", TEST_WORKSPACE_ID, { is_active: false });
 
     const result = await enableBot("warn-bot", TEST_WORKSPACE_ID, {
+      botRepo: asBotRepository(botRepo),
       fetchFn: async () => new Response(JSON.stringify({ ok: true })),
     });
 
@@ -95,7 +101,7 @@ describe("bot lifecycle", () => {
   test("enable rolls back when Telegram rejects webhook", async () => {
     process.env.BASE_URL = "https://example.com";
 
-    const botRepo = new BotRepository();
+    const botRepo = new InMemoryBotRepository();
     await botRepo.create(TEST_WORKSPACE_ID, {
       id: "rollback-bot",
       name: "Rollback",
@@ -108,7 +114,10 @@ describe("bot lifecycle", () => {
       new Response(JSON.stringify({ ok: false, description: "invalid url" }));
 
     await expect(
-      enableBot("rollback-bot", TEST_WORKSPACE_ID, { fetchFn })
+      enableBot("rollback-bot", TEST_WORKSPACE_ID, {
+        botRepo: asBotRepository(botRepo),
+        fetchFn,
+      })
     ).rejects.toBeInstanceOf(BotLifecycleError);
 
     const stored = await botRepo.findById("rollback-bot", TEST_WORKSPACE_ID);

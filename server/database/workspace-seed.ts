@@ -34,8 +34,13 @@ const defaultRules = [
   },
 ];
 
-export async function seedWorkspaceRules(workspaceId: string) {
-  const ruleRepo = new RuleRepository();
+export async function seedWorkspaceRules(
+  workspaceId: string,
+  deps?: {
+    ruleRepo?: Pick<RuleRepository, "findAll" | "create">;
+  }
+) {
+  const ruleRepo = deps?.ruleRepo ?? new RuleRepository();
   const existingRules = await ruleRepo.findAll(workspaceId);
 
   if (existingRules.length > 0) {

@@ -1,12 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { RuleRepository } from "../../../server/database/repositories/rule-repository";
-import { TEST_WORKSPACE_ID, useTestDatabase } from "../../helpers/database";
+import { InMemoryRuleRepository } from "../../helpers/in-memory-rule-repository";
+import { TEST_WORKSPACE_ID } from "../../helpers/constants";
 
 describe("RuleRepository", () => {
-  useTestDatabase();
-
   test("creates and finds rules", async () => {
-    const repo = new RuleRepository();
+    const repo = new InMemoryRuleRepository();
     const created = await repo.create(TEST_WORKSPACE_ID, {
       id: "spam",
       name: "Spam",
@@ -26,7 +24,7 @@ describe("RuleRepository", () => {
   });
 
   test("updates rule fields", async () => {
-    const repo = new RuleRepository();
+    const repo = new InMemoryRuleRepository();
     await repo.create(TEST_WORKSPACE_ID, {
       id: "ads",
       name: "Ads",

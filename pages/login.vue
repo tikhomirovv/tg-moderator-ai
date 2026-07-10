@@ -4,10 +4,33 @@
       <h1 class="text-xl font-semibold">Sign in</h1>
 
       <p
-        v-if="verifyRequired"
+        v-if="verifiedSuccess"
+        class="text-sm text-green-700 bg-green-50 border border-green-200 rounded p-3"
+      >
+        Your email has been verified.
+        <span v-if="signedIn"> You're signed in.</span>
+        <span v-else> You can sign in now.</span>
+        <NuxtLink
+          v-if="signedIn"
+          to="/"
+          class="block mt-2 font-medium text-green-800 hover:underline"
+        >
+          Continue to app
+        </NuxtLink>
+      </p>
+
+      <p
+        v-else-if="verifyError"
+        class="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3"
+      >
+        {{ verifyError }}
+      </p>
+
+      <p
+        v-else-if="verifyRequired"
         class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3"
       >
-        Verify your email before signing in. Check Mailpit.
+        Verify your email before signing in.
       </p>
 
       <form class="space-y-4" @submit.prevent="signIn">
@@ -62,6 +85,31 @@ const password = ref("");
 const loading = ref(false);
 const error = ref("");
 const verifyRequired = computed(() => route.query.verify === "required");
+const verifiedSuccess = computed(() => route.query.verified === "1");
+const signedIn = ref(false);
+
+const verifyError = computed(() => {
+  const code = route.query.error;
+  if (!code || typeof code !== "string") {
+    return "";
+  }
+  if (code === "TOKEN_EXPIRED") {
+    return "Verification link has expired. Sign in to request a new one.";
+  }
+  if (code === "INVALID_TOKEN") {
+    return "Verification link is invalid or has already been used.";
+  }
+  return "Email verification failed. Try signing in to request a new link.";
+});
+
+onMounted(async () => {
+  if (!verifiedSuccess.value) {
+    return;
+  }
+
+  const { data: session } = await authClient.useSession(useFetch);
+  signedIn.value = Boolean(session.value?.user?.emailVerified);
+});
 
 async function signIn() {
   loading.value = true;

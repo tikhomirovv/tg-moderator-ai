@@ -7,7 +7,7 @@
         v-if="done"
         class="text-sm text-green-700 bg-green-50 border border-green-200 rounded p-3"
       >
-        Account created. Check Mailpit to verify your email, then sign in.
+        Account created. Check your email for a verification link, then sign in.
       </p>
 
       <form v-else class="space-y-4" @submit.prevent="signUp">
@@ -81,6 +81,7 @@ async function signUp() {
     name: name.value,
     email: email.value,
     password: password.value,
+    callbackURL: "/login?verified=1",
   });
 
   loading.value = false;

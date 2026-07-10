@@ -15,6 +15,15 @@ function getAuthBaseUrl() {
   );
 }
 
+function getEmailVerificationCallbackUrl() {
+  return "/login?verified=1";
+}
+
+function buildVerificationUrl(token: string) {
+  const callbackURL = encodeURIComponent(getEmailVerificationCallbackUrl());
+  return `${getAuthBaseUrl()}/api/auth/verify-email?token=${token}&callbackURL=${callbackURL}`;
+}
+
 function getAuthSecret() {
   const secret = process.env.BETTER_AUTH_SECRET;
   if (!secret) {
@@ -49,11 +58,11 @@ export function getAuth() {
       emailVerification: {
         sendOnSignUp: true,
         autoSignInAfterVerification: true,
-        sendVerificationEmail: async ({ user, url }) => {
+        sendVerificationEmail: async ({ user, token }) => {
           await sendAuthEmail({
             to: user.email,
             subject: "Verify your email",
-            html: `<p>Verify your email:</p><p><a href="${url}">${url}</a></p>`,
+            html: `<p>Verify your email:</p><p><a href="${buildVerificationUrl(token)}">${buildVerificationUrl(token)}</a></p>`,
           });
         },
       },

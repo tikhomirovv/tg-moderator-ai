@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { logger } from "../core/logger";
 
 export function createMailTransport() {
   const host = process.env.SMTP_HOST || "localhost";
@@ -25,5 +26,15 @@ export async function sendAuthEmail(options: {
     to: options.to,
     subject: options.subject,
     html: options.html,
+  });
+}
+
+export function queueAuthEmail(options: {
+  to: string;
+  subject: string;
+  html: string;
+}) {
+  void sendAuthEmail(options).catch((error) => {
+    logger.error({ error: error as Error, to: options.to }, "Auth email failed");
   });
 }

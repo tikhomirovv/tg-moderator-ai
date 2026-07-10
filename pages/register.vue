@@ -81,7 +81,7 @@ async function signUp() {
     name: name.value,
     email: email.value,
     password: password.value,
-    callbackURL: "/login?verified=1",
+    callbackURL: `${window.location.origin}/login?verified=1`,
   });
 
   loading.value = false;

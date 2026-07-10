@@ -80,9 +80,13 @@
 
 <script setup lang="ts">
 import { authClient } from "~/lib/auth-client";
+import { fetchAuthSession } from "~/lib/fetch-auth-session";
 import { fetchUserWorkspaces } from "~/lib/fetch-workspaces";
 
-const { data: session } = await authClient.useSession(useFetch);
+const { data: session, refresh: refreshSession } = await useAsyncData(
+  "layout-auth-session",
+  () => fetchAuthSession()
+);
 const showWorkspaceModal = ref(false);
 const workspaceSwitcher = ref<{ reload: () => Promise<void> } | null>(null);
 const currentWorkspaceName = ref("");
@@ -130,8 +134,9 @@ async function ensureWorkspace() {
 
 async function onWorkspaceCreated() {
   await workspaceSwitcher.value?.reload();
+  await authClient.getSession();
+  await refreshSession();
   await refreshWorkspaceName();
-  await refreshNuxtApp();
 }
 
 onMounted(() => {

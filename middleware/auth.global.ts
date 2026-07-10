@@ -1,4 +1,4 @@
-import { authClient } from "~/lib/auth-client";
+import { fetchAuthSession } from "~/lib/fetch-auth-session";
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const publicPaths = ["/login", "/register"];
@@ -7,13 +7,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return;
   }
 
-  const { data: session } = await authClient.useSession(useFetch);
+  const session = await fetchAuthSession();
 
-  if (!session.value) {
+  if (!session?.user) {
     return navigateTo("/login");
   }
 
-  if (!session.value.user.emailVerified) {
+  if (!session.user.emailVerified) {
     return navigateTo("/login?verify=required");
   }
 });

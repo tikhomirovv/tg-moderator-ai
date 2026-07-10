@@ -37,11 +37,11 @@
           <h1 class="text-lg font-semibold">Telegram AI Moderator</h1>
         </div>
         <div class="flex items-center gap-4 text-sm">
-          <span v-if="session?.user" class="text-gray-600">
-            {{ session.user.email }}
+          <span v-if="session.data?.user" class="text-gray-600">
+            {{ session.data.user.email }}
           </span>
           <button
-            v-if="session"
+            v-if="session.data"
             class="text-red-600 hover:underline"
             @click="signOut"
           >
@@ -62,16 +62,18 @@
 <script setup lang="ts">
 import { authClient } from "~/lib/auth-client";
 
-const { data: session } = await authClient.useSession(useFetch);
+const session = authClient.useSession();
 const showWorkspaceModal = ref(false);
 
 async function ensureWorkspace() {
-  if (!session.value?.user?.emailVerified) {
+  const { data: currentSession } = await authClient.getSession();
+
+  if (!currentSession?.user?.emailVerified) {
     return;
   }
 
   const { data: organizations } = await authClient.organization.list();
-  const activeId = session.value.session.activeOrganizationId;
+  const activeId = currentSession.session.activeOrganizationId;
 
   if (!organizations?.length) {
     showWorkspaceModal.value = true;
@@ -82,12 +84,18 @@ async function ensureWorkspace() {
     await authClient.organization.setActive({
       organizationId: organizations[0].id,
     });
-    await reloadNuxtApp();
+    await authClient.getSession();
   }
 }
 
 onMounted(() => {
-  ensureWorkspace();
+  void ensureWorkspace();
+});
+
+watch(showWorkspaceModal, (isOpen) => {
+  if (!isOpen) {
+    void ensureWorkspace();
+  }
 });
 
 async function signOut() {

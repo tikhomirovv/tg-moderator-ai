@@ -71,8 +71,11 @@ async function createWorkspace() {
     organizationId: data.id,
   });
 
+  await authClient.getSession();
+
   loading.value = false;
   open.value = false;
-  await reloadNuxtApp();
+  name.value = "";
+  await navigateTo("/", { replace: true });
 }
 </script>

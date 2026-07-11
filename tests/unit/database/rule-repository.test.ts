@@ -13,15 +13,15 @@ describe("RuleRepository", () => {
       delete_on_violation: true,
       ban_on_violation: true,
       warnings_before_ban: 2,
-      whitelist: [{ telegram_user_id: 100, username: null }],
+      whitelist: ["100"],
     });
 
     expect(created.id).toBe("spam");
     expect(created.delete_on_violation).toBe(true);
-    expect(created.whitelist).toHaveLength(1);
+    expect(created.whitelist).toEqual(["100"]);
 
     const found = await repo.findById("spam", TEST_WORKSPACE_ID);
-    expect(found?.whitelist[0]?.telegram_user_id).toBe(100);
+    expect(found?.whitelist).toEqual(["100"]);
 
     const active = await repo.findActive(TEST_WORKSPACE_ID);
     expect(active).toHaveLength(1);
@@ -39,12 +39,12 @@ describe("RuleRepository", () => {
     const updated = await repo.update("ads", TEST_WORKSPACE_ID, {
       name: "Advertising",
       is_active: false,
-      whitelist: [{ telegram_user_id: null, username: "trusted" }],
+      whitelist: ["@trusted"],
     });
 
     expect(updated?.name).toBe("Advertising");
     expect(updated?.is_active).toBe(false);
-    expect(updated?.whitelist[0]?.username).toBe("trusted");
+    expect(updated?.whitelist).toEqual(["trusted"]);
   });
 
   test("deletes rule", async () => {

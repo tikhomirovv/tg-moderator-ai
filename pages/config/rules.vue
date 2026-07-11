@@ -167,8 +167,8 @@
               </button>
             </div>
             <p class="text-xs text-gray-500">
-              Whitelisted users skip this rule entirely (by Telegram user ID or
-              @username, case-insensitive).
+              Whitelisted users skip this rule entirely. Enter a Telegram user ID
+              (digits only) or @username (with or without @).
             </p>
 
             <div
@@ -179,26 +179,17 @@
             </div>
 
             <div
-              v-for="(entry, index) in form.whitelist"
+              v-for="(_entry, index) in form.whitelist"
               :key="index"
               class="flex gap-2 items-end"
             >
               <div class="flex-1">
-                <label class="block text-xs text-gray-600 mb-1">User ID</label>
+                <label class="block text-xs text-gray-600 mb-1">Entry</label>
                 <input
-                  v-model="entry.telegram_user_id"
-                  type="number"
-                  class="w-full border rounded px-2 py-1 text-sm"
-                  placeholder="123456789"
-                />
-              </div>
-              <div class="flex-1">
-                <label class="block text-xs text-gray-600 mb-1">Username</label>
-                <input
-                  v-model="entry.username"
+                  v-model="form.whitelist[index]"
                   type="text"
                   class="w-full border rounded px-2 py-1 text-sm"
-                  placeholder="username"
+                  placeholder="123456789 or @username"
                 />
               </div>
               <button
@@ -236,11 +227,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 
-interface WhitelistFormEntry {
-  telegram_user_id: string;
-  username: string;
-}
-
 interface RuleForm {
   name: string;
   description: string;
@@ -248,7 +234,7 @@ interface RuleForm {
   delete_on_violation: boolean;
   ban_on_violation: boolean;
   warnings_before_ban: number;
-  whitelist: WhitelistFormEntry[];
+  whitelist: string[];
 }
 
 const rules = ref<any[]>([]);
@@ -296,11 +282,7 @@ function openEditModal(rule: any) {
     delete_on_violation: Boolean(rule.delete_on_violation),
     ban_on_violation: Boolean(rule.ban_on_violation),
     warnings_before_ban: rule.warnings_before_ban ?? 3,
-    whitelist: (rule.whitelist || []).map((entry: any) => ({
-      telegram_user_id:
-        entry.telegram_user_id != null ? String(entry.telegram_user_id) : "",
-      username: entry.username || "",
-    })),
+    whitelist: [...(rule.whitelist || [])],
   };
   showModal.value = true;
 }
@@ -312,7 +294,7 @@ function closeModal() {
 }
 
 function addWhitelistEntry() {
-  form.value.whitelist.push({ telegram_user_id: "", username: "" });
+  form.value.whitelist.push("");
 }
 
 function removeWhitelistEntry(index: number) {
@@ -321,17 +303,8 @@ function removeWhitelistEntry(index: number) {
 
 function buildWhitelistPayload() {
   return form.value.whitelist
-    .map((entry) => {
-      const telegram_user_id = entry.telegram_user_id.trim()
-        ? Number(entry.telegram_user_id)
-        : null;
-      const username = entry.username.trim() || null;
-      if (telegram_user_id === null && username === null) {
-        return null;
-      }
-      return { telegram_user_id, username };
-    })
-    .filter(Boolean);
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
 }
 
 async function saveRule() {

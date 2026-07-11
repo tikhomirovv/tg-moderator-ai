@@ -16,7 +16,7 @@ type ChatStatisticsRow = typeof import("./schema").chatStatistics.$inferSelect;
 
 export function toRule(
   row: RuleRow,
-  whitelist: import("./models/rule").RuleWhitelistEntry[] = []
+  whitelist: string[] = []
 ): Rule {
   return {
     id: row.id,
@@ -36,12 +36,8 @@ export function toRule(
 type RuleWhitelistRow =
   typeof import("./schema").ruleWhitelist.$inferSelect;
 
-export function toRuleWhitelistEntry(row: RuleWhitelistRow) {
-  return {
-    id: row.id,
-    telegram_user_id: row.telegramUserId,
-    username: row.username,
-  };
+export function toRuleWhitelistEntry(row: RuleWhitelistRow): string {
+  return row.entry;
 }
 
 export function toChat(row: ChatRow, ruleIds: string[]): DbChat {

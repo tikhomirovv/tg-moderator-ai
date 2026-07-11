@@ -1,9 +1,3 @@
-export interface RuleWhitelistEntry {
-  id: number;
-  telegram_user_id: number | null;
-  username: string | null;
-}
-
 export interface Rule {
   id: string;
   name: string;
@@ -13,14 +7,9 @@ export interface Rule {
   delete_on_violation: boolean;
   ban_on_violation: boolean;
   warnings_before_ban: number | null;
-  whitelist: RuleWhitelistEntry[];
+  whitelist: string[];
   created_at: Date;
   updated_at: Date;
-}
-
-export interface RuleWhitelistInput {
-  telegram_user_id?: number | null;
-  username?: string | null;
 }
 
 export interface CreateRuleRequest {
@@ -31,7 +20,7 @@ export interface CreateRuleRequest {
   delete_on_violation?: boolean;
   ban_on_violation?: boolean;
   warnings_before_ban?: number | null;
-  whitelist?: RuleWhitelistInput[];
+  whitelist?: string[];
 }
 
 export interface UpdateRuleRequest {
@@ -42,5 +31,5 @@ export interface UpdateRuleRequest {
   delete_on_violation?: boolean;
   ban_on_violation?: boolean;
   warnings_before_ban?: number | null;
-  whitelist?: RuleWhitelistInput[];
+  whitelist?: string[];
 }

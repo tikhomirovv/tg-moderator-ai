@@ -15,7 +15,6 @@ import {
   primaryKey,
   foreignKey,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
 import { organization } from "./auth-schema";
 
 export const actionTypeEnum = pgEnum("action_type", [
@@ -50,20 +49,17 @@ export const ruleWhitelist = pgTable(
     id: serial("id").primaryKey(),
     workspaceId: text("workspace_id").notNull(),
     ruleId: varchar("rule_id", { length: 64 }).notNull(),
-    telegramUserId: bigint("telegram_user_id", { mode: "number" }),
-    username: varchar("username", { length: 255 }),
+    entry: varchar("entry", { length: 255 }).notNull(),
   },
   (table) => [
     foreignKey({
       columns: [table.workspaceId, table.ruleId],
       foreignColumns: [rules.workspaceId, rules.id],
     }).onDelete("cascade"),
-    uniqueIndex("rule_whitelist_rule_user_unique")
-      .on(table.ruleId, table.telegramUserId)
-      .where(sql`${table.telegramUserId} IS NOT NULL`),
-    uniqueIndex("rule_whitelist_rule_username_unique")
-      .on(table.ruleId, table.username)
-      .where(sql`${table.username} IS NOT NULL`),
+    uniqueIndex("rule_whitelist_rule_entry_unique").on(
+      table.ruleId,
+      table.entry
+    ),
   ]
 );
 

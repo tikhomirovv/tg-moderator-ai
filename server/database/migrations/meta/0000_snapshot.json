@@ -1631,22 +1631,16 @@
           "primaryKey": false,
           "notNull": true
         },
-        "telegram_user_id": {
-          "name": "telegram_user_id",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "username": {
-          "name": "username",
+        "entry": {
+          "name": "entry",
           "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         }
       },
       "indexes": {
-        "rule_whitelist_rule_user_unique": {
-          "name": "rule_whitelist_rule_user_unique",
+        "rule_whitelist_rule_entry_unique": {
+          "name": "rule_whitelist_rule_entry_unique",
           "columns": [
             {
               "expression": "rule_id",
@@ -1655,7 +1649,7 @@
               "nulls": "last"
             },
             {
-              "expression": "telegram_user_id",
+              "expression": "entry",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1664,30 +1658,7 @@
           "isUnique": true,
           "concurrently": false,
           "method": "btree",
-          "with": {},
-          "where": "\"telegram_user_id\" IS NOT NULL"
-        },
-        "rule_whitelist_rule_username_unique": {
-          "name": "rule_whitelist_rule_username_unique",
-          "columns": [
-            {
-              "expression": "rule_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "username",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {},
-          "where": "\"username\" IS NOT NULL"
+          "with": {}
         }
       },
       "foreignKeys": {

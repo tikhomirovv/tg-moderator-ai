@@ -18,7 +18,7 @@ describe("database mappers", () => {
         createdAt: now,
         updatedAt: now,
       },
-      [{ id: 1, telegram_user_id: 42, username: null }]
+      ["42"]
     );
 
     expect(rule).toEqual({
@@ -30,7 +30,7 @@ describe("database mappers", () => {
       delete_on_violation: true,
       ban_on_violation: false,
       warnings_before_ban: 3,
-      whitelist: [{ id: 1, telegram_user_id: 42, username: null }],
+      whitelist: ["42"],
       created_at: now,
       updated_at: now,
     });

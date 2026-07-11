@@ -1,44 +1,21 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
-import {
-  Rule,
-  CreateRuleRequest,
-  UpdateRuleRequest,
-  RuleWhitelistInput,
-  RuleWhitelistEntry,
-} from "../models/rule";
+import { Rule, CreateRuleRequest, UpdateRuleRequest } from "../models/rule";
 import { rules, ruleWhitelist } from "../schema";
-import { toRule, toRuleWhitelistEntry } from "../mappers";
+import { toRule } from "../mappers";
+import { normalizeWhitelistEntry } from "../../core/rule-whitelist";
 
-function normalizeWhitelistInput(
-  entries: RuleWhitelistInput[] | undefined
-): Array<{ telegramUserId: number | null; username: string | null }> {
+function normalizeWhitelistInput(entries: string[] | undefined): string[] {
   if (!entries?.length) {
     return [];
   }
 
-  return entries
-    .map((entry) => {
-      const telegramUserId =
-        entry.telegram_user_id !== undefined && entry.telegram_user_id !== null
-          ? entry.telegram_user_id
-          : null;
-      const username =
-        entry.username !== undefined && entry.username !== null
-          ? entry.username.trim().replace(/^@+/, "") || null
-          : null;
+  const normalized = entries
+    .map(normalizeWhitelistEntry)
+    .filter((entry): entry is string => entry !== null);
 
-      if (telegramUserId === null && username === null) {
-        return null;
-      }
-
-      return { telegramUserId, username };
-    })
-    .filter(
-      (entry): entry is { telegramUserId: number | null; username: string | null } =>
-        entry !== null
-    );
+  return [...new Set(normalized)];
 }
 
 export class RuleRepository {
@@ -49,8 +26,8 @@ export class RuleRepository {
   private async loadWhitelistForRules(
     workspaceId: string,
     ruleIds: string[]
-  ): Promise<Map<string, RuleWhitelistEntry[]>> {
-    const result = new Map<string, RuleWhitelistEntry[]>();
+  ): Promise<Map<string, string[]>> {
+    const result = new Map<string, string[]>();
     if (ruleIds.length === 0) {
       return result;
     }
@@ -66,9 +43,8 @@ export class RuleRepository {
       );
 
     for (const row of rows) {
-      const entry = toRuleWhitelistEntry(row);
       const existing = result.get(row.ruleId) ?? [];
-      existing.push(entry);
+      existing.push(row.entry);
       result.set(row.ruleId, existing);
     }
 
@@ -78,7 +54,7 @@ export class RuleRepository {
   private async replaceWhitelist(
     workspaceId: string,
     ruleId: string,
-    entries: RuleWhitelistInput[] | undefined
+    entries: string[] | undefined
   ): Promise<void> {
     await this.db
       .delete(ruleWhitelist)
@@ -98,8 +74,7 @@ export class RuleRepository {
       normalized.map((entry) => ({
         workspaceId,
         ruleId,
-        telegramUserId: entry.telegramUserId,
-        username: entry.username,
+        entry,
       }))
     );
   }
@@ -268,7 +243,7 @@ export class RuleRepository {
   async getWhitelistByRuleIds(
     workspaceId: string,
     ruleIds: string[]
-  ): Promise<Map<string, RuleWhitelistEntry[]>> {
+  ): Promise<Map<string, string[]>> {
     return this.loadWhitelistForRules(workspaceId, ruleIds);
   }
 }

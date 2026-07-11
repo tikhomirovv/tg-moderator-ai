@@ -1,225 +1,107 @@
-# Telegram AI Moderator Bot
+# tg-moderator-ai
 
-🤖 **Telegram-бот модератор с искусственным интеллектом** для автоматической модерации чатов на основе конфигурируемых правил и AI-анализа.
+Self-hosted веб-админка и Telegram webhook для AI-модерации чатов. Правила настраиваются в workspace и применяются **на чат** — у одного бота в разных чатах могут быть разные наборы правил.
 
-## ✨ Возможности
+Репозиторий: [github.com/tikhomirovv/tg-moderator-ai](https://github.com/tikhomirovv/tg-moderator-ai)
 
-- 🤖 **AI-модерация**: Автоматический анализ сообщений с помощью OpenAI GPT-4
-- ⚙️ **Гибкая настройка**: Конфигурируемые правила модерации для каждого чата
-- 📊 **Веб-интерфейс**: Удобное управление ботами и настройками
-- 📝 **Логирование**: Подробные логи всех действий модерации
-- 🔄 **Webhook интеграция**: Прямая интеграция с Telegram Bot API
-- 🎯 **Точечная настройка**: Разные правила для разных чатов
-- 🚫 **Автоматические действия**: Предупреждения, удаление сообщений, баны
+## Возможности
 
-## 🛠 Технический стек
+- **AI-модерация** — анализ сообщений через OpenAI-compatible API (OpenAI, OpenRouter, Polza и др.)
+- **Правила в workspace** — библиотека правил; в чате выбирается подмножество; per-rule delete/ban/warnings/whitelist
+- **Действия модератора** — предупреждения, удаление, бан по настройкам правила
+- **Silent mode** — только логи в приложении, без действий в Telegram
+- **Мульти-tenant** — workspace (Better Auth Organization), приглашения участников
+- **Webhook под капотом** — статус «Working / Disabled / Problem»
+- **Логи и статистика** — действия модерации по боту
 
-- **Runtime**: [Bun](https://bun.sh/) - быстрый JavaScript runtime
-- **Framework**: [Nuxt 3](https://nuxt.com/) (SSR + API роуты)
-- **Frontend**: [Vue 3](https://vuejs.org/) + Composition API
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) - утилитарный CSS фреймворк
-- **AI**: [OpenAI GPT-4](https://openai.com/) - для анализа сообщений
-- **Database**: [MongoDB](https://www.mongodb.com/) с абстракцией для легкой смены
-- **Logging**: [Pino](https://getpino.io/) + pino-pretty для структурированного логирования
-- **Deployment**: Docker Compose для простого развертывания
+## Модель данных
 
-## 🚀 Быстрый старт
-
-### Предварительные требования
-
-- [Bun](https://bun.sh/) (рекомендуется) или Node.js 18+
-- [Docker](https://www.docker.com/) и Docker Compose
-- [localtunnel](https://github.com/localtunnel/localtunnel) для HTTPS в разработке (webhook)
-- Telegram Bot Token от [@BotFather](https://t.me/BotFather)
-
-### 1. Клонирование и установка
-
-```bash
-# Клонирование репозитория
-git clone <repository-url>
-cd tg-moderator-ai
-
-# Установка зависимостей
-bun install
+```
+User → Workspace → bots[] → chats[] → rules[] (id из библиотеки workspace)
 ```
 
-### 2. Настройка переменных окружения
+Публичный endpoint: `POST /api/telegram/webhook/:botId`. Защита: per-bot `webhook_secret` + `X-Telegram-Bot-Api-Secret-Token`.
+
+## Стек
+
+| Слой | Технологии |
+|------|------------|
+| Runtime | [Bun](https://bun.sh/) |
+| App | [Nuxt 4](https://nuxt.com/), [Vue 3](https://vuejs.org/), [Tailwind CSS](https://tailwindcss.com/) |
+| БД | [PostgreSQL](https://www.postgresql.org/), [Drizzle ORM](https://orm.drizzle.team/) |
+| Auth | [Better Auth](https://www.better-auth.com/) |
+| LLM | OpenAI-compatible (`LLM_API_KEY`, опционально `LLM_BASE_URL`) |
+
+## Быстрый старт (разработка)
 
 ```bash
-# Копирование примера конфигурации
+git clone https://github.com/tikhomirovv/tg-moderator-ai.git
+cd tg-moderator-ai
+bun install
 cp .env.example .env
 ```
 
-Отредактируйте `.env` файл:
+Минимум в `.env`: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `LLM_API_KEY`, `BASE_URL` (HTTPS для webhook), `SMTP_*`.
 
-```env
-# OpenAI API (обязательно)
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=gpt-4.1-nano-2025-04-14
+**PostgreSQL локально:** `docker compose up -d postgres`
 
-# MongoDB (для Docker Compose)
-MONGODB_URI=mongodb://admin:password@localhost:27017/tg-moderator?authSource=admin
-
-# Базовый URL для webhook (должен быть доступен из интернета)
-# Dev: localtunnel — https://your-subdomain.loca.lt
-# Prod: https://your-domain.com
-BASE_URL=https://your-subdomain.loca.lt
-
-# Настройки приложения
-NODE_ENV=development
-```
-
-### 3. Запуск базы данных
+**Dev HTTPS (webhook):** `bunx localtunnel --port 3001` → `BASE_URL=https://….loca.lt`
 
 ```bash
-# Запуск MongoDB через Docker Compose
-docker-compose up -d mongodb
-
-# Проверка статуса
-docker-compose ps
+bun run dev   # порт 3001, миграции автоматически
 ```
 
-### 4. HTTPS для разработки (localtunnel)
+Полный список переменных — в [`.env.example`](.env.example).
 
-Telegram требует HTTPS для webhook:
+После смены схемы (например после pull с миграциями): `bun run db:reset`
 
-```bash
-# В отдельном терминале (порт приложения — 3001)
-bunx localtunnel --port 3001
-
-# Скопируйте выданный HTTPS URL в .env:
-# BASE_URL=https://your-subdomain.loca.lt
-```
-
-Перезапустите `bun run dev` после смены `BASE_URL`.
-
-### 5. Запуск приложения
+## Команды
 
 ```bash
-# Запуск в режиме разработки
-bun run dev
-```
-
-Приложение будет доступно на http://localhost:3001
-
-### 6. Инициализация базы данных
-
-При первом запуске база данных автоматически инициализируется с базовыми данными.
-
-## 🔌 API Endpoints
-
-### Боты
-- `GET /api/bots` - список всех ботов
-- `POST /api/bots` - создание бота
-- `GET /api/bots/[id]` - информация о боте
-- `PUT /api/bots/[id]` - обновление бота
-- `DELETE /api/bots/[id]` - удаление бота
-
-### Конфигурация
-- `GET /api/config/rules` - список правил
-- `POST /api/config/rules` - создание правила
-- `PUT /api/config/rules/[id]` - обновление правила
-- `DELETE /api/config/rules/[id]` - удаление правила
-
-### Модерация
-- `GET /api/moderation/logs` - логи модерации
-- `GET /api/moderation/stats` - статистика модерации
-
-### Telegram Webhook
-- `POST /api/telegram/webhook/[botId]` - webhook для Telegram
-
-## 📝 Логирование
-
-Приложение использует Pino для структурированного логирования:
-
-- **INFO**: основные действия (создание бота, обработка сообщений)
-- **ERROR**: ошибки и исключения
-- **WARN**: предупреждения (неправильные токены, ошибки API)
-
-Логи выводятся в консоль в формате JSON для удобного парсинга.
-
-## 🐳 Развертывание
-
-### Docker Compose (рекомендуется)
-
-```bash
-# Запуск всех сервисов
-docker-compose up -d
-
-# Просмотр логов
-docker-compose logs -f
-
-# Остановка
-docker-compose down
-```
-
-### Ручное развертывание
-
-1. Установите MongoDB
-2. Настройте переменные окружения
-3. Запустите приложение:
-   ```bash
-   bun run build
-   bun run start
-   ```
-
-## 🔧 Разработка
-
-### Команды разработки
-
-```bash
-# Запуск в режиме разработки
-bun run dev
-
-# Сборка для продакшена
+bun run dev          # dev + миграции (порт 3001)
 bun run build
-
+bun test
+bun run db:migrate
+bun run db:reset
+make docker-build
 ```
 
-## 🐛 Устранение неполадок
+## Production
 
-### Частые проблемы
+Образ: `ghcr.io/tikhomirovv/tg-moderator-ai:latest` (CI на push `master` / теги `v*`).
 
-1. **Webhook не работает**:
-   - Убедитесь, что BASE_URL доступен из интернета
-   - Проверьте, что используется HTTPS
-   - Проверьте логи на наличие ошибок
+Кратко: [deploy/README.md](deploy/README.md) · полная инструкция: [.docs/deploy.md](.docs/deploy.md)
 
-2. **Бот не отвечает**:
-   - Проверьте правильность токена
-   - Убедитесь, что бот добавлен в чат
-   - Проверьте права бота в чате
+Health: `GET /api/health` → `{"ok":true}`. В контейнере порт **3000**.
 
-3. **Ошибки MongoDB**:
-   - Убедитесь, что MongoDB запущена
-   - Проверьте строку подключения в .env
-   - Проверьте права доступа к базе данных
+## Дополнительные документы
 
-### Логи и отладка
+| Документ | Описание |
+|----------|----------|
+| [Production deploy](.docs/deploy.md) | Пошаговый production deploy (GHCR, env, Traefik, проверки) |
+| [deploy/compose.example.yml](deploy/compose.example.yml) | Пример Traefik compose |
+| [AGENTS.md](AGENTS.md) | Контекст для разработки |
+| [.docs/SPEC.md](.docs/SPEC.md) | Спецификация (может отставать от кода) |
 
-```bash
-# Просмотр логов приложения
-bun run dev
+## API (кратко)
 
-# Просмотр логов Docker
-docker-compose logs -f
+| Метод | Путь | Описание |
+|-------|------|----------|
+| `GET/POST` | `/api/bots` | Список / создание |
+| `GET/PUT` | `/api/bots/:id` | Детали / обновление |
+| `GET` | `/api/bots/:id/logs`, `.../statistics` | Логи, статистика |
+| `GET/POST` | `/api/config/rules` | Список / создание |
+| `PUT/DELETE` | `/api/config/rules/:id` | Обновление / удаление |
+| `POST` | `/api/telegram/webhook/:botId` | Webhook Telegram |
+| `*` | `/api/auth/*` | Better Auth |
 
-# Просмотр логов MongoDB
-docker-compose logs mongodb
-```
+## Устранение неполадок
 
-## 🚢 Production deploy (Docker + GHCR)
+- **Webhook / бот Problem** — `BASE_URL` публичный HTTPS
+- **БД** — `DATABASE_URL`, `bun run db:migrate` или `db:reset`
+- **LLM** — `LLM_API_KEY`, при gateway — `LLM_BASE_URL` + `LLM_MODEL`
+- **Auth** — `BETTER_AUTH_URL` совпадает с URL в браузере
 
-CI publishes images to `ghcr.io/tikhomirovv/tg-moderator-ai` on push to `master` and tags `v*`.
+## Лицензия
 
-- **Guide:** [deploy/README.md](deploy/README.md)
-- **Compose example (Traefik):** [deploy/compose.example.yml](deploy/compose.example.yml)
-- **Local build:** `make docker-build`
-
-Container startup applies DB migrations, then registers webhooks for active bots. Health: `GET /api/health` → `{"ok":true}`.
-
-## 📄 Лицензия
-
-Этот проект распространяется под лицензией [Creative Commons Attribution-NonCommercial 4.0 International](LICENSE).
-
-**⭐ Если проект вам понравился, поставьте звездочку на GitHub!**
+[CC-BY-NC-4.0](LICENSE)

@@ -404,6 +404,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
+import { shouldRedirectFromBotDetail } from "~/lib/workspace-bot-route";
 
 const route = useRoute();
 const botId = route.params.id as string;
@@ -484,13 +485,24 @@ function formatDate(dateString: string) {
   });
 }
 
-async function loadBot() {
+async function loadBot(options: { afterWorkspaceSwitch?: boolean } = {}) {
   loading.value = true;
   try {
     const resp = await $fetch<any>(`/api/bots/${botId}`);
     bot.value = resp?.data;
-  } catch (error) {
-    console.error("Error loading bot:", error);
+  } catch (error: any) {
+    const status = error?.statusCode ?? error?.response?.status;
+    const botMissing = status === 404;
+
+    // After workspace switch, redirect when bot does not exist in new workspace.
+    if (options.afterWorkspaceSwitch && shouldRedirectFromBotDetail(!botMissing)) {
+      await navigateTo("/bots");
+      return;
+    }
+
+    if (!botMissing) {
+      console.error("Error loading bot:", error);
+    }
   } finally {
     loading.value = false;
   }
@@ -656,4 +668,13 @@ onMounted(loadBot);
 onMounted(loadRules);
 onMounted(loadLogs);
 onMounted(loadStatistics);
+
+useOnWorkspaceSwitch(async () => {
+  await loadBot({ afterWorkspaceSwitch: true });
+  if (bot.value) {
+    await loadRules();
+    await loadLogs();
+    await loadStatistics();
+  }
+});
 </script>

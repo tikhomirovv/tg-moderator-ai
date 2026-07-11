@@ -56,6 +56,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   createWorkspace: [];
+  switched: [workspaceId: string];
 }>();
 
 const open = ref(false);
@@ -80,7 +81,7 @@ async function switchWorkspace(workspaceId: string) {
   await authClient.organization.setActive({ organizationId: workspaceId });
   await authClient.getSession();
   open.value = false;
-  await refreshNuxtApp();
+  emit("switched", workspaceId);
 }
 
 function openCreateModal() {

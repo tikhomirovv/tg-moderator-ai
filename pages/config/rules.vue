@@ -197,4 +197,5 @@ async function createRule() {
 }
 
 onMounted(load);
+useOnWorkspaceSwitch(() => load());
 </script>

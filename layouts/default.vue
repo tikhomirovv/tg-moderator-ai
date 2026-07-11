@@ -12,6 +12,7 @@
           ref="workspaceSwitcher"
           :current-workspace-id="currentWorkspaceId"
           @create-workspace="showWorkspaceModal = true"
+          @switched="onWorkspaceSwitched"
         />
       </div>
 
@@ -91,6 +92,10 @@
 import { authClient } from "~/lib/auth-client";
 import { fetchAuthSession } from "~/lib/fetch-auth-session";
 import { fetchUserWorkspaces } from "~/lib/fetch-workspaces";
+import {
+  provideWorkspaceContext,
+  type WorkspaceSwitchHandler,
+} from "~/composables/useWorkspaceContext";
 
 const { data: session, refresh: refreshSession } = await useAsyncData(
   "layout-auth-session",
@@ -100,10 +105,36 @@ const showWorkspaceModal = ref(false);
 const showInviteModal = ref(false);
 const workspaceSwitcher = ref<{ reload: () => Promise<void> } | null>(null);
 const currentWorkspaceName = ref("");
+const workspaceSwitchHandlers = new Set<WorkspaceSwitchHandler>();
 
 const currentWorkspaceId = computed(
   () => session.value?.session?.activeOrganizationId ?? undefined
 );
+
+async function completeWorkspaceSwitch(workspaceId: string): Promise<void> {
+  await refreshSession();
+  await refreshWorkspaceName();
+  await workspaceSwitcher.value?.reload();
+
+  for (const handler of workspaceSwitchHandlers) {
+    await handler(workspaceId);
+  }
+}
+
+provideWorkspaceContext({
+  activeWorkspaceId: currentWorkspaceId,
+  registerOnSwitch(handler) {
+    workspaceSwitchHandlers.add(handler);
+    onUnmounted(() => {
+      workspaceSwitchHandlers.delete(handler);
+    });
+  },
+  completeSwitch: completeWorkspaceSwitch,
+});
+
+async function onWorkspaceSwitched(workspaceId: string) {
+  await completeWorkspaceSwitch(workspaceId);
+}
 
 async function refreshWorkspaceName() {
   const workspaceId = currentWorkspaceId.value;
@@ -145,8 +176,13 @@ async function ensureWorkspace() {
 async function onWorkspaceCreated() {
   await workspaceSwitcher.value?.reload();
   await authClient.getSession();
-  await refreshSession();
-  await refreshWorkspaceName();
+  const workspaceId = session.value?.session?.activeOrganizationId;
+  if (workspaceId) {
+    await completeWorkspaceSwitch(workspaceId);
+  } else {
+    await refreshSession();
+    await refreshWorkspaceName();
+  }
 }
 
 onMounted(() => {

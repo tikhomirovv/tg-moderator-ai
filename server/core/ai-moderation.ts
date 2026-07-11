@@ -5,14 +5,15 @@ import { logger } from "./logger";
 import {
   createLlmClient,
   loadLlmConfig,
+  resolveLlmLogHost,
   resolveLlmModel,
-  type LlmProviderConfig,
+  type LlmConfig,
 } from "./llm-provider";
 
 type AnalyzeMessageOptions = {
   client?: OpenAI;
   model?: string;
-  config?: LlmProviderConfig;
+  config?: LlmConfig;
 };
 
 export function buildModerationSystemPrompt(): string {
@@ -74,7 +75,7 @@ export async function analyzeMessage(
         messageLength: request.message.length,
         rulesCount: rules.length,
         model,
-        provider: config.provider,
+        llm_host: resolveLlmLogHost(config.baseUrl),
       },
       "Sending moderation request to LLM"
     );

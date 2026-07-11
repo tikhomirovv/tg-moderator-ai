@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
   createLlmClient,
+  DEFAULT_LLM_HOST,
   loadLlmConfig,
+  resolveLlmLogHost,
 } from "../../../server/core/llm-provider";
 
 describe("llm-provider", () => {
@@ -10,15 +12,24 @@ describe("llm-provider", () => {
       LLM_API_KEY: "test-key",
       LLM_BASE_URL: "https://openrouter.ai/api/v1",
       LLM_MODEL: "gpt-4o-mini",
-      LLM_PROVIDER: "openrouter",
     });
 
     expect(config).toEqual({
       apiKey: "test-key",
       baseUrl: "https://openrouter.ai/api/v1",
       model: "gpt-4o-mini",
-      provider: "openrouter",
     });
+  });
+
+  test("resolveLlmLogHost returns OpenAI default when base URL is missing", () => {
+    expect(resolveLlmLogHost()).toBe(DEFAULT_LLM_HOST);
+    expect(resolveLlmLogHost("")).toBe(DEFAULT_LLM_HOST);
+  });
+
+  test("resolveLlmLogHost extracts hostname from base URL", () => {
+    expect(resolveLlmLogHost("https://openrouter.ai/api/v1")).toBe(
+      "openrouter.ai"
+    );
   });
 
   test("createLlmClient requires API key", () => {
@@ -26,7 +37,6 @@ describe("llm-provider", () => {
       createLlmClient({
         apiKey: "",
         model: "gpt-4o-mini",
-        provider: "openai",
       })
     ).toThrow("LLM_API_KEY is not configured");
   });
@@ -36,7 +46,6 @@ describe("llm-provider", () => {
       apiKey: "test-key",
       baseUrl: "https://polza.ai/api/v1",
       model: "gpt-4o-mini",
-      provider: "polza",
     });
 
     expect(client).toBeDefined();

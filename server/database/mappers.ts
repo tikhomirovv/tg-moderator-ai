@@ -14,15 +14,33 @@ type UserContextRow = typeof import("./schema").userContexts.$inferSelect;
 type UserMessageRow = typeof import("./schema").userMessages.$inferSelect;
 type ChatStatisticsRow = typeof import("./schema").chatStatistics.$inferSelect;
 
-export function toRule(row: RuleRow): Rule {
+export function toRule(
+  row: RuleRow,
+  whitelist: import("./models/rule").RuleWhitelistEntry[] = []
+): Rule {
   return {
     id: row.id,
     name: row.name,
     description: row.description,
     ai_prompt: row.aiPrompt,
     is_active: row.isActive,
+    delete_on_violation: row.deleteOnViolation,
+    ban_on_violation: row.banOnViolation,
+    warnings_before_ban: row.warningsBeforeBan,
+    whitelist,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
+  };
+}
+
+type RuleWhitelistRow =
+  typeof import("./schema").ruleWhitelist.$inferSelect;
+
+export function toRuleWhitelistEntry(row: RuleWhitelistRow) {
+  return {
+    id: row.id,
+    telegram_user_id: row.telegramUserId,
+    username: row.username,
   };
 }
 
@@ -30,8 +48,6 @@ export function toChat(row: ChatRow, ruleIds: string[]): DbChat {
   return {
     chat_id: row.chatId,
     name: row.name,
-    warnings_before_ban: row.warningsBeforeBan,
-    auto_delete_violations: row.autoDeleteViolations,
     silent_mode: row.silentMode,
     rules: ruleIds,
   };

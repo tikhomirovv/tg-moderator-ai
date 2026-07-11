@@ -15,6 +15,7 @@ import {
   primaryKey,
   foreignKey,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { organization } from "./auth-schema";
 
 export const actionTypeEnum = pgEnum("action_type", [
@@ -34,10 +35,36 @@ export const rules = pgTable(
     description: text("description").notNull(),
     aiPrompt: text("ai_prompt").notNull(),
     isActive: boolean("is_active").notNull().default(true),
+    deleteOnViolation: boolean("delete_on_violation").notNull().default(false),
+    banOnViolation: boolean("ban_on_violation").notNull().default(false),
+    warningsBeforeBan: integer("warnings_before_ban"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.workspaceId, table.id] })]
+);
+
+export const ruleWhitelist = pgTable(
+  "rule_whitelist",
+  {
+    id: serial("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    ruleId: varchar("rule_id", { length: 64 }).notNull(),
+    telegramUserId: bigint("telegram_user_id", { mode: "number" }),
+    username: varchar("username", { length: 255 }),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.workspaceId, table.ruleId],
+      foreignColumns: [rules.workspaceId, rules.id],
+    }).onDelete("cascade"),
+    uniqueIndex("rule_whitelist_rule_user_unique")
+      .on(table.ruleId, table.telegramUserId)
+      .where(sql`${table.telegramUserId} IS NOT NULL`),
+    uniqueIndex("rule_whitelist_rule_username_unique")
+      .on(table.ruleId, table.username)
+      .where(sql`${table.username} IS NOT NULL`),
+  ]
 );
 
 export const bots = pgTable(
@@ -68,10 +95,6 @@ export const chats = pgTable(
       .references(() => bots.id, { onDelete: "cascade" }),
     chatId: bigint("chat_id", { mode: "number" }).notNull(),
     name: text("name").notNull(),
-    warningsBeforeBan: integer("warnings_before_ban").notNull().default(3),
-    autoDeleteViolations: boolean("auto_delete_violations")
-      .notNull()
-      .default(true),
     silentMode: boolean("silent_mode").notNull().default(false),
   },
   (table) => [

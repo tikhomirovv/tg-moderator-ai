@@ -1,5 +1,4 @@
 CREATE TYPE "public"."action_type" AS ENUM('warning', 'delete', 'ban');--> statement-breakpoint
-CREATE TYPE "public"."severity" AS ENUM('low', 'medium', 'high');--> statement-breakpoint
 CREATE TABLE "bots" (
 	"id" varchar(64) PRIMARY KEY NOT NULL,
 	"workspace_id" text NOT NULL,
@@ -37,8 +36,6 @@ CREATE TABLE "chats" (
 	"bot_id" varchar(64) NOT NULL,
 	"chat_id" bigint NOT NULL,
 	"name" text NOT NULL,
-	"warnings_before_ban" integer DEFAULT 3 NOT NULL,
-	"auto_delete_violations" boolean DEFAULT true NOT NULL,
 	"silent_mode" boolean DEFAULT false NOT NULL
 );
 --> statement-breakpoint
@@ -57,14 +54,24 @@ CREATE TABLE "moderation_actions" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "rule_whitelist" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"workspace_id" text NOT NULL,
+	"rule_id" varchar(64) NOT NULL,
+	"telegram_user_id" bigint,
+	"username" varchar(255)
+);
+--> statement-breakpoint
 CREATE TABLE "rules" (
 	"id" varchar(64) NOT NULL,
 	"workspace_id" text NOT NULL,
 	"name" text NOT NULL,
 	"description" text NOT NULL,
 	"ai_prompt" text NOT NULL,
-	"severity" "severity" NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
+	"delete_on_violation" boolean DEFAULT false NOT NULL,
+	"ban_on_violation" boolean DEFAULT false NOT NULL,
+	"warnings_before_ban" integer,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "rules_workspace_id_id_pk" PRIMARY KEY("workspace_id","id")
@@ -183,6 +190,7 @@ ALTER TABLE "bots" ADD CONSTRAINT "bots_workspace_id_organization_id_fk" FOREIGN
 ALTER TABLE "chat_rules" ADD CONSTRAINT "chat_rules_chat_id_chats_id_fk" FOREIGN KEY ("chat_id") REFERENCES "public"."chats"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "chat_rules" ADD CONSTRAINT "chat_rules_workspace_id_rule_id_rules_workspace_id_id_fk" FOREIGN KEY ("workspace_id","rule_id") REFERENCES "public"."rules"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "chats" ADD CONSTRAINT "chats_bot_id_bots_id_fk" FOREIGN KEY ("bot_id") REFERENCES "public"."bots"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "rule_whitelist" ADD CONSTRAINT "rule_whitelist_workspace_id_rule_id_rules_workspace_id_id_fk" FOREIGN KEY ("workspace_id","rule_id") REFERENCES "public"."rules"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "rules" ADD CONSTRAINT "rules_workspace_id_organization_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invitation" ADD CONSTRAINT "invitation_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -197,6 +205,8 @@ CREATE UNIQUE INDEX "chats_bot_chat_unique" ON "chats" USING btree ("bot_id","ch
 CREATE INDEX "moderation_actions_bot_chat_ts" ON "moderation_actions" USING btree ("bot_id","chat_id","timestamp");--> statement-breakpoint
 CREATE INDEX "moderation_actions_bot_user_ts" ON "moderation_actions" USING btree ("bot_id","chat_id","user_id","timestamp");--> statement-breakpoint
 CREATE INDEX "moderation_actions_type" ON "moderation_actions" USING btree ("action_type");--> statement-breakpoint
+CREATE UNIQUE INDEX "rule_whitelist_rule_user_unique" ON "rule_whitelist" USING btree ("rule_id","telegram_user_id") WHERE "telegram_user_id" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "rule_whitelist_rule_username_unique" ON "rule_whitelist" USING btree ("rule_id","username") WHERE "username" IS NOT NULL;--> statement-breakpoint
 CREATE UNIQUE INDEX "user_contexts_unique" ON "user_contexts" USING btree ("bot_id","chat_id","user_id");--> statement-breakpoint
 CREATE INDEX "user_contexts_last_activity" ON "user_contexts" USING btree ("last_activity");--> statement-breakpoint
 CREATE INDEX "user_contexts_banned" ON "user_contexts" USING btree ("is_banned");--> statement-breakpoint

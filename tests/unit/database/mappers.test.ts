@@ -4,15 +4,22 @@ import { toChat, toDateKey, toRule } from "../../../server/database/mappers";
 describe("database mappers", () => {
   test("toRule maps drizzle row to API shape", () => {
     const now = new Date("2026-01-01T00:00:00.000Z");
-    const rule = toRule({
-      id: "spam",
-      name: "Spam",
-      description: "No spam",
-      aiPrompt: "detect spam",
-      isActive: true,
-      createdAt: now,
-      updatedAt: now,
-    });
+    const rule = toRule(
+      {
+        id: "spam",
+        workspaceId: "ws-1",
+        name: "Spam",
+        description: "No spam",
+        aiPrompt: "detect spam",
+        isActive: true,
+        deleteOnViolation: true,
+        banOnViolation: false,
+        warningsBeforeBan: 3,
+        createdAt: now,
+        updatedAt: now,
+      },
+      [{ id: 1, telegram_user_id: 42, username: null }]
+    );
 
     expect(rule).toEqual({
       id: "spam",
@@ -20,6 +27,10 @@ describe("database mappers", () => {
       description: "No spam",
       ai_prompt: "detect spam",
       is_active: true,
+      delete_on_violation: true,
+      ban_on_violation: false,
+      warnings_before_ban: 3,
+      whitelist: [{ id: 1, telegram_user_id: 42, username: null }],
       created_at: now,
       updated_at: now,
     });
@@ -32,8 +43,6 @@ describe("database mappers", () => {
         botId: "bot-1",
         chatId: -100123,
         name: "Main",
-        warningsBeforeBan: 2,
-        autoDeleteViolations: true,
         silentMode: false,
       },
       ["spam", "hate_speech"]
@@ -41,6 +50,7 @@ describe("database mappers", () => {
 
     expect(chat.rules).toEqual(["spam", "hate_speech"]);
     expect(chat.chat_id).toBe(-100123);
+    expect(chat.silent_mode).toBe(false);
   });
 
   test("toDateKey normalizes date to YYYY-MM-DD", () => {

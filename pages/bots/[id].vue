@@ -88,9 +88,7 @@
                 <div class="font-medium">{{ chat.name }}</div>
                 <div class="text-sm text-gray-600">ID: {{ chat.chat_id }}</div>
                 <div class="text-sm text-gray-600">
-                  Rules: {{ chat.rules?.length || 0 }}, Warnings:
-                  {{ chat.warnings_before_ban }}, Auto-delete:
-                  {{ chat.auto_delete_violations ? "Yes" : "No" }}
+                  Rules: {{ chat.rules?.length || 0 }}
                 </div>
                 <div class="text-sm text-gray-600">
                   Silent Mode:
@@ -280,34 +278,7 @@
             />
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Warnings Before Ban</label
-            >
-            <input
-              v-model="newChat.warnings_before_ban"
-              type="number"
-              min="1"
-              max="10"
-              class="w-full border rounded px-3 py-2"
-              required
-            />
-          </div>
-
-          <div>
-            <label class="flex items-center">
-              <input
-                v-model="newChat.auto_delete_violations"
-                type="checkbox"
-                class="mr-2"
-              />
-              <span class="text-sm font-medium text-gray-700"
-                >Auto-delete violations</span
-              >
-            </label>
-          </div>
-
-          <!-- Silent режим настройки -->
+          <!-- Silent mode: DB logging only, no Telegram side effects -->
           <div class="border-t pt-4">
             <h4 class="font-medium text-gray-700 mb-3">Silent Mode</h4>
 
@@ -327,16 +298,12 @@
             <div class="mt-3 text-xs text-gray-500 bg-gray-50 p-2 rounded">
               <p class="font-medium mb-1">Silent Mode:</p>
               <p>
-                • <strong>Enabled:</strong> Monitor only - no messages, bans, or
-                deletions
+                • <strong>Enabled:</strong> violations logged to DB only — no
+                Telegram delete, ban, or warning messages
               </p>
               <p>
-                • <strong>Disabled:</strong> Full moderation - warnings, bans,
-                and deletions
-              </p>
-              <p>
-                • <strong>Note:</strong> All violations are still logged and
-                analyzed
+                • <strong>Disabled:</strong> per-rule actions apply (delete,
+                warn, ban as configured on each rule)
               </p>
             </div>
           </div>
@@ -442,10 +409,8 @@ const statistics = ref<any>({
 const newChat = ref({
   chat_id: "",
   name: "",
-  warnings_before_ban: 3,
-  auto_delete_violations: true,
-  rules: [],
-  silent_mode: false, // New field for silent mode
+  rules: [] as string[],
+  silent_mode: false,
 });
 
 const aggregatedStatusText = computed(() => {
@@ -557,10 +522,8 @@ function editChat(chat: any) {
   newChat.value = {
     chat_id: chat.chat_id,
     name: chat.name,
-    warnings_before_ban: chat.warnings_before_ban,
-    auto_delete_violations: chat.auto_delete_violations,
     rules: chat.rules || [],
-    silent_mode: chat.silent_mode, // Map existing silent_mode
+    silent_mode: chat.silent_mode,
   };
   showAddChatModal.value = true;
 }
@@ -571,10 +534,8 @@ function closeChatModal() {
   newChat.value = {
     chat_id: "",
     name: "",
-    warnings_before_ban: 3,
-    auto_delete_violations: true,
     rules: [],
-    silent_mode: false, // Reset silent_mode
+    silent_mode: false,
   };
 }
 

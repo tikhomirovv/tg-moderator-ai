@@ -47,6 +47,7 @@ describe("buildModerationUserPrompt", () => {
       },
       [
         {
+          id: "spam",
           name: "Spam",
           description: "No spam",
           ai_prompt: "commercial links without permission",
@@ -55,6 +56,7 @@ describe("buildModerationUserPrompt", () => {
     );
 
     expect(prompt).toContain("MESSAGE TO ANALYZE");
+    expect(prompt).toContain("[spam]");
     expect(prompt).toContain("commercial links without permission");
     expect(prompt).toContain("Previous warnings: 1");
     expect(prompt).not.toContain("JSON response only");
@@ -83,6 +85,7 @@ describe("analyzeMessage", () => {
       },
       [
         {
+          id: "spam",
           name: "Spam",
           description: "No spam",
           ai_prompt: "detect spam",
@@ -127,6 +130,7 @@ describe("analyzeMessage", () => {
       },
       [
         {
+          id: "spam",
           name: "Spam",
           description: "No spam",
           ai_prompt: "commercial ads",

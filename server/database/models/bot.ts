@@ -1,8 +1,6 @@
 export interface Chat {
   chat_id: number;
   name: string;
-  warnings_before_ban: number;
-  auto_delete_violations: boolean;
   rules: string[];
   silent_mode: boolean;
 }
@@ -23,17 +21,16 @@ export interface CreateBotRequest {
   id: string;
   name: string;
   chats: Chat[];
-  token?: string; // Токен при создании
+  token?: string;
 }
 
 export interface UpdateBotRequest {
   name?: string;
   chats?: Chat[];
-  token?: string; // Токен при обновлении
+  token?: string;
   is_active?: boolean;
 }
 
-// Интерфейс для API ответов (без токена)
 export interface BotResponse {
   id: string;
   name: string;

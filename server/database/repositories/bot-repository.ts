@@ -55,8 +55,6 @@ export class BotRepository {
           botId,
           chatId: chat.chat_id,
           name: chat.name,
-          warningsBeforeBan: chat.warnings_before_ban,
-          autoDeleteViolations: chat.auto_delete_violations,
           silentMode: chat.silent_mode ?? false,
         })
         .returning({ id: chats.id });

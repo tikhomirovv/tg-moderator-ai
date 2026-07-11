@@ -37,7 +37,7 @@ export interface AIModerationRequest {
   rules: string[];
   context: {
     user_warnings: number;
-    chat_history: string[];
+    chat_history: Array<{ text: string; timestamp: string }>;
   };
 }
 

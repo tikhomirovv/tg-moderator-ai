@@ -23,7 +23,7 @@ Rules:
 - Use only the listed rules. Do not invent additional rules or apply general moderation heuristics.
 - If there are no rules, or the message does not violate any listed rule, set violation_detected to false.
 - Consider user_warnings and chat_history when judging patterns and escalation.
-- When analyzing context, ask whether the message continues prior problematic behavior or changes meaning in conversation.
+- chat_history is a JSON array of this user's recent messages in the chat (oldest first): text + timestamp only. Use it for context (e.g. split thoughts across messages). Judge violation only against MESSAGE TO ANALYZE.
 
 Respond with JSON only, no extra text:
 {
@@ -45,11 +45,11 @@ export function buildModerationUserPrompt(
     )
     .join("\n");
 
-  const recentHistory = request.context.chat_history.slice(-3).join(", ");
+  const historyJson = JSON.stringify(request.context.chat_history);
 
   return `USER CONTEXT:
 - Previous warnings: ${request.context.user_warnings}
-- Recent chat history: ${recentHistory || "(none)"}
+- Recent messages (oldest first): ${historyJson}
 
 CHAT RULES (${rules.length}):
 ${rules.length > 0 ? rulesText : "No rules configured"}

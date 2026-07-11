@@ -28,7 +28,7 @@ export async function handleTelegramUpdate(
 
     if (!isBotEligibleForUpdates(botConfig)) {
       if (botConfig && !botConfig.is_active) {
-        logger.info(`Bot ${botId} is inactive, ignoring update`);
+        logger.debug(`Bot ${botId} is inactive, ignoring update`);
       } else if (botConfig && !botConfig.token) {
         logger.warn(`Bot ${botId} has no token`);
       }

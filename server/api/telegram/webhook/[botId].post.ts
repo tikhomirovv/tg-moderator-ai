@@ -1,6 +1,9 @@
 import { handleTelegramUpdate } from "../../../index";
 import { logger } from "../../../core/logger";
-import { assertValidTelegramWebhook } from "../../../utils/telegram-webhook-auth";
+import {
+  assertValidTelegramWebhook,
+  resolveWebhookRejectReason,
+} from "../../../utils/telegram-webhook-auth";
 
 export default defineEventHandler(async (event) => {
   try {
@@ -19,20 +22,21 @@ export default defineEventHandler(async (event) => {
     try {
       await assertValidTelegramWebhook(botId, secretToken);
     } catch (error) {
+      const reason = await resolveWebhookRejectReason(botId, secretToken);
       logger.warn(
-        { botId, hasSecretHeader: Boolean(secretToken) },
+        { botId, reason },
         "Rejected suspicious Telegram webhook request"
       );
       throw error;
     }
 
-    logger.info(
+    logger.debug(
       `Received webhook for bot ${botId}, update_id: ${body.update_id}`
     );
 
     await handleTelegramUpdate(botId, body);
 
-    logger.info(`Webhook processed for bot ${botId}`);
+    logger.debug(`Webhook processed for bot ${botId}`);
 
     return {
       success: true,

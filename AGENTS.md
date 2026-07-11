@@ -61,3 +61,7 @@ bun run dev
 bun run build
 bun test
 ```
+
+## Логирование
+
+Уровни и правила: [`docs/logging.md`](docs/logging.md). Переменная `LOG_LEVEL` (`info` по умолчанию, `debug` для отладки).

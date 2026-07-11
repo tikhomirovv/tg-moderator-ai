@@ -33,7 +33,7 @@ export class TelegramBot {
 
   async handleUpdate(update: TelegramUpdate): Promise<void> {
     try {
-      logger.info(
+      logger.debug(
         `Получено обновление для бота ${this.botId}, update_id: ${update.update_id}`
       );
 
@@ -46,7 +46,7 @@ export class TelegramBot {
 
       const message = update.message;
 
-      logger.info(
+      logger.debug(
         `Обрабатываем сообщение от пользователя ${message.from.id} в чате ${message.chat.id}`
       );
 
@@ -59,7 +59,7 @@ export class TelegramBot {
         return;
       }
 
-      logger.info(
+      logger.debug(
         `Чат найден в конфигурации: ${chatConfig.name}, правил: ${
           chatConfig.rules?.length || 0
         }`
@@ -72,7 +72,7 @@ export class TelegramBot {
         return;
       }
 
-      logger.info(
+      logger.debug(
         `Начинаем анализ сообщения: "${message.text.substring(0, 50)}${
           message.text.length > 50 ? "..." : ""
         }"`
@@ -127,7 +127,7 @@ export class TelegramBot {
         return;
       }
 
-      logger.info(
+      logger.debug(
         `Загружено правил для чата ${chatConfig.name}: ${applicableRules.length}`
       );
 
@@ -276,7 +276,7 @@ export class TelegramBot {
             message.message_id
           );
         } else {
-          logger.info(
+          logger.warn(
             `Silent mode: warning logged but not sent for user ${message.from.id} in chat ${message.chat.id}`
           );
         }
@@ -304,6 +304,21 @@ export class TelegramBot {
           `Violation: ${ruleLabel}`
         );
       }
+
+      logger.info(
+        {
+          botId: this.botId,
+          chatId: message.chat.id,
+          userId: message.from.id,
+          rule: ruleLabel,
+          confidence: aiResponse.confidence,
+          warn: plan.logWarning,
+          delete: plan.logDelete,
+          ban: plan.logBan,
+          silentMode: Boolean(chatConfig.silent_mode),
+        },
+        "Moderation violation handled"
+      );
     } catch (error) {
       logger.error({ error: error as Error }, "Ошибка обработки нарушения");
     }

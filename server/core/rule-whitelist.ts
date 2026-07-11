@@ -83,7 +83,7 @@ export function filterRulesByWhitelist<T extends { id: string; name?: string }>(
     const matchedEntry = findMatchingWhitelistEntry(entries, sender);
 
     if (matchedEntry !== null) {
-      logger.info(
+      logger.debug(
         {
           botId: logContext?.botId,
           chatId: logContext?.chatId,

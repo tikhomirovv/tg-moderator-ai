@@ -97,7 +97,6 @@ describe("analyzeMessage", () => {
         config: {
           apiKey: "test",
           model: "gpt-test",
-          provider: "openai",
         },
       }
     );
@@ -142,7 +141,6 @@ describe("analyzeMessage", () => {
         config: {
           apiKey: "test",
           model: "gpt-test",
-          provider: "openai",
         },
       }
     );
@@ -181,7 +179,6 @@ describe("analyzeMessage", () => {
           apiKey: "test",
           baseUrl: "https://openrouter.ai/api/v1",
           model: "openrouter/test-model",
-          provider: "openrouter",
         },
       }
     );

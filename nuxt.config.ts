@@ -8,7 +8,6 @@ export default defineNuxtConfig({
     llmApiKey: process.env.LLM_API_KEY,
     llmBaseUrl: process.env.LLM_BASE_URL,
     llmModel: process.env.LLM_MODEL || "gpt-4.1-nano-2025-04-14",
-    llmProvider: process.env.LLM_PROVIDER || "openai",
     databaseUrl:
       process.env.DATABASE_URL ||
       "postgresql://tgmoderator:tgmoderator@localhost:5432/tgmoderator",

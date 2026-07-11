@@ -21,7 +21,7 @@ User → Workspace (Better Auth Organization) → bots[] → chats[] → rules[]
 - Bun, Nuxt 4, Nitro, Vue 3, Tailwind
 - PostgreSQL, Drizzle
 - Better Auth (email + password; Organization = Workspace в UI)
-- LLM: OpenAI-compatible API via `LLM_API_KEY`, optional `LLM_BASE_URL` (OpenRouter/Polza), `LLM_MODEL`, `LLM_PROVIDER`
+- LLM: OpenAI-compatible API via `LLM_API_KEY`, optional `LLM_BASE_URL` (OpenRouter/Polza), `LLM_MODEL`
 
 Код и коммиты: **English**. Общение с пользователем: **RU**.
 

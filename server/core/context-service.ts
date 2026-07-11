@@ -3,6 +3,10 @@ import { UserMessageRepository } from "../database/repositories/user-message-rep
 import { ModerationActionRepository } from "../database/repositories/moderation-action-repository";
 import { ChatStatisticsRepository } from "../database/repositories/chat-statistics-repository";
 import { logger } from "./logger";
+import {
+  buildChatHistoryForPrompt,
+  MAX_USER_MESSAGES_PER_SCOPE,
+} from "./chat-history";
 
 export class ContextService {
   private userContextRepo: UserContextRepository;
@@ -22,10 +26,14 @@ export class ContextService {
     botId: string,
     chatId: number,
     userId: number,
-    userInfo?: { username?: string; first_name?: string; last_name?: string }
+    userInfo?: {
+      username?: string;
+      first_name?: string;
+      last_name?: string;
+    },
+    options?: { excludeMessageId?: number }
   ) {
     try {
-      // Получаем или создаем контекст пользователя
       const userContext = await this.userContextRepo.getOrCreate(
         botId,
         chatId,
@@ -33,17 +41,24 @@ export class ContextService {
         userInfo
       );
 
-      // Получаем последние сообщения пользователя
       const recentMessages = await this.userMessageRepo.getRecentMessages(
         botId,
         chatId,
         userId,
-        5
+        5,
+        { excludeMessageId: options?.excludeMessageId }
       );
 
       return {
         user_warnings: userContext.warnings_count,
-        chat_history: recentMessages.map((m) => m.text),
+        chat_history: buildChatHistoryForPrompt(
+          recentMessages.map((message) => ({
+            message_id: message.message_id,
+            text: message.text,
+            timestamp: message.timestamp,
+          })),
+          options?.excludeMessageId
+        ),
         is_banned: userContext.is_banned,
       };
     } catch (error) {
@@ -77,6 +92,13 @@ export class ContextService {
         text: text,
         timestamp: timestamp,
       });
+
+      await this.userMessageRepo.pruneOldestMessages(
+        botId,
+        chatId,
+        userId,
+        MAX_USER_MESSAGES_PER_SCOPE
+      );
 
       // Обновляем статистику
       await this.incrementMessageCount(botId, chatId);

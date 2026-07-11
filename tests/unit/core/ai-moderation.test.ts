@@ -30,7 +30,7 @@ describe("buildModerationSystemPrompt", () => {
 
     expect(prompt).toContain("chat moderator");
     expect(prompt).toContain("violation_detected");
-    expect(prompt).not.toContain("MESSAGE TO ANALYZE");
+    expect(prompt).toContain("chat_history");
     expect(prompt).not.toContain("CHAT RULES");
   });
 });
@@ -42,7 +42,12 @@ describe("buildModerationUserPrompt", () => {
         message: "buy now",
         context: {
           user_warnings: 1,
-          chat_history: ["hello"],
+          chat_history: [
+            {
+              text: "hello",
+              timestamp: "2026-07-11T10:00:00.000Z",
+            },
+          ],
         },
       },
       [
@@ -59,6 +64,8 @@ describe("buildModerationUserPrompt", () => {
     expect(prompt).toContain("[spam]");
     expect(prompt).toContain("commercial links without permission");
     expect(prompt).toContain("Previous warnings: 1");
+    expect(prompt).toContain('"text":"hello"');
+    expect(prompt).toContain("2026-07-11T10:00:00.000Z");
     expect(prompt).not.toContain("JSON response only");
     expect(prompt).not.toContain("You are a chat moderator");
   });
@@ -80,7 +87,12 @@ describe("analyzeMessage", () => {
         message: "buy now",
         context: {
           user_warnings: 1,
-          chat_history: ["hello"],
+          chat_history: [
+            {
+              text: "hello",
+              timestamp: "2026-07-11T10:00:00.000Z",
+            },
+          ],
         },
       },
       [
@@ -151,7 +163,7 @@ describe("analyzeMessage", () => {
     expect(system).toContain("chat moderator");
     expect(user).toContain("MESSAGE TO ANALYZE");
     expect(user).not.toContain("JSON response only");
-    expect(system).not.toContain("MESSAGE TO ANALYZE");
+    expect(system).toContain("chat_history");
   });
 
   test("works with alternate provider config without throwing", async () => {

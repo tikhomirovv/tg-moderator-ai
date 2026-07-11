@@ -138,7 +138,8 @@ export class TelegramBot {
           username: message.from.username,
           first_name: message.from.first_name,
           last_name: message.from.last_name,
-        }
+        },
+        { excludeMessageId: message.message_id }
       );
 
       const aiRequest: AIModerationRequest = {

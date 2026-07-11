@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, desc, sql } from "drizzle-orm";
+import { and, eq, gte, lte, desc, asc, inArray, ne, sql } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   UserMessage,
@@ -6,6 +6,7 @@ import {
 } from "../models/user-message";
 import { userMessages } from "../schema";
 import { toUserMessage } from "../mappers";
+import { selectOldestMessageIdsToPrune } from "../../core/chat-history";
 
 export class UserMessageRepository {
   private get db() {
@@ -27,6 +28,38 @@ export class UserMessageRepository {
       .returning();
 
     return toUserMessage(row);
+  }
+
+  async pruneOldestMessages(
+    botId: string,
+    chatId: number,
+    userId: number,
+    maxMessages: number
+  ): Promise<void> {
+    const rows = await this.db
+      .select({ id: userMessages.id })
+      .from(userMessages)
+      .where(
+        and(
+          eq(userMessages.botId, botId),
+          eq(userMessages.chatId, chatId),
+          eq(userMessages.userId, userId)
+        )
+      )
+      .orderBy(asc(userMessages.timestamp), asc(userMessages.id));
+
+    const idsToDelete = selectOldestMessageIdsToPrune(
+      rows.map((row) => row.id),
+      maxMessages
+    );
+
+    if (idsToDelete.length === 0) {
+      return;
+    }
+
+    await this.db
+      .delete(userMessages)
+      .where(inArray(userMessages.id, idsToDelete));
   }
 
   async findByMessageId(
@@ -53,22 +86,27 @@ export class UserMessageRepository {
     botId: string,
     chatId: number,
     userId: number,
-    limit: number = 10
+    limit: number = 10,
+    options?: { excludeMessageId?: number }
   ): Promise<UserMessage[]> {
+    const conditions = [
+      eq(userMessages.botId, botId),
+      eq(userMessages.chatId, chatId),
+      eq(userMessages.userId, userId),
+    ];
+
+    if (options?.excludeMessageId !== undefined) {
+      conditions.push(ne(userMessages.messageId, options.excludeMessageId));
+    }
+
     const rows = await this.db
       .select()
       .from(userMessages)
-      .where(
-        and(
-          eq(userMessages.botId, botId),
-          eq(userMessages.chatId, chatId),
-          eq(userMessages.userId, userId)
-        )
-      )
+      .where(and(...conditions))
       .orderBy(desc(userMessages.timestamp))
       .limit(limit);
 
-    return rows.map(toUserMessage);
+    return rows.map(toUserMessage).reverse();
   }
 
   async markAsDeleted(

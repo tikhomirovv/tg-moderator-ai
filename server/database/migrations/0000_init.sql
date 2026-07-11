@@ -58,8 +58,7 @@ CREATE TABLE "rule_whitelist" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"workspace_id" text NOT NULL,
 	"rule_id" varchar(64) NOT NULL,
-	"telegram_user_id" bigint,
-	"username" varchar(255)
+	"entry" varchar(255) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "rules" (
@@ -205,8 +204,7 @@ CREATE UNIQUE INDEX "chats_bot_chat_unique" ON "chats" USING btree ("bot_id","ch
 CREATE INDEX "moderation_actions_bot_chat_ts" ON "moderation_actions" USING btree ("bot_id","chat_id","timestamp");--> statement-breakpoint
 CREATE INDEX "moderation_actions_bot_user_ts" ON "moderation_actions" USING btree ("bot_id","chat_id","user_id","timestamp");--> statement-breakpoint
 CREATE INDEX "moderation_actions_type" ON "moderation_actions" USING btree ("action_type");--> statement-breakpoint
-CREATE UNIQUE INDEX "rule_whitelist_rule_user_unique" ON "rule_whitelist" USING btree ("rule_id","telegram_user_id") WHERE "telegram_user_id" IS NOT NULL;--> statement-breakpoint
-CREATE UNIQUE INDEX "rule_whitelist_rule_username_unique" ON "rule_whitelist" USING btree ("rule_id","username") WHERE "username" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "rule_whitelist_rule_entry_unique" ON "rule_whitelist" USING btree ("rule_id","entry");--> statement-breakpoint
 CREATE UNIQUE INDEX "user_contexts_unique" ON "user_contexts" USING btree ("bot_id","chat_id","user_id");--> statement-breakpoint
 CREATE INDEX "user_contexts_last_activity" ON "user_contexts" USING btree ("last_activity");--> statement-breakpoint
 CREATE INDEX "user_contexts_banned" ON "user_contexts" USING btree ("is_banned");--> statement-breakpoint

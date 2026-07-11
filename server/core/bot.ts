@@ -111,7 +111,8 @@ export class TelegramBot {
       const applicableRules = filterRulesByWhitelist(
         loadedRules,
         whitelistByRuleId,
-        message.from
+        message.from,
+        { botId: this.botId, chatId: message.chat.id }
       );
 
       if (applicableRules.length === 0) {

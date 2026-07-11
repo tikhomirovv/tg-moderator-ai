@@ -1,20 +1,17 @@
 import type {
   CreateRuleRequest,
   Rule,
-  RuleWhitelistEntry,
-  RuleWhitelistInput,
   UpdateRuleRequest,
 } from "../../server/database/models/rule";
+import { normalizeWhitelistEntry } from "../../server/core/rule-whitelist";
 
 function ruleKey(workspaceId: string, id: string) {
   return `${workspaceId}:${id}`;
 }
 
-let nextWhitelistId = 1;
-
 export class InMemoryRuleRepository {
   private rules = new Map<string, Rule>();
-  private whitelist = new Map<string, RuleWhitelistEntry[]>();
+  private whitelist = new Map<string, string[]>();
 
   async findAll(workspaceId: string): Promise<Rule[]> {
     return [...this.rules.entries()]
@@ -36,25 +33,14 @@ export class InMemoryRuleRepository {
     };
   }
 
-  private storeWhitelist(ruleId: string, entries: RuleWhitelistInput[] = []) {
-    const stored: RuleWhitelistEntry[] = entries
-      .map((entry) => {
-        const telegram_user_id =
-          entry.telegram_user_id !== undefined && entry.telegram_user_id !== null
-            ? entry.telegram_user_id
-            : null;
-        const username = entry.username?.trim().replace(/^@+/, "") || null;
-        if (telegram_user_id === null && username === null) {
-          return null;
-        }
-        return {
-          id: nextWhitelistId++,
-          telegram_user_id,
-          username,
-        };
-      })
-      .filter((entry): entry is RuleWhitelistEntry => entry !== null);
-
+  private storeWhitelist(ruleId: string, entries: string[] = []) {
+    const stored = [
+      ...new Set(
+        entries
+          .map(normalizeWhitelistEntry)
+          .filter((entry): entry is string => entry !== null)
+      ),
+    ];
     this.whitelist.set(ruleId, stored);
   }
 

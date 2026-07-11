@@ -89,6 +89,41 @@ export class ContextService {
     }
   }
 
+  // Record violation in moderation_actions without warn/ban/delete actions.
+  async logViolationAudit(
+    botId: string,
+    chatId: number,
+    userId: number,
+    messageId: number,
+    ruleViolated: string,
+    aiConfidence: number,
+    aiReasoning: string
+  ) {
+    try {
+      await this.moderationActionRepo.create({
+        bot_id: botId,
+        chat_id: chatId,
+        user_id: userId,
+        message_id: messageId,
+        action_type: "warning",
+        rule_violated: ruleViolated,
+        ai_confidence: aiConfidence,
+        ai_reasoning: aiReasoning,
+        timestamp: new Date(),
+        moderator_bot_id: botId,
+      });
+
+      logger.info(
+        `Violation logged (audit only): bot=${botId}, chat=${chatId}, user=${userId}, rule=${ruleViolated}`
+      );
+    } catch (error) {
+      logger.error(
+        { error: error as Error },
+        "Ошибка записи audit-нарушения"
+      );
+    }
+  }
+
   // Обработка предупреждения
   async handleWarning(
     botId: string,

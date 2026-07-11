@@ -13,6 +13,8 @@ export interface ViolationModerationPlan {
   logBan: boolean;
   /** Persist message deletion in DB. */
   logDelete: boolean;
+  /** Violation audit only (no warn/ban/delete side effects). */
+  logAudit: boolean;
   /** Send warning reply via Telegram API. */
   telegramWarning: boolean;
   /** Call banChatMember via Telegram API. */
@@ -40,15 +42,17 @@ export function planViolationModeration(input: {
     input.rule.ban_on_violation &&
     input.userWarningsBefore >= warningsBeforeBan;
 
-  const logWarning = !shouldBan;
   const logBan = shouldBan;
+  const logWarning = input.rule.ban_on_violation && !shouldBan;
   const logDelete = input.rule.delete_on_violation;
+  const logAudit = !logWarning && !logBan && !logDelete;
   const telegramEnabled = !input.silentMode;
 
   return {
     logWarning,
     logBan,
     logDelete,
+    logAudit,
     telegramWarning: telegramEnabled && logWarning,
     telegramBan: telegramEnabled && logBan,
     telegramDelete: telegramEnabled && logDelete,

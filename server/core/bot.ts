@@ -278,6 +278,16 @@ export class TelegramBot {
             `Silent mode: warning logged but not sent for user ${message.from.id} in chat ${message.chat.id}`
           );
         }
+      } else if (plan.logAudit) {
+        await this.contextService.logViolationAudit(
+          this.botId,
+          message.chat.id,
+          message.from.id,
+          message.message_id,
+          ruleLabel,
+          aiResponse.confidence,
+          aiResponse.reasoning
+        );
       }
 
       if (plan.logDelete) {

@@ -40,7 +40,7 @@ export function buildModerationUserPrompt(
   const rulesText = rules
     .map(
       (rule) =>
-        `- ${rule.name}: ${rule.description}\n  Criteria: ${rule.ai_prompt}`
+        `- [${rule.id}] ${rule.name}: ${rule.description}\n  Criteria: ${rule.ai_prompt}`
     )
     .join("\n");
 

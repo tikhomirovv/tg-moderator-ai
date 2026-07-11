@@ -1,12 +1,15 @@
 import { TelegramUpdate, TelegramMessage } from "../types/telegram";
 import { Bot as DbBot } from "../database/models/bot";
-import { AIModerationRequest } from "../types/moderation";
+import { AIModerationRequest, AIModerationResponse } from "../types/moderation";
 import { Bot, Chat as ConfigChat } from "../types/config";
+import { Rule as DbRule } from "../database/models/rule";
 import { analyzeMessage } from "./ai-moderation";
 import { logger } from "./logger";
 import { RuleRepository } from "../database/repositories/rule-repository";
 import { BotRepository } from "../database/repositories/bot-repository";
 import { ContextService } from "./context-service";
+import { filterRulesByWhitelist } from "./rule-whitelist";
+import { planViolationModeration } from "./moderation-actions";
 
 export class TelegramBot {
   private token: string;
@@ -28,7 +31,6 @@ export class TelegramBot {
     this.contextService = new ContextService();
   }
 
-  // Обработка входящих обновлений
   async handleUpdate(update: TelegramUpdate): Promise<void> {
     try {
       logger.info(
@@ -39,7 +41,7 @@ export class TelegramBot {
         logger.debug(
           `Игнорируем обновление без сообщения: update_id=${update.update_id}`
         );
-        return; // Игнорируем обновления без сообщений
+        return;
       }
 
       const message = update.message;
@@ -48,14 +50,13 @@ export class TelegramBot {
         `Обрабатываем сообщение от пользователя ${message.from.id} в чате ${message.chat.id}`
       );
 
-      // Проверяем, что сообщение из отслеживаемого чата
       const chatConfig = await this.getChatConfig(message.chat.id);
       if (!chatConfig) {
         const chatLabel = this.describeTelegramChat(message.chat);
         logger.warn(
           `Сообщение из неотслеживаемого чата: chat_id=${message.chat.id}, chat=${chatLabel}, bot_id=${this.botId}`
         );
-        return; // Игнорируем сообщения из неотслеживаемых чатов
+        return;
       }
 
       logger.info(
@@ -64,7 +65,6 @@ export class TelegramBot {
         }`
       );
 
-      // Проверяем, что сообщение содержит текст
       if (!message.text) {
         logger.debug(
           `Игнорируем сообщение без текста: message_id=${message.message_id}`
@@ -78,48 +78,58 @@ export class TelegramBot {
         }"`
       );
 
-      // Анализируем сообщение
       await this.analyzeAndModerate(message, chatConfig);
     } catch (error) {
       logger.error({ error: error as Error }, "Ошибка обработки обновления");
     }
   }
 
-  // Анализ и модерация сообщения
   private async analyzeAndModerate(
     message: TelegramMessage,
     chatConfig: ConfigChat
   ): Promise<void> {
     try {
-      // Сохраняем сообщение в базу данных
       await this.contextService.saveMessage(
         this.botId,
         message.chat.id,
         message.from.id,
         message.message_id,
         message.text!,
-        new Date(message.date * 1000) // Telegram date в секундах, конвертируем в миллисекунды
+        new Date(message.date * 1000)
       );
 
-      // Получаем правила из базы данных
       const ruleRepo = new RuleRepository();
-      const rules = await ruleRepo.findByIds(
+      const loadedRules = await ruleRepo.findByIds(
         chatConfig.rules || [],
         this.workspaceId
       );
 
-      logger.info(
-        `Загружено правил для чата ${chatConfig.name}: ${rules.length}`
+      const whitelistByRuleId = new Map(
+        loadedRules.map((rule) => [rule.id, rule.whitelist])
       );
 
-      // Отладочная информация о правилах
-      logger.info(
-        `Правила чата ${chatConfig.name} - ID: ${
-          chatConfig.rules?.join(", ") || "нет"
-        }, загружено: ${rules.length}`
+      const applicableRules = filterRulesByWhitelist(
+        loadedRules,
+        whitelistByRuleId,
+        message.from
       );
 
-      // Получаем контекст пользователя
+      if (applicableRules.length === 0) {
+        logger.debug(
+          {
+            chatId: message.chat.id,
+            userId: message.from.id,
+            configuredRules: chatConfig.rules?.length ?? 0,
+          },
+          "No applicable rules after whitelist filter — skipping LLM"
+        );
+        return;
+      }
+
+      logger.info(
+        `Загружено правил для чата ${chatConfig.name}: ${applicableRules.length}`
+      );
+
       const userContext = await this.contextService.getUserContext(
         this.botId,
         message.chat.id,
@@ -131,26 +141,38 @@ export class TelegramBot {
         }
       );
 
-      // Формируем запрос для AI
       const aiRequest: AIModerationRequest = {
         message: message.text!,
         user_id: message.from.id,
         chat_id: message.chat.id,
-        rules: chatConfig.rules,
+        rules: applicableRules.map((rule) => rule.id),
         context: {
           user_warnings: userContext.user_warnings,
           chat_history: userContext.chat_history,
         },
       };
 
-      // Анализируем сообщение с помощью AI
-      const aiResponse = await analyzeMessage(aiRequest, rules);
+      const aiResponse = await analyzeMessage(
+        aiRequest,
+        applicableRules.map((rule) => ({
+          id: rule.id,
+          name: rule.name,
+          description: rule.description,
+          ai_prompt: rule.ai_prompt,
+        }))
+      );
 
       if (aiResponse.violation_detected) {
-        // Нарушение обнаружено
-        await this.handleViolation(message, chatConfig, aiResponse);
+        const violatedRule = applicableRules.find(
+          (rule) => rule.id === aiResponse.rule_violated
+        );
+        await this.handleViolation(
+          message,
+          chatConfig,
+          aiResponse,
+          violatedRule ?? null
+        );
       } else {
-        // Нарушений нет
         logger.debug(
           `Сообщение от пользователя ${message.from.id} не содержит нарушений`
         );
@@ -160,41 +182,43 @@ export class TelegramBot {
     }
   }
 
-  // Обработка нарушения
   private async handleViolation(
     message: TelegramMessage,
     chatConfig: ConfigChat,
-    aiResponse: any
+    aiResponse: AIModerationResponse,
+    violatedRule: DbRule | null
   ): Promise<void> {
     try {
-      // Получаем актуальный контекст пользователя перед обработкой
       const userContext = await this.contextService.getUserContext(
         this.botId,
         message.chat.id,
         message.from.id
       );
 
-      // Проверяем, нужно ли забанить пользователя
-      const shouldBan =
-        userContext.user_warnings >= chatConfig.warnings_before_ban;
+      const ruleConfig = violatedRule ?? {
+        delete_on_violation: false,
+        ban_on_violation: false,
+        warnings_before_ban: null,
+      };
 
-      if (shouldBan) {
-        // Сохраняем информацию о бане в БД
+      const plan = planViolationModeration({
+        silentMode: Boolean(chatConfig.silent_mode),
+        rule: ruleConfig,
+        userWarningsBefore: userContext.user_warnings,
+      });
+
+      const ruleLabel = aiResponse.rule_violated || "unknown";
+
+      if (plan.logBan) {
         await this.contextService.handleUserBan(
           this.botId,
           message.chat.id,
           message.from.id,
-          aiResponse.rule_violated || "unknown"
+          ruleLabel
         );
 
-        // Баним пользователя (если не silent режим)
-        if (!chatConfig.silent_mode) {
-          // Реальный бан через Telegram API
-          await this.banUser(
-            message.chat.id,
-            message.from.id,
-            aiResponse.rule_violated
-          );
+        if (plan.telegramBan) {
+          await this.banUser(message.chat.id, message.from.id, ruleLabel);
 
           const banText =
             `🚫 <b>Пользователь заблокирован!</b>\n\n` +
@@ -205,48 +229,45 @@ export class TelegramBot {
             }</b> ` +
             `заблокирован за нарушение правил чата.\n` +
             `Количество предупреждений: <b>${userContext.user_warnings}</b>\n` +
-            `Последнее нарушение: <b>${aiResponse.rule_violated}</b>`;
+            `Последнее нарушение: <b>${ruleLabel}</b>`;
 
           await this.sendInfoMessage(message.chat.id, banText);
         }
 
         logger.warn(
           `Пользователь ${message.from.id} ${
-            chatConfig.silent_mode ? "would be banned" : "забанен"
+            plan.telegramBan ? "забанен" : "would be banned (silent)"
           } в чате ${message.chat.id} после ${
             userContext.user_warnings
-          } предупреждений (silent: ${chatConfig.silent_mode})`
+          } предупреждений`
         );
-      } else {
-        // Обрабатываем предупреждение
+      } else if (plan.logWarning) {
         await this.contextService.handleWarning(
           this.botId,
           message.chat.id,
           message.from.id,
           message.message_id,
-          aiResponse.rule_violated || "unknown",
+          ruleLabel,
           aiResponse.confidence,
           aiResponse.reasoning
         );
 
-        // Отправляем предупреждение (если не silent режим)
-        if (!chatConfig.silent_mode) {
+        if (plan.telegramWarning) {
           const warningsLeft =
-            chatConfig.warnings_before_ban - userContext.user_warnings;
+            plan.warningsBeforeBan - userContext.user_warnings;
           const warningText =
             `⚠️ <b>Предупреждение!</b>\n\n` +
             `Сообщение нарушает правила чата.\n` +
-            `Нарушение: <b>${aiResponse.rule_violated}</b>\n` +
+            `Нарушение: <b>${ruleLabel}</b>\n` +
             `Уверенность: <b>${Math.round(
               aiResponse.confidence * 100
             )}%</b>\n\n` +
             `Предупреждений: <b>${userContext.user_warnings + 1}/${
-              chatConfig.warnings_before_ban
+              plan.warningsBeforeBan
             }</b>\n` +
             `До блокировки: <b>${warningsLeft - 1}</b>\n\n` +
             `Пожалуйста, соблюдайте правила чата.`;
 
-          // Отвечаем на сообщение с нарушением
           await this.sendMessage(
             message.chat.id,
             warningText,
@@ -254,21 +275,21 @@ export class TelegramBot {
           );
         } else {
           logger.info(
-            `Silent mode: Warning logged but not sent for user ${message.from.id} in chat ${message.chat.id}`
+            `Silent mode: warning logged but not sent for user ${message.from.id} in chat ${message.chat.id}`
           );
         }
       }
 
-      // Удаляем сообщение если настроено
-      if (chatConfig.auto_delete_violations) {
-        await this.deleteMessage(message.chat.id, message.message_id);
+      if (plan.logDelete) {
+        if (plan.telegramDelete) {
+          await this.deleteMessage(message.chat.id, message.message_id);
+        }
 
-        // Обрабатываем удаление сообщения
         await this.contextService.handleMessageDeletion(
           this.botId,
           message.chat.id,
           message.message_id,
-          `Violation: ${aiResponse.rule_violated}`
+          `Violation: ${ruleLabel}`
         );
       }
     } catch (error) {
@@ -276,31 +297,12 @@ export class TelegramBot {
     }
   }
 
-  // Отправка информационного сообщения (без ответа)
   private async sendInfoMessage(chatId: number, text: string): Promise<void> {
     await this.sendMessage(chatId, text);
   }
 
-  // Получение информации о боте
-  private async getBotInfo(): Promise<any> {
-    const response = await fetch(
-      `https://api.telegram.org/bot${this.token}/getMe`
-    );
-    const data = await response.json();
-
-    if (!data.ok) {
-      throw new Error(
-        `Ошибка получения информации о боте: ${data.description}`
-      );
-    }
-
-    return data.result;
-  }
-
-  // Получение конфигурации чата
   private async getChatConfig(chatId: number): Promise<ConfigChat | null> {
     try {
-      // Webhook path has no session — bot id is globally unique in DB.
       const botRepo = new BotRepository();
       const updatedBotConfig = await botRepo.findByIdWithToken(this.botId);
 
@@ -316,7 +318,6 @@ export class TelegramBot {
         chats: updatedBotConfig.chats,
       };
 
-      // Ищем чат в обновленной конфигурации
       const chatConfig = this.botConfig.chats.find(
         (chat) => chat.chat_id === chatId
       );
@@ -333,7 +334,6 @@ export class TelegramBot {
         { error: error as Error },
         `Error getting chat config for ${chatId}`
       );
-      // Возвращаем локальную конфигурацию как fallback
       return (
         this.botConfig.chats.find((chat) => chat.chat_id === chatId) || null
       );
@@ -347,19 +347,17 @@ export class TelegramBot {
     return parts.join(" · ") || "unknown";
   }
 
-  // Отправка сообщения
   private async sendMessage(
     chatId: number,
     text: string,
     replyToMessageId?: number
   ): Promise<void> {
-    const messageData: any = {
+    const messageData: Record<string, unknown> = {
       chat_id: chatId,
-      text: text,
+      text,
       parse_mode: "HTML",
     };
 
-    // Если указан ID сообщения для ответа, добавляем reply_to_message_id
     if (replyToMessageId) {
       messageData.reply_to_message_id = replyToMessageId;
     }
@@ -380,7 +378,6 @@ export class TelegramBot {
     }
   }
 
-  // Удаление сообщения
   private async deleteMessage(
     chatId: number,
     messageId: number
@@ -406,7 +403,6 @@ export class TelegramBot {
     }
   }
 
-  // Бан пользователя в чате
   private async banUser(
     chatId: number,
     userId: number,
@@ -422,8 +418,8 @@ export class TelegramBot {
         body: JSON.stringify({
           chat_id: chatId,
           user_id: userId,
-          until_date: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 дней
-          revoke_messages: true, // Удаляем все сообщения пользователя
+          until_date: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+          revoke_messages: true,
         }),
       }
     );
@@ -445,7 +441,6 @@ export class TelegramBot {
     logger.info(`Пользователь ${userId} забанен в чате ${chatId}`);
   }
 
-  // Установка вебхука
   async setWebhook(url: string): Promise<void> {
     try {
       const response = await fetch(
@@ -456,7 +451,7 @@ export class TelegramBot {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            url: url,
+            url,
             allowed_updates: ["message", "edited_message"],
           }),
         }
@@ -479,7 +474,6 @@ export class TelegramBot {
     }
   }
 
-  // Получение информации о боте
   getBotId(): string {
     return this.botId;
   }

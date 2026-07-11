@@ -24,6 +24,8 @@ describe("seedWorkspaceRules", () => {
       expect(rule.ai_prompt.toLowerCase()).not.toContain("определи");
       expect(rule.ai_prompt.toLowerCase()).not.toContain("прочитай");
       expect(rule.ai_prompt.toLowerCase()).not.toContain("проверь");
+      expect(typeof rule.delete_on_violation).toBe("boolean");
+      expect(typeof rule.ban_on_violation).toBe("boolean");
     }
   });
 

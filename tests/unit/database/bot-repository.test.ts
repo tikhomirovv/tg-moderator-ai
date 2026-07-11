@@ -28,16 +28,12 @@ describe("BotRepository", () => {
         {
           chat_id: -100111,
           name: "General",
-          warnings_before_ban: 3,
-          auto_delete_violations: true,
           silent_mode: false,
           rules: ["spam"],
         },
         {
           chat_id: -100222,
           name: "Strict",
-          warnings_before_ban: 1,
-          auto_delete_violations: false,
           silent_mode: true,
           rules: ["hate_speech"],
         },
@@ -46,7 +42,7 @@ describe("BotRepository", () => {
 
     expect(created.chats).toHaveLength(2);
     expect(created.chats[0]?.rules).toEqual(["spam"]);
-    expect(created.chats[1]?.rules).toEqual(["hate_speech"]);
+    expect(created.chats[1]?.silent_mode).toBe(true);
 
     const publicBot = await botRepo.findById("mod-bot", TEST_WORKSPACE_ID);
     expect(publicBot?.chats).toHaveLength(2);
@@ -66,8 +62,6 @@ describe("BotRepository", () => {
         {
           chat_id: -100333,
           name: "Old",
-          warnings_before_ban: 3,
-          auto_delete_violations: true,
           silent_mode: false,
           rules: [],
         },
@@ -79,9 +73,7 @@ describe("BotRepository", () => {
         {
           chat_id: -100444,
           name: "New",
-          warnings_before_ban: 2,
-          auto_delete_violations: false,
-          silent_mode: false,
+          silent_mode: true,
           rules: [],
         },
       ],
@@ -89,6 +81,7 @@ describe("BotRepository", () => {
 
     expect(updated?.chats).toHaveLength(1);
     expect(updated?.chats[0]?.chat_id).toBe(-100444);
+    expect(updated?.chats[0]?.silent_mode).toBe(true);
   });
 
   test("does not return bot from another workspace", async () => {

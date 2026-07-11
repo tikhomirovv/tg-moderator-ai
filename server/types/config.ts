@@ -1,12 +1,10 @@
-// Типы для конфигурации ботов
+// Bot runtime configuration types (webhook path, not DB models).
 export interface Chat {
   chat_id: number;
   name: string;
-  warnings_before_ban: number;
-  auto_delete_violations: boolean;
   rules: string[];
-  // Silent режим - отключает все действия в чате
-  silent_mode?: boolean; // true = только мониторинг, false = полные действия
+  /** When true, violations are logged in DB only — no Telegram delete/ban/warn. */
+  silent_mode?: boolean;
 }
 
 export interface Bot {
@@ -19,8 +17,8 @@ export interface BotsConfig {
   bots: Bot[];
 }
 
-// Типы для правил модерации
 export interface Rule {
+  id: string;
   name: string;
   description: string;
   ai_prompt: string;
@@ -30,7 +28,6 @@ export interface RulesConfig {
   rules: Record<string, Rule>;
 }
 
-// Типы для токенов
 export interface BotToken {
   botId: string;
   token: string;

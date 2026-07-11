@@ -8,6 +8,9 @@ const defaultRules = [
     description: "Запрещены повторяющиеся сообщения, реклама без разрешения",
     ai_prompt:
       "Спам, реклама. Критерии: повторяющиеся сообщения, коммерческая реклама без разрешения, массовые рассылки, флуд.",
+    delete_on_violation: true,
+    ban_on_violation: true,
+    warnings_before_ban: 3,
   },
   {
     id: "hate_speech",
@@ -15,6 +18,9 @@ const defaultRules = [
     description: "Запрещены оскорбления, дискриминация, призывы к насилию",
     ai_prompt:
       "Ненавистнические высказывания, оскорбления, пассивная агрессия, дискриминация, призывы к насилию.",
+    delete_on_violation: true,
+    ban_on_violation: true,
+    warnings_before_ban: 2,
   },
   {
     id: "advertising",
@@ -22,6 +28,9 @@ const defaultRules = [
     description: "Коммерческая реклама без разрешения администрации",
     ai_prompt:
       "Коммерческая реклама товаров или услуг без явного разрешения администрации чата.",
+    delete_on_violation: true,
+    ban_on_violation: false,
+    warnings_before_ban: null,
   },
   {
     id: "gaming_violations",
@@ -29,6 +38,9 @@ const defaultRules = [
     description: "Спам в игровых командах, оскорбления игроков",
     ai_prompt:
       "Нарушения в игровых чатах: спам в командах, оскорбления игроков, раскрытие личной информации.",
+    delete_on_violation: false,
+    ban_on_violation: true,
+    warnings_before_ban: 3,
   },
 ];
 

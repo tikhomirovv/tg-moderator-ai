@@ -80,7 +80,7 @@ export async function analyzeMessage(
       "Sending moderation request to LLM"
     );
 
-    logger.info(
+    logger.debug(
       {
         systemPrompt,
         userPrompt,
@@ -120,9 +120,14 @@ export async function analyzeMessage(
         rule_violated: result.rule_violated,
         confidence: result.confidence,
         model,
-        ai_response: response,
+        llm_host: resolveLlmLogHost(config.baseUrl),
       },
       "LLM moderation analysis completed"
+    );
+
+    logger.debug(
+      { ai_response: response },
+      "LLM moderation raw response"
     );
 
     return result;

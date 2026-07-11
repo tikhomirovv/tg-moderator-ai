@@ -46,8 +46,8 @@ export default defineEventHandler(async (event) => {
       todayEnd
     );
 
-    logger.info(
-      `Debug: Found ${todayMessages.length} messages and ${todayActions.length} actions for bot ${botId} today`
+    logger.debug(
+      `Found ${todayMessages.length} messages and ${todayActions.length} actions for bot ${botId} today`
     );
 
     // Получаем все действия модерации для бота
@@ -67,8 +67,8 @@ export default defineEventHandler(async (event) => {
         u.last_activity >= new Date(Date.now() - 24 * 60 * 60 * 1000)
     );
 
-    logger.info(
-      `Debug: Found ${allUsers.length} total users, ${bannedUsers.length} banned, ${activeUsers.length} active`
+    logger.debug(
+      `Found ${allUsers.length} total users, ${bannedUsers.length} banned, ${activeUsers.length} active`
     );
 
     const statistics = {
@@ -97,7 +97,7 @@ export default defineEventHandler(async (event) => {
       },
     };
 
-    logger.info(`Debug: Statistics calculated for bot ${botId}`);
+    logger.debug(`Statistics calculated for bot ${botId}`);
 
     return {
       success: true,

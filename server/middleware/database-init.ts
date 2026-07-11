@@ -13,7 +13,7 @@ export default defineEventHandler(async () => {
     const connection = getDatabaseConnection();
     if (!connection.isConnected()) {
       await connection.connect();
-      logger.info("Database connection ready");
+      logger.debug("Database connection ready");
     }
 
     await seedDatabase();

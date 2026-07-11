@@ -1,4 +1,4 @@
-import { and, eq, gte, desc, sql } from "drizzle-orm";
+import { and, eq, gte, desc, sql, inArray, countDistinct } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   UserContext,
@@ -227,5 +227,37 @@ export class UserContextRepository {
       .where(eq(userContexts.botId, botId));
 
     return rows.map(toUserContext);
+  }
+
+  /**
+   * Count distinct Telegram user_id values across all bots in a workspace.
+   * The same user in multiple bots/chats is counted once.
+   */
+  async countDistinctUsersByBotIds(
+    botIds: string[],
+    options: { activeWithinHours?: number; bannedOnly?: boolean } = {}
+  ): Promise<number> {
+    if (botIds.length === 0) {
+      return 0;
+    }
+
+    const conditions = [inArray(userContexts.botId, botIds)];
+
+    if (options.bannedOnly) {
+      conditions.push(eq(userContexts.isBanned, true));
+    } else if (options.activeWithinHours !== undefined) {
+      const cutoffDate = new Date(
+        Date.now() - options.activeWithinHours * 60 * 60 * 1000
+      );
+      conditions.push(gte(userContexts.lastActivity, cutoffDate));
+      conditions.push(eq(userContexts.isBanned, false));
+    }
+
+    const [result] = await this.db
+      .select({ count: countDistinct(userContexts.userId) })
+      .from(userContexts)
+      .where(and(...conditions));
+
+    return Number(result?.count ?? 0);
   }
 }

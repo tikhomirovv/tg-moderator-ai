@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, desc, countDistinct, sql } from "drizzle-orm";
+import { and, eq, gte, lte, desc, countDistinct, sql, inArray } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   ModerationAction,
@@ -187,5 +187,54 @@ export class ModerationActionRepository {
       .where(and(...conditions));
 
     return Number(result?.count ?? 0);
+  }
+
+  async getRecentByBotIds(
+    botIds: string[],
+    limit: number = 20
+  ): Promise<ModerationAction[]> {
+    if (botIds.length === 0) {
+      return [];
+    }
+
+    const rows = await this.db
+      .select()
+      .from(moderationActions)
+      .where(inArray(moderationActions.botId, botIds))
+      .orderBy(desc(moderationActions.timestamp))
+      .limit(limit);
+
+    return rows.map(toModerationAction);
+  }
+
+  async getActionBreakdownByBotIds(
+    botIds: string[],
+    startDate: Date,
+    endDate: Date
+  ): Promise<{ warning: number; delete: number; ban: number }> {
+    if (botIds.length === 0) {
+      return { warning: 0, delete: 0, ban: 0 };
+    }
+
+    const rows = await this.db
+      .select({
+        action_type: moderationActions.actionType,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(moderationActions)
+      .where(
+        and(
+          inArray(moderationActions.botId, botIds),
+          gte(moderationActions.timestamp, startDate),
+          lte(moderationActions.timestamp, endDate)
+        )
+      )
+      .groupBy(moderationActions.actionType);
+
+    const breakdown = { warning: 0, delete: 0, ban: 0 };
+    for (const row of rows) {
+      breakdown[row.action_type] = row.count;
+    }
+    return breakdown;
   }
 }

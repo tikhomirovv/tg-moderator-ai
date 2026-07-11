@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, asc, sql } from "drizzle-orm";
+import { and, eq, gte, lte, asc, sql, inArray } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   ChatStatistics,
@@ -230,6 +230,94 @@ export class ChatStatisticsRepository {
         total_users_banned: 0,
         max_unique_users: 0,
         days_count: 0,
+      }
+    );
+  }
+
+  async getWorkspaceDailyAggregates(
+    botIds: string[],
+    startDate: Date,
+    endDate: Date
+  ): Promise<
+    Array<{
+      date: string;
+      messages_processed: number;
+      warnings_issued: number;
+      messages_deleted: number;
+      users_banned: number;
+    }>
+  > {
+    if (botIds.length === 0) {
+      return [];
+    }
+
+    const rows = await this.db
+      .select({
+        date: chatStatistics.date,
+        messages_processed: sql<number>`coalesce(sum(${chatStatistics.messagesProcessed}), 0)::int`,
+        warnings_issued: sql<number>`coalesce(sum(${chatStatistics.warningsIssued}), 0)::int`,
+        messages_deleted: sql<number>`coalesce(sum(${chatStatistics.messagesDeleted}), 0)::int`,
+        users_banned: sql<number>`coalesce(sum(${chatStatistics.usersBanned}), 0)::int`,
+      })
+      .from(chatStatistics)
+      .where(
+        and(
+          inArray(chatStatistics.botId, botIds),
+          gte(chatStatistics.date, toDateKey(startDate)),
+          lte(chatStatistics.date, toDateKey(endDate))
+        )
+      )
+      .groupBy(chatStatistics.date)
+      .orderBy(asc(chatStatistics.date));
+
+    return rows.map((row) => ({
+      date: String(row.date),
+      messages_processed: row.messages_processed,
+      warnings_issued: row.warnings_issued,
+      messages_deleted: row.messages_deleted,
+      users_banned: row.users_banned,
+    }));
+  }
+
+  async getWorkspaceTodayTotals(
+    botIds: string[],
+    date: Date
+  ): Promise<{
+    messages_processed: number;
+    warnings_issued: number;
+    messages_deleted: number;
+    users_banned: number;
+  }> {
+    if (botIds.length === 0) {
+      return {
+        messages_processed: 0,
+        warnings_issued: 0,
+        messages_deleted: 0,
+        users_banned: 0,
+      };
+    }
+
+    const [result] = await this.db
+      .select({
+        messages_processed: sql<number>`coalesce(sum(${chatStatistics.messagesProcessed}), 0)::int`,
+        warnings_issued: sql<number>`coalesce(sum(${chatStatistics.warningsIssued}), 0)::int`,
+        messages_deleted: sql<number>`coalesce(sum(${chatStatistics.messagesDeleted}), 0)::int`,
+        users_banned: sql<number>`coalesce(sum(${chatStatistics.usersBanned}), 0)::int`,
+      })
+      .from(chatStatistics)
+      .where(
+        and(
+          inArray(chatStatistics.botId, botIds),
+          eq(chatStatistics.date, toDateKey(date))
+        )
+      );
+
+    return (
+      result ?? {
+        messages_processed: 0,
+        warnings_issued: 0,
+        messages_deleted: 0,
+        users_banned: 0,
       }
     );
   }

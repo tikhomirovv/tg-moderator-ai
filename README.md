@@ -53,7 +53,7 @@ bun run dev   # порт 3001, миграции автоматически
 
 Полный список переменных — в [`.env.example`](.env.example).
 
-После смены схемы (например после pull с миграциями): `bun run db:reset`
+После pull со сменой схемы: **`bun run db:reset`** (полный сброс dev-БД, одна миграция `0000_init.sql`).
 
 ## Команды
 
@@ -98,7 +98,7 @@ Health: `GET /api/health` → `{"ok":true}`. В контейнере порт **
 ## Устранение неполадок
 
 - **Webhook / бот Problem** — `BASE_URL` публичный HTTPS
-- **БД** — `DATABASE_URL`, `bun run db:migrate` или `db:reset`
+- **БД** — `DATABASE_URL`; после смены схемы — `bun run db:reset` (не incremental migrate)
 - **LLM** — `LLM_API_KEY`, при gateway — `LLM_BASE_URL` + `LLM_MODEL`
 - **Auth** — `BETTER_AUTH_URL` совпадает с URL в браузере
 

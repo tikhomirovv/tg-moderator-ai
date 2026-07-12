@@ -31,23 +31,11 @@ const REPO_COMPARE_BASE =
 const REPO_RELEASE_BASE =
   "https://github.com/tikhomirovv/tg-moderator-ai/releases/tag";
 
+/** Release markdown files live in repo root — not next to bundled Nitro output. */
+export const RELEASES_DIR = "data/releases";
+
 export function resolveReleasesDirectory(rootDir?: string): string {
-  if (rootDir) {
-    return path.join(rootDir, "data/releases");
-  }
-
-  const candidates = [
-    path.resolve(process.cwd(), "data/releases"),
-    path.resolve(import.meta.dir, "../../data/releases"),
-  ];
-
-  for (const candidate of candidates) {
-    if (existsSync(candidate)) {
-      return candidate;
-    }
-  }
-
-  return candidates[0]!;
+  return path.join(rootDir ?? process.cwd(), RELEASES_DIR);
 }
 
 export function parseReleaseFrontmatter(raw: string): {

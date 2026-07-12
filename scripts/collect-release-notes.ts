@@ -1,13 +1,20 @@
 #!/usr/bin/env bun
 /**
- * Draft release notes from git log + optional GitHub issues.
+ * Draft release notes: technical report (tag, GitHub Release, .docs/releases)
+ * + user-facing summary (app /release-notes only).
  * Usage: bun scripts/collect-release-notes.ts v1.1.0 [--write]
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-const SECTION_BY_TYPE: Record<string, string> = {
+const USER_SECTION_BY_TYPE: Record<string, string> = {
+  feat: "Добавлено",
+  fix: "Исправлено",
+  perf: "Производительность",
+};
+
+const TECH_SECTION_BY_TYPE: Record<string, string> = {
   feat: "Добавлено",
   fix: "Исправлено",
   perf: "Производительность",
@@ -19,6 +26,26 @@ const SECTION_BY_TYPE: Record<string, string> = {
   build: "Сборка",
 };
 
+const USER_TYPES = new Set(["feat", "fix", "perf"]);
+
+/** Skip commit descriptions that read like dev notes, not product copy. */
+const USER_SKIP_PATTERNS = [
+  /\//,
+  /\.(vue|ts|js|md)\b/i,
+  /\[.*\]/,
+  /\b(API|import|Drizzle|Nitro|SSR|GHCR|Docker|CI|schema|migration)\b/i,
+  /\b(GET|POST|PUT|DELETE)\s+\//i,
+  /\bvia\s+\S+\.(vue|ts)/i,
+  /\bcorrect\b/i,
+  /\balign\b/i,
+  /\bresolve\b/i,
+  /\bpath(s)?\b/i,
+];
+
+function isTooTechnicalForUser(text: string): boolean {
+  return USER_SKIP_PATTERNS.some((pattern) => pattern.test(text));
+}
+
 type CommitInfo = {
   hash: string;
   subject: string;
@@ -27,6 +54,11 @@ type CommitInfo = {
   scope?: string;
   description: string;
   issueIds: number[];
+};
+
+type IssueSummary = {
+  id: number;
+  title: string;
 };
 
 function run(command: string[]): string {
@@ -69,38 +101,42 @@ function sanitizeCommitBody(body: string): string {
 }
 
 function getLastTag(): string | null {
-  const output = tryRun(["git", "describe", "--tags", "--abbrev=0"]);
-  return output || null;
+  return tryRun(["git", "describe", "--tags", "--abbrev=0"]);
 }
 
-function parseConventionalCommit(subject: string, body: string): CommitInfo {
+function parseConventionalCommit(subject: string): CommitInfo {
   const match = subject.match(/^(\w+)(?:\(([^)]+)\))?!?:\s*(.+)$/);
-  const issueIds = [
-    ...subject.matchAll(/#(\d+)/g),
-    ...body.matchAll(/#(\d+)/g),
-    ...body.matchAll(/Closes\s+#(\d+)/gi),
-  ].map((m) => Number.parseInt(m[1]!, 10));
 
   if (!match) {
     return {
       hash: "",
       subject,
-      body,
+      body: "",
       type: "chore",
       description: subject,
-      issueIds: [...new Set(issueIds)],
+      issueIds: [],
     };
   }
 
   return {
     hash: "",
     subject,
-    body,
+    body: "",
     type: match[1]!.toLowerCase(),
     scope: match[2],
     description: match[3]!.trim(),
-    issueIds: [...new Set(issueIds)],
+    issueIds: [],
   };
+}
+
+function collectIssueIds(subject: string, body: string): number[] {
+  return [
+    ...new Set(
+      [...subject.matchAll(/#(\d+)/g), ...body.matchAll(/#(\d+)/g)]
+        .map((m) => Number.parseInt(m[1]!, 10))
+        .filter((id) => Number.isFinite(id))
+    ),
+  ];
 }
 
 function loadPackageVersion(): string {
@@ -120,7 +156,11 @@ function updatePackageVersion(version: string): void {
   writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
 }
 
-async function fetchIssueSummary(issueId: number): Promise<string | null> {
+function formatTimestampForFilename(date: Date): string {
+  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+}
+
+async function fetchIssueSummary(issueId: number): Promise<IssueSummary | null> {
   const json = tryRun([
     "gh",
     "issue",
@@ -138,33 +178,76 @@ async function fetchIssueSummary(issueId: number): Promise<string | null> {
     if (issue.state !== "CLOSED") {
       return null;
     }
-    return issue.title;
+    return { id: issueId, title: issue.title };
   } catch {
     return null;
   }
 }
 
-async function enrichDescription(commit: CommitInfo): Promise<string> {
-  let line = commit.description;
-  if (commit.scope) {
-    line = `**${commit.scope}:** ${line}`;
+function formatTechnicalLine(
+  commit: CommitInfo,
+  issues: IssueSummary[]
+): string {
+  const shortHash = commit.hash.slice(0, 7);
+  const scope = commit.scope ? `**${commit.scope}** ` : "";
+  const issueSuffix =
+    issues.length > 0
+      ? ` (${issues.map((i) => `#${i.id} — ${i.title}`).join("; ")})`
+      : "";
+  return `\`${shortHash}\` ${scope}${commit.description}${issueSuffix}`;
+}
+
+function humanizeForUser(
+  commit: CommitInfo,
+  issues: IssueSummary[]
+): string | null {
+  if (!USER_TYPES.has(commit.type)) {
+    return null;
   }
 
-  if (commit.issueIds.length === 0) {
-    return line;
+  if (issues.length > 0) {
+    return issues[0]!.title;
   }
 
-  const issueBits: string[] = [];
-  for (const issueId of commit.issueIds.slice(0, 3)) {
-    const title = await fetchIssueSummary(issueId);
-    if (title) {
-      issueBits.push(`#${issueId} — ${title}`);
-    } else {
-      issueBits.push(`#${issueId}`);
+  let text = commit.description
+    .replace(/`/g, "")
+    .replace(/\b(GET|POST|PUT|DELETE)\s+\/api\/\S+/gi, "")
+    .replace(/\b[a-z_]+_[a-z_]+\b/g, (word) => {
+      if (word.includes("_") && word.length > 12) {
+        return "";
+      }
+      return word;
+    })
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  if (!text || text.length < 4 || isTooTechnicalForUser(text)) {
+    return null;
+  }
+
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function buildMarkdownBody(
+  grouped: Map<string, string[]>,
+  sectionOrder: string[],
+  emptyMessage: string
+): string {
+  const parts: string[] = [];
+
+  for (const section of sectionOrder) {
+    const items = grouped.get(section);
+    if (!items?.length) {
+      continue;
     }
+    parts.push(`## ${section}`, "", ...items.map((item) => `- ${item}`), "");
   }
 
-  return `${line} (${issueBits.join("; ")})`;
+  if (parts.length === 0) {
+    parts.push(`## Прочее`, "", `- ${emptyMessage}`, "");
+  }
+
+  return parts.join("\n").trim();
 }
 
 async function main() {
@@ -181,47 +264,58 @@ async function main() {
   const version = versionFromTag(tag);
   const lastTag = getLastTag();
   const range = lastTag ? `${lastTag}..HEAD` : "HEAD";
-  const logFormat = "%H%x09%s%x09%b";
+  const generatedAt = new Date();
+  const date = generatedAt.toISOString().slice(0, 10);
+  const logFormat = "%H%x09%s%x09%b%x1e";
   const rawLog = run(["git", "log", range, `--pretty=format:${logFormat}`]);
 
   const commits: CommitInfo[] = rawLog
-    .split("\n")
+    .split("\x1e")
+    .map((record) => record.trim())
     .filter(Boolean)
-    .map((line) => {
-      const [hash, subject, body = ""] = line.split("\t");
-      const parsed = parseConventionalCommit(subject ?? line, "");
+    .map((record) => {
+      const [hash, subject, body = ""] = record.split("\t");
+      const parsed = parseConventionalCommit(subject ?? line);
       parsed.hash = hash ?? "";
       parsed.body = sanitizeCommitBody(body);
-      if (parsed.issueIds.length === 0) {
-        parsed.issueIds = [
-          ...parsed.body.matchAll(/#(\d+)/g),
-          ...parsed.body.matchAll(/Closes\s+#(\d+)/gi),
-        ].map((m) => Number.parseInt(m[1]!, 10));
-        parsed.issueIds = [...new Set(parsed.issueIds)];
-      }
+      parsed.issueIds = collectIssueIds(subject ?? "", parsed.body);
       return parsed;
     })
     .filter((commit) => !commit.subject.startsWith("Merge "))
     .filter((commit) => commit.description.length > 0);
 
-  const grouped = new Map<string, string[]>();
+  const technicalGrouped = new Map<string, string[]>();
+  const userGrouped = new Map<string, string[]>();
 
   for (const commit of commits) {
-    if (["chore", "test", "ci", "build"].includes(commit.type)) {
-      continue;
+    const issues: IssueSummary[] = [];
+    for (const issueId of commit.issueIds.slice(0, 3)) {
+      const summary = await fetchIssueSummary(issueId);
+      if (summary) {
+        issues.push(summary);
+      }
     }
-    const section = SECTION_BY_TYPE[commit.type] ?? "Прочее";
-    const line = await enrichDescription(commit);
-    const items = grouped.get(section) ?? [];
-    items.push(line);
-    grouped.set(section, items);
+
+    const techSection = TECH_SECTION_BY_TYPE[commit.type] ?? "Прочее";
+    const techLine = formatTechnicalLine(commit, issues);
+    const techItems = technicalGrouped.get(techSection) ?? [];
+    techItems.push(techLine);
+    technicalGrouped.set(techSection, techItems);
+
+    const userLine = humanizeForUser(commit, issues);
+    if (userLine) {
+      const userSection = USER_SECTION_BY_TYPE[commit.type] ?? "Прочее";
+      const userItems = userGrouped.get(userSection) ?? [];
+      if (!userItems.includes(userLine)) {
+        userItems.push(userLine);
+      }
+      userGrouped.set(userSection, userItems);
+    }
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-  const sectionOrder = [
+  const techSectionOrder = [
     "Добавлено",
     "Исправлено",
-    "Безопасность",
     "Производительность",
     "Документация",
     "CI",
@@ -231,48 +325,71 @@ async function main() {
     "Служебное",
     "Прочее",
   ];
+  const userSectionOrder = ["Добавлено", "Исправлено", "Производительность"];
 
-  const bodyParts: string[] = [];
-  for (const section of sectionOrder) {
-    const items = grouped.get(section);
-    if (!items?.length) {
-      continue;
-    }
-    bodyParts.push(`## ${section}`, "", ...items.map((item) => `- ${item}`), "");
-  }
+  const technicalBody = buildMarkdownBody(
+    technicalGrouped,
+    techSectionOrder,
+    "Нет коммитов в диапазоне."
+  );
+  const userBody = buildMarkdownBody(
+    userGrouped,
+    userSectionOrder,
+    "Нет изменений, заметных пользователю — отредактируйте вручную или отложите релиз."
+  );
 
-  if (bodyParts.length === 0) {
-    bodyParts.push("## Прочее", "", "- Нет пользовательских изменений в этом диапазоне.", "");
-  }
-
-  const markdown = `---
+  const technicalMarkdown = `---
 version: "${version}"
 tag: ${tag}
-date: ${today}
+date: ${date}
+generated_at: ${generatedAt.toISOString()}
+range: ${range}
+commits: ${commits.length}
 ---
 
-${bodyParts.join("\n").trim()}
+${technicalBody}
 `;
 
-  const outDir = path.join(import.meta.dir, "../data/releases");
-  const outFile = path.join(outDir, `${tag}.md`);
+  const userMarkdown = `---
+version: "${version}"
+tag: ${tag}
+date: ${date}
+---
 
-  console.log(`# Draft release notes for ${tag}`);
-  console.log(`Range: ${range}`);
-  console.log(`Commits: ${commits.length}`);
-  console.log("---");
-  console.log(markdown);
+${userBody}
+`;
+
+  const techDir = path.join(import.meta.dir, "../.docs/releases");
+  const techFile = path.join(
+    techDir,
+    `${tag}_${formatTimestampForFilename(generatedAt)}.md`
+  );
+  const userDir = path.join(import.meta.dir, "../data/releases");
+  const userFile = path.join(userDir, `${tag}.md`);
+
+  console.log(`# Release draft for ${tag}`);
+  console.log(`Range: ${range} (${commits.length} commits)`);
+  console.log("\n## USER (data/releases) — edit before publish\n");
+  console.log(userMarkdown);
+  console.log("\n## TECHNICAL (.docs/releases) — archive\n");
+  console.log(technicalMarkdown);
 
   if (shouldWrite) {
-    if (!existsSync(outDir)) {
-      mkdirSync(outDir, { recursive: true });
+    mkdirSync(techDir, { recursive: true });
+    mkdirSync(userDir, { recursive: true });
+    writeFileSync(techFile, technicalMarkdown);
+    if (!existsSync(userFile)) {
+      writeFileSync(userFile, userMarkdown);
+    } else {
+      console.error(`Skipped user draft (exists): ${userFile}`);
     }
-    writeFileSync(outFile, markdown);
     if (loadPackageVersion() !== version) {
       updatePackageVersion(version);
       console.error(`Updated package.json version → ${version}`);
     }
-    console.error(`Wrote ${outFile}`);
+    console.error(`Wrote technical: ${techFile}`);
+    console.error(`Wrote user draft: ${userFile}`);
+    console.error("Edit data/releases file for end users before tagging.");
   }
 }
 

@@ -3,8 +3,8 @@
     <header class="mb-8">
       <h2 class="text-2xl font-semibold text-gray-900">Что нового</h2>
       <p class="mt-2 text-gray-600">
-        История релизов tg-moderator-ai. Образ Docker публикуется в GHCR при
-        теге <code class="text-sm bg-gray-100 px-1 rounded">v*</code>.
+        История обновлений приложения. Здесь только то, что важно при работе с
+        ботами, правилами и модерацией.
       </p>
     </header>
 
@@ -15,7 +15,7 @@
     </div>
 
     <div v-else-if="releases.length === 0" class="text-gray-500 text-center py-12">
-      Пока нет опубликованных релизов.
+      Пока нет опубликованных релизов. После первого релиза здесь появится описание изменений.
     </div>
 
     <div v-else class="space-y-10">

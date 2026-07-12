@@ -73,12 +73,15 @@ export class BotRepository {
 
   async findAllForUser(userId: string): Promise<BotResponse[]> {
     const memberRepo = new BotMemberRepository();
-    const botRows = await memberRepo.findBotsForUser(userId);
+    const memberships = await memberRepo.findBotsWithRolesForUser(userId);
     const result: BotResponse[] = [];
 
-    for (const row of botRows) {
+    for (const { bot: row, role } of memberships) {
       const chatList = await this.loadChatsForBot(row.id);
-      result.push(toBotResponse(row, chatList));
+      result.push({
+        ...toBotResponse(row, chatList),
+        my_role: role as BotResponse["my_role"],
+      });
     }
 
     return result;
@@ -127,7 +130,10 @@ export class BotRepository {
 
     await this.replaceChats(botData.id, botData.chats);
     const chatList = await this.loadChatsForBot(botData.id);
-    return toBotResponse(row, chatList);
+    return {
+      ...toBotResponse(row, chatList),
+      my_role: "owner",
+    };
   }
 
   async update(

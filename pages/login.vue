@@ -11,10 +11,6 @@
       >
         Войти через Telegram
       </a>
-      <p class="text-sm text-gray-500">
-        Уже есть код доступа?
-        <NuxtLink to="/join" class="text-blue-600 hover:underline">Join team</NuxtLink>
-      </p>
     </div>
   </div>
 </template>

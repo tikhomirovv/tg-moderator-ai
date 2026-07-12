@@ -99,5 +99,20 @@ describe("BotRepository", () => {
 
     const owner = await botRepo.findAllForUser(TEST_OWNER_USER_ID);
     expect(owner).toHaveLength(1);
+    expect(owner[0]?.my_role).toBe("owner");
+  });
+
+  test("includes manager role for joined members", async () => {
+    const botRepo = new InMemoryBotRepository();
+    await botRepo.create(TEST_OWNER_USER_ID, {
+      id: "shared-bot",
+      name: "Shared",
+      chats: [],
+    });
+    await botRepo.addMember("manager-user", "shared-bot", "manager");
+
+    const managerBots = await botRepo.findAllForUser("manager-user");
+    expect(managerBots).toHaveLength(1);
+    expect(managerBots[0]?.my_role).toBe("manager");
   });
 });

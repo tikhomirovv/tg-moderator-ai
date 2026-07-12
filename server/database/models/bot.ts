@@ -31,11 +31,14 @@ export interface UpdateBotRequest {
   is_active?: boolean;
 }
 
+export type BotMemberRole = "owner" | "manager";
+
 export interface BotResponse {
   id: string;
   name: string;
   chats: Chat[];
   is_active: boolean;
+  my_role?: BotMemberRole;
   delivery_status?: "healthy" | "disabled" | "degraded" | "unavailable";
   delivery_message?: string;
   created_at: Date;

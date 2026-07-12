@@ -22,13 +22,6 @@
         >
           Bots
         </NuxtLink>
-        <NuxtLink
-          to="/join"
-          class="block px-3 py-2 rounded hover:bg-gray-100"
-          active-class="bg-gray-100 font-medium"
-        >
-          Join team
-        </NuxtLink>
       </nav>
 
       <div class="p-4 text-xs border-t">

@@ -26,13 +26,14 @@
       class="bg-white border rounded p-8 text-center"
     >
       <p class="text-gray-600 mb-4">
-        No bots yet. Create a bot or join a team to start moderating chats.
+        No bots yet. Open Bots to create your own or join a team with an access
+        code.
       </p>
       <NuxtLink
         to="/bots"
         class="inline-block px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
       >
-        Add bot
+        Manage bots
       </NuxtLink>
     </div>
 
@@ -69,7 +70,6 @@ async function load() {
   error.value = null;
 
   try {
-    await $fetch("/api/init", { method: "POST" });
     const resp = await $fetch<{ success: boolean; data: DashboardData }>(
       "/api/dashboard"
     );

@@ -7,19 +7,29 @@ import type {
 
 export class InMemoryBotRepository {
   private bots = new Map<string, Bot>();
-  private members = new Map<string, Set<string>>();
+  private memberRoles = new Map<string, "owner" | "manager">();
+
+  private memberKey(userId: string, botId: string) {
+    return `${userId}:${botId}`;
+  }
 
   async findAllForUser(userId: string): Promise<BotResponse[]> {
-    const botIds = this.members.get(userId) ?? new Set<string>();
-    return [...botIds]
-      .map((id) => this.bots.get(id))
-      .filter((bot): bot is Bot => Boolean(bot))
-      .map((bot) => this.toResponse(bot));
+    return [...this.bots.values()]
+      .filter((bot) => this.memberRoles.has(this.memberKey(userId, bot.id)))
+      .map((bot) => this.toResponse(bot, userId));
   }
 
   async findById(id: string): Promise<BotResponse | null> {
     const bot = this.bots.get(id);
     return bot ? this.toResponse(bot) : null;
+  }
+
+  async addMember(
+    userId: string,
+    botId: string,
+    role: "owner" | "manager"
+  ): Promise<void> {
+    this.memberRoles.set(this.memberKey(userId, botId), role);
   }
 
   async findByIdWithToken(id: string): Promise<Bot | null> {
@@ -40,10 +50,8 @@ export class InMemoryBotRepository {
       updated_at: now,
     };
     this.bots.set(botData.id, bot);
-    const memberSet = this.members.get(ownerUserId) ?? new Set<string>();
-    memberSet.add(botData.id);
-    this.members.set(ownerUserId, memberSet);
-    return this.toResponse(bot);
+    this.memberRoles.set(this.memberKey(ownerUserId, botData.id), "owner");
+    return this.toResponse(bot, ownerUserId);
   }
 
   async update(id: string, updateData: UpdateBotRequest): Promise<BotResponse | null> {
@@ -79,12 +87,17 @@ export class InMemoryBotRepository {
     }
   }
 
-  private toResponse(bot: Bot): BotResponse {
+  private toResponse(bot: Bot, userId?: string): BotResponse {
+    const myRole = userId
+      ? this.memberRoles.get(this.memberKey(userId, bot.id))
+      : undefined;
+
     return {
       id: bot.id,
       name: bot.name,
       chats: bot.chats.map((chat) => ({ ...chat, rules: [...chat.rules] })),
       is_active: bot.is_active,
+      my_role: myRole,
       created_at: bot.created_at,
       updated_at: bot.updated_at,
     };

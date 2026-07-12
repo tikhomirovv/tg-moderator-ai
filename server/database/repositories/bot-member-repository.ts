@@ -97,4 +97,15 @@ export class BotMemberRepository {
       .from(bots)
       .where(inArray(bots.id, botIds));
   }
+
+  async findBotsWithRolesForUser(userId: string) {
+    return this.db
+      .select({
+        bot: bots,
+        role: botMembers.role,
+      })
+      .from(botMembers)
+      .innerJoin(bots, eq(botMembers.botId, bots.id))
+      .where(eq(botMembers.userId, userId));
+  }
 }

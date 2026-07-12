@@ -3,10 +3,7 @@ import { UserMessageRepository } from "../database/repositories/user-message-rep
 import { ModerationActionRepository } from "../database/repositories/moderation-action-repository";
 import { ChatStatisticsRepository } from "../database/repositories/chat-statistics-repository";
 import { logger } from "./logger";
-import {
-  buildChatHistoryForPrompt,
-  MAX_USER_MESSAGES_PER_SCOPE,
-} from "./chat-history";
+import { buildChatHistoryForPrompt } from "./chat-history";
 
 export class ContextService {
   private userContextRepo: UserContextRepository;
@@ -93,12 +90,7 @@ export class ContextService {
         timestamp: timestamp,
       });
 
-      await this.userMessageRepo.pruneOldestMessages(
-        botId,
-        chatId,
-        userId,
-        MAX_USER_MESSAGES_PER_SCOPE
-      );
+      // Retention: daily Nitro task prunes excess rows (see retention-cleanup.ts).
 
       // Обновляем статистику
       await this.incrementMessageCount(botId, chatId);

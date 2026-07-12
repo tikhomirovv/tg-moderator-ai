@@ -203,4 +203,25 @@ export class UserMessageRepository {
 
     return result?.count ?? 0;
   }
+
+  async deleteExcessPerScope(maxPerScope: number): Promise<number> {
+    const result = await this.db.execute<{ id: number }>(sql`
+      DELETE FROM user_messages
+      WHERE id IN (
+        SELECT id
+        FROM (
+          SELECT id,
+            ROW_NUMBER() OVER (
+              PARTITION BY bot_id, chat_id, user_id
+              ORDER BY timestamp DESC, id DESC
+            ) AS rn
+          FROM user_messages
+        ) ranked
+        WHERE rn > ${maxPerScope}
+      )
+      RETURNING id
+    `);
+
+    return result.length;
+  }
 }

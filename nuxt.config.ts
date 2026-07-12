@@ -19,6 +19,16 @@ export default defineNuxtConfig({
   },
   nitro: {
     preset: "node-server",
+    experimental: {
+      tasks: true,
+    },
+    scheduledTasks: {
+      "0 3 * * *": [
+        "retention:user-messages",
+        "retention:moderation-actions",
+        "retention:moderation-decisions",
+      ],
+    },
   },
   typescript: {
     strict: true,

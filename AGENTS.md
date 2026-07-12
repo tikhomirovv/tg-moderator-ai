@@ -21,6 +21,8 @@ User (telegram_id)
 
 Публичный endpoint без session: `POST /api/telegram/webhook/*` (Telegram). Защита: per-bot `webhook_secret` в БД + заголовок `X-Telegram-Bot-Api-Secret-Token`.
 
+Подробнее: [`.docs/project-overview.md`](.docs/project-overview.md) · [`.docs/technical-design.md`](.docs/technical-design.md)
+
 ## Стек
 
 - Bun, Nuxt 4, Nitro, Vue 3, Tailwind

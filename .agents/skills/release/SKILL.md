@@ -45,18 +45,18 @@ Archive file: commit as-is. GitHub file: use for `gh release create/edit` — **
 
 ### Human language for users (critical)
 
-**Audience:** workspace admin who moderates Telegram chats — not a developer. They care about *what they can do now* and *what works better*, not how it was built.
+**Audience:** bot owner or manager who moderates Telegram chats — not a developer. They care about *what they can do now* and *what works better*, not how it was built.
 
 **Write like this:**
 
 - Full Russian sentences or short clear phrases a non-technical person understands
-- Product outcomes: «Можно пригласить коллегу в workspace по email», «На дашборде видна статистика модерации»
+- Product outcomes: «Можно пригласить коллегу в команду бота по коду», «На дашборде видна статистика модерации»
 - Benefits in plain words: faster, clearer, fixed annoying bug
 
 **Never in user-facing notes:**
 
 - Commit subjects, English dev-speak, file paths (`index.vue`, `decisions.get.ts`)
-- Internal names: Drizzle, Nitro, Better Auth, GHCR, webhook_secret, `moderation_decisions`
+- Internal names: Drizzle, Nitro, GHCR, webhook_secret, `moderation_decisions`
 - API routes, SQL, migrations, CI/Docker, issue numbers (`#58`)
 - Vague infra lines: «align import paths», «schema reset», «fix SSR session»
 
@@ -67,7 +67,7 @@ Archive file: commit as-is. GitHub file: use for `gh release create/edit` — **
 | Moderation audit decisions table and UI | Можно просматривать, какие решения приняла модель по каждому сообщению |
 | Open bot audit page via [id]/index.vue | Страница аудита бота открывается корректно |
 | JSON chat history in LLM prompt and 100-msg retention | Бот учитывает больше контекста переписки при проверке сообщений |
-| Map Better Auth errors to friendly UI messages | Понятные сообщения об ошибках при входе и регистрации |
+| Telegram login errors shown clearly in UI | Понятные сообщения, если вход через Telegram не удался |
 
 Before publish, every bullet must pass: **«Поймёт ли это админ чата без знания кода?»** If not — rewrite or drop.
 
@@ -134,7 +134,7 @@ date: 2026-07-12
 
 ## Исправлено
 
-- Исправлено переключение workspace на странице бота
+- Исправлено открытие страницы аудита бота
 ```
 
 Allowed sections: **Добавлено**, **Исправлено**, **Производительность** only.

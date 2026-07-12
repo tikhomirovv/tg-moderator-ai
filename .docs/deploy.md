@@ -1,6 +1,6 @@
 # Production deploy — tg-moderator-ai
 
-Self-hosted production guide. Образ приложения в Docker; PostgreSQL, Traefik и SMTP — **снаружи**, настраиваются администратором.
+Self-hosted production guide. Образ приложения в Docker; PostgreSQL и Traefik — **снаружи**, настраиваются администратором.
 
 См. также: [deploy/compose.example.yml](../deploy/compose.example.yml) — пример Traefik compose.
 
@@ -27,7 +27,7 @@ Self-hosted production guide. Образ приложения в Docker; Postgre
 - Домен с **HTTPS** (Let's Encrypt через Traefik или иной способ)
 - PostgreSQL 14+ (доступен из сети контейнера)
 - Traefik уже настроен (external network `traefik`)
-- API-ключ LLM, SMTP для auth-писем
+- API-ключ LLM; Telegram Web Login credentials (`TELEGRAM_LOGIN_*`)
 
 ## 3. Образ GHCR
 
@@ -142,3 +142,14 @@ docker run --rm -p 3000:3000 --env-file .env ghcr.io/tikhomirovv/tg-moderator-ai
 | Docker / production | **3000** |
 
 Корневой `docker-compose.yml` в репозитории — **только локальный PostgreSQL** для разработки, не production stack.
+
+## Dev HTTPS (cloudflared)
+
+Для локальной разработки webhook и Telegram OIDC нужен публичный HTTPS:
+
+```bash
+bun run dev          # порт 3001
+make tunnel          # cloudflared → скопировать URL в BASE_URL
+```
+
+Подробнее: [technical-design.md](technical-design.md#dev-https-tunnel). **localtunnel не используем.**

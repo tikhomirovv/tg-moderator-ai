@@ -74,16 +74,19 @@ make docker-build
 
 Health: `GET /api/health` → `{"ok":true}`. В контейнере порт **3000**.
 
-## Дополнительные документы
+## Документация
 
 | Документ | Описание |
 |----------|----------|
-| [Production deploy](.docs/deploy.md) | Пошаговый production deploy (GHCR, env, Traefik, проверки) |
-| [Database migrations](.docs/database-migrations.md) | Incremental миграции, политика no data loss |
-| [Release notes](/release-notes) | История релизов для пользователей (после публикации тега) |
+| [.docs/project-overview.md](.docs/project-overview.md) | Продукт, аудитория, статус |
+| [.docs/prd.md](.docs/prd.md) | Сценарии, требования, ограничения |
+| [.docs/technical-design.md](.docs/technical-design.md) | Стек, API, структура, dev tunnel |
+| [Production deploy](.docs/deploy.md) | GHCR, env, Traefik, проверки |
+| [Database migrations](.docs/database-migrations.md) | Incremental миграции |
 | [deploy/compose.example.yml](deploy/compose.example.yml) | Пример Traefik compose |
-| [AGENTS.md](AGENTS.md) | Контекст для разработки |
-| [.docs/SPEC.md](.docs/SPEC.md) | Спецификация (может отставать от кода) |
+| [AGENTS.md](AGENTS.md) | Контекст для AI-агентов |
+| [docs/logging.md](docs/logging.md) | Уровни логирования |
+| [.docs/SPEC.md](.docs/SPEC.md) | Архив ранней спецификации (MongoDB) |
 
 ## API (кратко)
 
@@ -106,7 +109,7 @@ Health: `GET /api/health` → `{"ok":true}`. В контейнере порт **
 - **Webhook / бот Problem** — `BASE_URL` публичный HTTPS
 - **БД** — `DATABASE_URL`; после смены схемы — `bun run db:migrate` (см. [.docs/database-migrations.md](.docs/database-migrations.md))
 - **LLM** — `LLM_API_KEY`, при gateway — `LLM_BASE_URL` + `LLM_MODEL`
-- **Auth** — `BASE_URL` публичный HTTPS; `TELEGRAM_LOGIN_BOT_ID` и `TELEGRAM_LOGIN_CLIENT_SECRET` из BotFather Web Login
+- **Auth** — `BASE_URL` публичный HTTPS (`make tunnel` в dev); OIDC callback в BotFather
 
 ## Лицензия
 

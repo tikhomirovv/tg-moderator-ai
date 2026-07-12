@@ -68,7 +68,7 @@ make docker-build
 
 ## Production
 
-Образ: `ghcr.io/tikhomirovv/tg-moderator-ai:latest` (CI на push `master` / теги `v*`).
+Образ: `ghcr.io/tikhomirovv/tg-moderator-ai:latest` (CI: git tag `v*` или ручной запуск workflow).
 
 Кратко: [deploy/README.md](deploy/README.md) · полная инструкция: [.docs/deploy.md](.docs/deploy.md)
 

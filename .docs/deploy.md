@@ -32,11 +32,20 @@ Self-hosted production guide. Образ приложения в Docker; Postgre
 ## 3. Образ GHCR
 
 ```
-ghcr.io/tikhomirovv/tg-moderator-ai:latest   # push в master
-ghcr.io/tikhomirovv/tg-moderator-ai:v1.0.0   # git tag v*
+ghcr.io/tikhomirovv/tg-moderator-ai:latest   # git tag v* или ручной workflow
+ghcr.io/tikhomirovv/tg-moderator-ai:v1.0.0   # git tag v1.0.0
 ```
 
-CI: workflow [`.github/workflows/docker-publish.yml`](../.github/workflows/docker-publish.yml) на push в `master` и теги `v*`.
+CI: workflow [`.github/workflows/docker-publish.yml`](../.github/workflows/docker-publish.yml) — **только** push тега `v*` или **Run workflow** в Actions. Push в `master` образ не собирает.
+
+### Публикация нового образа
+
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+Или: GitHub → **Actions** → **Publish Docker image** → **Run workflow** (соберёт `latest` + `sha-…` с текущего ref).
 
 ### `docker pull` denied
 

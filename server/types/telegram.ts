@@ -22,6 +22,69 @@ export interface TelegramChat {
   username?: string;
 }
 
+export interface TelegramChatPhoto {
+  small_file_id: string;
+  small_file_unique_id: string;
+  big_file_id: string;
+  big_file_unique_id: string;
+}
+
+export interface TelegramChatFull extends TelegramChat {
+  photo?: TelegramChatPhoto;
+}
+
+export interface ChatMemberMember {
+  status: "member";
+  user: TelegramUser;
+}
+
+export interface ChatMemberLeft {
+  status: "left";
+  user: TelegramUser;
+}
+
+export interface ChatMemberBanned {
+  status: "kicked";
+  user: TelegramUser;
+  until_date?: number;
+}
+
+export interface ChatMemberAdministrator {
+  status: "administrator";
+  user: TelegramUser;
+  can_be_edited: boolean;
+  is_anonymous: boolean;
+  can_manage_chat: boolean;
+  can_delete_messages: boolean;
+  can_manage_video_chats: boolean;
+  can_restrict_members: boolean;
+  can_promote_members: boolean;
+  can_change_info: boolean;
+  can_invite_users: boolean;
+  can_post_stories?: boolean;
+  can_edit_stories?: boolean;
+  can_delete_stories?: boolean;
+  can_post_messages?: boolean;
+  can_edit_messages?: boolean;
+  can_pin_messages?: boolean;
+  can_manage_topics?: boolean;
+}
+
+export type ChatMember =
+  | ChatMemberMember
+  | ChatMemberLeft
+  | ChatMemberBanned
+  | ChatMemberAdministrator
+  | { status: string; user: TelegramUser };
+
+export interface ChatMemberUpdated {
+  chat: TelegramChat;
+  from: TelegramUser;
+  date: number;
+  old_chat_member: ChatMember;
+  new_chat_member: ChatMember;
+}
+
 export interface TelegramBot {
   id: number;
   is_bot: boolean;
@@ -38,4 +101,5 @@ export interface TelegramUpdate {
   edited_message?: TelegramMessage;
   channel_post?: TelegramMessage;
   edited_channel_post?: TelegramMessage;
+  my_chat_member?: ChatMemberUpdated;
 }

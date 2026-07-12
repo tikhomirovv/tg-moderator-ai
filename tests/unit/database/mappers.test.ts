@@ -42,13 +42,21 @@ describe("database mappers", () => {
         chatId: -100123,
         name: "Main",
         silentMode: false,
+        photoFileId: "photo-big",
+        telegramUsername: "mainchat",
+        healthStatus: "ok",
+        healthMessage: "Ready",
+        healthCheckedAt: new Date("2026-07-01T00:00:00.000Z"),
       },
       3
     );
 
+    expect(chat.id).toBe(1);
     expect(chat.rules_count).toBe(3);
     expect(chat.chat_id).toBe(-100123);
     expect(chat.silent_mode).toBe(false);
+    expect(chat.photo_file_id).toBe("photo-big");
+    expect(chat.health_status).toBe("ok");
   });
 
   test("toDateKey normalizes date to YYYY-MM-DD", () => {

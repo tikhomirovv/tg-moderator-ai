@@ -26,6 +26,12 @@ export const actionTypeEnum = pgEnum("action_type", [
 
 export const botMemberRoleEnum = pgEnum("bot_member_role", ["owner", "manager"]);
 
+export const chatHealthStatusEnum = pgEnum("chat_health_status", [
+  "ok",
+  "degraded",
+  "unhealthy",
+]);
+
 export const bots = pgTable("bots", {
   id: varchar("id", { length: 64 }).primaryKey(),
   ownerUserId: text("owner_user_id")
@@ -55,9 +61,44 @@ export const chats = pgTable(
     chatId: bigint("chat_id", { mode: "number" }).notNull(),
     name: text("name").notNull(),
     silentMode: boolean("silent_mode").notNull().default(false),
+    photoFileId: text("photo_file_id"),
+    telegramUsername: text("telegram_username"),
+    healthStatus: chatHealthStatusEnum("health_status"),
+    healthMessage: text("health_message"),
+    healthCheckedAt: timestamp("health_checked_at", { withTimezone: true }),
   },
   (table) => [
     uniqueIndex("chats_bot_chat_unique").on(table.botId, table.chatId),
+  ]
+);
+
+export const chatActivationPending = pgTable(
+  "chat_activation_pending",
+  {
+    id: serial("id").primaryKey(),
+    botId: varchar("bot_id", { length: 64 })
+      .notNull()
+      .references(() => bots.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    resultChatId: integer("result_chat_id").references(() => chats.id, {
+      onDelete: "set null",
+    }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    failedCode: text("failed_code"),
+    failedMessage: text("failed_message"),
+  },
+  (table) => [
+    index("chat_activation_pending_bot_user_created_idx").on(
+      table.botId,
+      table.userId,
+      table.createdAt
+    ),
   ]
 );
 

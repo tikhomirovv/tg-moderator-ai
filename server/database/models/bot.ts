@@ -1,8 +1,16 @@
+export type ChatHealthStatus = "ok" | "degraded" | "unhealthy";
+
 export interface Chat {
+  id: number;
   chat_id: number;
   name: string;
   silent_mode: boolean;
   rules_count: number;
+  photo_file_id?: string | null;
+  telegram_username?: string | null;
+  health_status?: ChatHealthStatus | null;
+  health_message?: string | null;
+  health_checked_at?: Date | null;
 }
 
 export interface Bot {

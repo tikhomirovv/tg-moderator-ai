@@ -1,13 +1,13 @@
 # tg-moderator-ai
 
-Self-hosted веб-админка и Telegram webhook для AI-модерации чатов. Правила настраиваются **per bot** и применяются **на чат** — у одного бота в разных чатах могут быть разные наборы правил.
+Self-hosted веб-админка и Telegram webhook для AI-модерации чатов. Правила настраиваются **per chat** — у одного бота в разных чатах могут быть разные наборы правил.
 
 Репозиторий: [github.com/tikhomirovv/tg-moderator-ai](https://github.com/tikhomirovv/tg-moderator-ai)
 
 ## Возможности
 
 - **AI-модерация** — анализ сообщений через OpenAI-compatible API (OpenAI, OpenRouter, Polza и др.)
-- **Правила per bot** — библиотека правил бота; в чате выбирается подмножество; per-rule delete/ban/warnings/whitelist
+- **Правила per chat** — свой набор правил на каждый чат; шаблоны из каталога; per-rule delete/ban/warnings
 - **Действия модератора** — предупреждения, удаление, бан по настройкам правила
 - **Silent mode** — только логи в приложении, без действий в Telegram
 - **Команда на боте** — owner/manager, join по access code
@@ -17,7 +17,7 @@ Self-hosted веб-админка и Telegram webhook для AI-модераци
 ## Модель данных
 
 ```
-User (telegram_id) → Bot → bot_members → rules[] → chats[]
+User (telegram_id) → Bot → bot_members → chats[] → rules[]
 ```
 
 Публичный endpoint: `POST /api/telegram/webhook/:botId`. Защита: per-bot `webhook_secret` + `X-Telegram-Bot-Api-Secret-Token`. Вход: Telegram OIDC.
@@ -95,8 +95,8 @@ Health: `GET /api/health` → `{"ok":true}`. В контейнере порт **
 | `GET/POST` | `/api/bots` | Список / создание |
 | `GET/PUT` | `/api/bots/:id` | Детали / обновление |
 | `GET` | `/api/bots/:id/logs`, `.../statistics` | Логи, статистика |
-| `GET/POST` | `/api/bots/:id/rules` | Правила бота / создание |
-| `GET/POST` | `/api/bots/:id/rule-templates` | Библиотека пресетов / добавление |
+| `GET/POST` | `/api/bots/:id/chats/:chatId/rules` | Правила чата / создание |
+| `GET/POST` | `/api/bots/:id/chats/:chatId/rule-templates` | Каталог пресетов / добавление в чат |
 | `POST` | `/api/bots/join` | Join по access code |
 | `GET` | `/api/dashboard` | Дашборд по ботам пользователя |
 | `POST` | `/api/telegram/webhook/:botId` | Webhook Telegram |

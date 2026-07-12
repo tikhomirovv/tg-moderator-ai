@@ -33,6 +33,7 @@ export interface ModerationLog {
 export interface AIModerationRequest {
   message: string;
   user_id: number;
+  username?: string;
   chat_id: number;
   rules: string[];
   context: {

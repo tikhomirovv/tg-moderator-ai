@@ -45,7 +45,12 @@ export class InMemoryBotRepository {
       token: botData.token,
       owner_user_id: ownerUserId,
       is_active: true,
-      chats: botData.chats.map((chat) => ({ ...chat, rules: [...chat.rules] })),
+      chats: botData.chats.map((chat) => ({
+        chat_id: chat.chat_id,
+        name: chat.name,
+        silent_mode: chat.silent_mode ?? false,
+        rules_count: 0,
+      })),
       created_at: now,
       updated_at: now,
     };
@@ -71,8 +76,10 @@ export class InMemoryBotRepository {
     }
     if (updateData.chats !== undefined) {
       bot.chats = updateData.chats.map((chat) => ({
-        ...chat,
-        rules: [...chat.rules],
+        chat_id: chat.chat_id,
+        name: chat.name,
+        silent_mode: chat.silent_mode ?? false,
+        rules_count: 0,
       }));
     }
     bot.updated_at = new Date();
@@ -95,7 +102,7 @@ export class InMemoryBotRepository {
     return {
       id: bot.id,
       name: bot.name,
-      chats: bot.chats.map((chat) => ({ ...chat, rules: [...chat.rules] })),
+      chats: bot.chats.map((chat) => ({ ...chat })),
       is_active: bot.is_active,
       my_role: myRole,
       created_at: bot.created_at,

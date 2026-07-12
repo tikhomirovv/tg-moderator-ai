@@ -7,8 +7,8 @@ import { analyzeMessage } from "./ai-moderation";
 import { logger } from "./logger";
 import { RuleRepository } from "../database/repositories/rule-repository";
 import { BotRepository } from "../database/repositories/bot-repository";
+import { ChatRepository } from "../database/repositories/chat-repository";
 import { ContextService } from "./context-service";
-import { filterRulesByWhitelist } from "./rule-whitelist";
 import { planViolationModeration } from "./moderation-actions";
 import {
   buildModerationDecisionRequest,
@@ -61,11 +61,7 @@ export class TelegramBot {
         return;
       }
 
-      logger.debug(
-        `Чат найден в конфигурации: ${chatConfig.name}, правил: ${
-          chatConfig.rules?.length || 0
-        }`
-      );
+      logger.debug(`Чат найден в конфигурации: ${chatConfig.name}`);
 
       if (!message.text) {
         logger.debug(
@@ -100,21 +96,23 @@ export class TelegramBot {
         new Date(message.date * 1000)
       );
 
+      const chatRepo = new ChatRepository();
+      const chatRow = await chatRepo.findByTelegramChatId(
+        this.botId,
+        message.chat.id
+      );
+      if (!chatRow) {
+        logger.warn(
+          { chatId: message.chat.id, botId: this.botId },
+          "Chat row missing while processing message"
+        );
+        return;
+      }
+
       const ruleRepo = new RuleRepository();
-      const loadedRules = await ruleRepo.findByIds(
-        chatConfig.rules || [],
-        this.botId
-      );
-
-      const whitelistByRuleId = new Map(
-        loadedRules.map((rule) => [rule.id, rule.whitelist])
-      );
-
-      const applicableRules = filterRulesByWhitelist(
-        loadedRules,
-        whitelistByRuleId,
-        message.from,
-        { botId: this.botId, chatId: message.chat.id }
+      const applicableRules = await ruleRepo.findActiveForChat(
+        this.botId,
+        chatRow.id
       );
 
       if (applicableRules.length === 0) {
@@ -122,9 +120,8 @@ export class TelegramBot {
           {
             chatId: message.chat.id,
             userId: message.from.id,
-            configuredRules: chatConfig.rules?.length ?? 0,
           },
-          "No applicable rules after whitelist filter — skipping LLM"
+          "No active rules for chat — skipping LLM"
         );
         return;
       }
@@ -148,6 +145,7 @@ export class TelegramBot {
       const aiRequest: AIModerationRequest = {
         message: message.text!,
         user_id: message.from.id,
+        username: message.from.username,
         chat_id: message.chat.id,
         rules: applicableRules.map((rule) => rule.id),
         context: {

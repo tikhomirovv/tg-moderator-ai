@@ -21,12 +21,6 @@
           {{ bot?.is_active ? "Disable" : "Enable" }}
         </button>
         <NuxtLink
-          :to="`/bots/${botId}/rules`"
-          class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
-        >
-          Rules
-        </NuxtLink>
-        <NuxtLink
           :to="`/bots/${botId}/audit`"
           class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
         >
@@ -157,7 +151,7 @@
                 <div class="font-medium">{{ chat.name }}</div>
                 <div class="text-sm text-gray-600">ID: {{ chat.chat_id }}</div>
                 <div class="text-sm text-gray-600">
-                  Rules: {{ chat.rules?.length || 0 }}
+                  Rules: {{ chat.rules_count || 0 }}
                 </div>
                 <div class="text-sm text-gray-600">
                   Silent Mode:
@@ -167,6 +161,12 @@
                 </div>
               </div>
               <div class="flex gap-2">
+                <NuxtLink
+                  :to="`/bots/${botId}/chats/${chat.chat_id}/moderation`"
+                  class="text-green-700 text-sm hover:underline"
+                >
+                  Moderation
+                </NuxtLink>
                 <button
                   @click="editChat(chat)"
                   class="text-blue-600 text-sm hover:underline"
@@ -385,43 +385,6 @@
             </div>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2"
-              >Rules</label
-            >
-            <div
-              v-if="availableRules.length > 0"
-              class="space-y-2 max-h-32 overflow-y-auto border rounded p-2"
-            >
-              <label
-                v-for="rule in availableRules"
-                :key="rule.id"
-                class="flex items-center"
-              >
-                <input
-                  v-model="newChat.rules"
-                  :value="rule.id"
-                  type="checkbox"
-                  class="mr-2"
-                />
-                <div class="flex-1">
-                  <div class="text-sm font-medium">{{ rule.name }}</div>
-                  <div class="text-xs text-gray-500">
-                    {{ rule.description }}
-                  </div>
-                </div>
-              </label>
-            </div>
-            <div v-else class="text-sm text-gray-500">
-              No rules available.
-              <NuxtLink
-                :to="`/bots/${botId}/rules`"
-                class="text-blue-600 hover:underline"
-                >Create rules first</NuxtLink
-              >
-            </div>
-          </div>
-
           <div class="flex gap-2 pt-4">
             <button
               type="submit"
@@ -457,7 +420,6 @@ const loading = ref(false);
 const showAddChatModal = ref(false);
 const editingChat = ref<any>(null);
 const saving = ref(false);
-const availableRules = ref<any[]>([]);
 const accessCode = ref<string | null>(null);
 const teamMembers = ref<any[]>([]);
 const teamLoading = ref(false);
@@ -488,7 +450,6 @@ const statistics = ref<any>({
 const newChat = ref({
   chat_id: "",
   name: "",
-  rules: [] as string[],
   silent_mode: false,
 });
 
@@ -546,15 +507,6 @@ async function loadBot() {
   }
 }
 
-async function loadRules() {
-  try {
-    const resp = await $fetch<any>(`/api/bots/${botId}/rules`);
-    availableRules.value = resp?.data?.rules || [];
-  } catch (error) {
-    console.error("Error loading rules:", error);
-  }
-}
-
 async function toggleBotStatus() {
   if (!bot.value) return;
 
@@ -595,7 +547,6 @@ function editChat(chat: any) {
   newChat.value = {
     chat_id: chat.chat_id,
     name: chat.name,
-    rules: chat.rules || [],
     silent_mode: chat.silent_mode,
   };
   showAddChatModal.value = true;
@@ -607,7 +558,6 @@ function closeChatModal() {
   newChat.value = {
     chat_id: "",
     name: "",
-    rules: [],
     silent_mode: false,
   };
 }
@@ -743,6 +693,6 @@ async function removeMember(userId: string) {
 
 onMounted(async () => {
   await loadBot();
-  await Promise.all([loadRules(), loadLogs(), loadStatistics(), loadTeam()]);
+  await Promise.all([loadLogs(), loadStatistics(), loadTeam()]);
 });
 </script>

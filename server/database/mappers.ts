@@ -17,12 +17,10 @@ type UserContextRow = typeof import("./schema").userContexts.$inferSelect;
 type UserMessageRow = typeof import("./schema").userMessages.$inferSelect;
 type ChatStatisticsRow = typeof import("./schema").chatStatistics.$inferSelect;
 
-export function toRule(
-  row: RuleRow,
-  whitelist: string[] = []
-): Rule {
+export function toRule(row: RuleRow): Rule {
   return {
     id: row.id,
+    chat_id: row.chatId,
     name: row.name,
     description: row.description,
     ai_prompt: row.aiPrompt,
@@ -30,25 +28,17 @@ export function toRule(
     delete_on_violation: row.deleteOnViolation,
     ban_on_violation: row.banOnViolation,
     warnings_before_ban: row.warningsBeforeBan,
-    whitelist,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
   };
 }
 
-type RuleWhitelistRow =
-  typeof import("./schema").ruleWhitelist.$inferSelect;
-
-export function toRuleWhitelistEntry(row: RuleWhitelistRow): string {
-  return row.entry;
-}
-
-export function toChat(row: ChatRow, ruleIds: string[]): DbChat {
+export function toChat(row: ChatRow, rulesCount = 0): DbChat {
   return {
     chat_id: row.chatId,
     name: row.name,
     silent_mode: row.silentMode,
-    rules: ruleIds,
+    rules_count: rulesCount,
   };
 }
 

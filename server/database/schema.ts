@@ -15,7 +15,6 @@ import {
   uniqueIndex,
   index,
   primaryKey,
-  foreignKey,
 } from "drizzle-orm/pg-core";
 import { users } from "./auth-schema";
 
@@ -44,6 +43,22 @@ export const bots = pgTable("bots", {
     .defaultNow(),
 });
 
+export const chats = pgTable(
+  "chats",
+  {
+    id: serial("id").primaryKey(),
+    botId: varchar("bot_id", { length: 64 })
+      .notNull()
+      .references(() => bots.id, { onDelete: "cascade" }),
+    chatId: bigint("chat_id", { mode: "number" }).notNull(),
+    name: text("name").notNull(),
+    silentMode: boolean("silent_mode").notNull().default(false),
+  },
+  (table) => [
+    uniqueIndex("chats_bot_chat_unique").on(table.botId, table.chatId),
+  ]
+);
+
 export const rules = pgTable(
   "rules",
   {
@@ -51,6 +66,9 @@ export const rules = pgTable(
     botId: varchar("bot_id", { length: 64 })
       .notNull()
       .references(() => bots.id, { onDelete: "cascade" }),
+    chatId: integer("chat_id")
+      .notNull()
+      .references(() => chats.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description").notNull(),
     aiPrompt: text("ai_prompt").notNull(),
@@ -66,26 +84,6 @@ export const rules = pgTable(
       .defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.botId, table.id] })]
-);
-
-export const ruleWhitelist = pgTable(
-  "rule_whitelist",
-  {
-    id: serial("id").primaryKey(),
-    botId: varchar("bot_id", { length: 64 }).notNull(),
-    ruleId: uuid("rule_id").notNull(),
-    entry: varchar("entry", { length: 255 }).notNull(),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.botId, table.ruleId],
-      foreignColumns: [rules.botId, rules.id],
-    }).onDelete("cascade"),
-    uniqueIndex("rule_whitelist_rule_entry_unique").on(
-      table.ruleId,
-      table.entry
-    ),
-  ]
 );
 
 export const botMembers = pgTable(
@@ -119,40 +117,6 @@ export const botAccessCodes = pgTable(
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
   },
   (table) => [uniqueIndex("bot_access_codes_code_unique").on(table.code)]
-);
-
-export const chats = pgTable(
-  "chats",
-  {
-    id: serial("id").primaryKey(),
-    botId: varchar("bot_id", { length: 64 })
-      .notNull()
-      .references(() => bots.id, { onDelete: "cascade" }),
-    chatId: bigint("chat_id", { mode: "number" }).notNull(),
-    name: text("name").notNull(),
-    silentMode: boolean("silent_mode").notNull().default(false),
-  },
-  (table) => [
-    uniqueIndex("chats_bot_chat_unique").on(table.botId, table.chatId),
-  ]
-);
-
-export const chatRules = pgTable(
-  "chat_rules",
-  {
-    chatId: integer("chat_id")
-      .notNull()
-      .references(() => chats.id, { onDelete: "cascade" }),
-    botId: varchar("bot_id", { length: 64 }).notNull(),
-    ruleId: uuid("rule_id").notNull(),
-  },
-  (table) => [
-    primaryKey({ columns: [table.chatId, table.ruleId] }),
-    foreignKey({
-      columns: [table.botId, table.ruleId],
-      foreignColumns: [rules.botId, rules.id],
-    }).onDelete("cascade"),
-  ]
 );
 
 export const moderationActions = pgTable(

@@ -6,7 +6,7 @@ Runtime log level: `LOG_LEVEL` env var (`info` default, `debug` for troubleshoot
 
 | Level | Use for | Examples |
 |-------|---------|----------|
-| **debug** | High-frequency operational detail | incoming Telegram updates, message text (truncated), LLM prompts/responses, whitelist skips, chat lookup, DB ready in request path, statistics aggregation |
+| **debug** | High-frequency operational detail | incoming Telegram updates, message text (truncated), LLM prompts/responses, chat lookup, DB ready in request path, statistics aggregation |
 | **info** | Rare business events and lifecycle | app/DB startup, migrations OK, webhook set/remove, moderation outcome summary (rule + actions), user banned, database seed |
 | **warn** | Degradation and expected anomalies | webhook secret reject, inactive bot, unknown chat, delivery unhealthy, silent-mode skipped Telegram actions |
 | **error** | Failures | LLM/DB errors, webhook 500, uncaught handler exceptions |

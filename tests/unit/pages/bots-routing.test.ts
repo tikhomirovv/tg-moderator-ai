@@ -9,11 +9,14 @@ describe("bots page routing", () => {
     const botIdVue = path.join(PAGES_ROOT, "bots/[id].vue");
     const botIndexVue = path.join(PAGES_ROOT, "bots/[id]/index.vue");
     const auditVue = path.join(PAGES_ROOT, "bots/[id]/audit.vue");
-    const rulesVue = path.join(PAGES_ROOT, "bots/[id]/rules.vue");
+    const moderationVue = path.join(
+      PAGES_ROOT,
+      "bots/[id]/chats/[chatId]/moderation.vue"
+    );
 
     expect(existsSync(botIdVue)).toBe(false);
     expect(existsSync(botIndexVue)).toBe(true);
     expect(existsSync(auditVue)).toBe(true);
-    expect(existsSync(rulesVue)).toBe(true);
+    expect(existsSync(moderationVue)).toBe(true);
   });
 });

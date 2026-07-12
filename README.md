@@ -80,6 +80,7 @@ Health: `GET /api/health` → `{"ok":true}`. В контейнере порт **
 |----------|----------|
 | [Production deploy](.docs/deploy.md) | Пошаговый production deploy (GHCR, env, Traefik, проверки) |
 | [Database migrations](.docs/database-migrations.md) | Incremental миграции, политика no data loss |
+| [Release notes](/release-notes) | История релизов для пользователей (после публикации тега) |
 | [deploy/compose.example.yml](deploy/compose.example.yml) | Пример Traefik compose |
 | [AGENTS.md](AGENTS.md) | Контекст для разработки |
 | [.docs/SPEC.md](.docs/SPEC.md) | Спецификация (может отставать от кода) |

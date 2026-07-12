@@ -22,6 +22,7 @@ COPY package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.output ./.output
 COPY --from=build /app/server/database/migrations ./server/database/migrations
+COPY --from=build /app/data/releases ./data/releases
 COPY scripts/db-migrate.mjs ./scripts/db-migrate.mjs
 COPY docker/entrypoint.sh /entrypoint.sh
 

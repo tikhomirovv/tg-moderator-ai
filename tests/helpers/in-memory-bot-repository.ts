@@ -1,7 +1,7 @@
 import type {
   Bot,
   BotResponse,
-  CreateBotRequest,
+  CreateBotInput,
   UpdateBotRequest,
 } from "../../server/database/models/bot";
 
@@ -37,7 +37,7 @@ export class InMemoryBotRepository {
     return bot ? { ...bot, chats: bot.chats.map((chat) => ({ ...chat })) } : null;
   }
 
-  async create(ownerUserId: string, botData: CreateBotRequest): Promise<BotResponse> {
+  async create(ownerUserId: string, botData: CreateBotInput): Promise<BotResponse> {
     const now = new Date();
     const bot: Bot = {
       id: botData.id,
@@ -45,7 +45,7 @@ export class InMemoryBotRepository {
       token: botData.token,
       owner_user_id: ownerUserId,
       is_active: true,
-      chats: botData.chats.map((chat) => ({
+      chats: (botData.chats ?? []).map((chat) => ({
         chat_id: chat.chat_id,
         name: chat.name,
         silent_mode: chat.silent_mode ?? false,

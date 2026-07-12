@@ -2,7 +2,7 @@ import { eq, inArray, and, sql } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   Bot,
-  CreateBotRequest,
+  CreateBotInput,
   UpdateBotRequest,
   BotResponse,
   Chat,
@@ -145,7 +145,7 @@ export class BotRepository {
 
   async create(
     ownerUserId: string,
-    botData: CreateBotRequest
+    botData: CreateBotInput
   ): Promise<BotResponse> {
     const now = new Date();
     const [row] = await this.db
@@ -164,7 +164,7 @@ export class BotRepository {
     const memberRepo = new BotMemberRepository();
     await memberRepo.addMember(botData.id, ownerUserId, "owner");
 
-    await this.syncChats(botData.id, botData.chats);
+    await this.syncChats(botData.id, botData.chats ?? []);
     const chatList = await this.loadChatsForBot(botData.id);
     return {
       ...toBotResponse(row, chatList),

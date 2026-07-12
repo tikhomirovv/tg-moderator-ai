@@ -35,3 +35,32 @@ export async function telegramGetMe(
 
   return data.result;
 }
+
+export async function telegramSendMessage(
+  token: string,
+  chatId: number,
+  text: string,
+  fetchFn: TelegramFetch = fetch
+): Promise<void> {
+  const response = await fetchFn(
+    `https://api.telegram.org/bot${token}/sendMessage`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+      }),
+    }
+  );
+
+  const data = (await response.json()) as { ok: boolean; description?: string };
+  if (!data.ok) {
+    throw new TelegramBotApiError(
+      data.description || "Failed to send Telegram message",
+      "api_error"
+    );
+  }
+}

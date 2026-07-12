@@ -14,6 +14,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       appVersion: pkg.version,
+      telegramLoginBotUsername: process.env.TELEGRAM_LOGIN_BOT_USERNAME || "",
     },
     // Переменные только для сервера
     llmApiKey: process.env.LLM_API_KEY,

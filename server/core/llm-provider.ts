@@ -40,6 +40,12 @@ export function createLlmClient(config: LlmConfig = loadLlmConfig()): OpenAI {
 }
 
 export function resolveLlmModel(config: LlmConfig = loadLlmConfig()): string {
+  // Docker deploy sets LLM_MODEL at container start; Nuxt runtimeConfig is baked at image build.
+  const envModel = config.model;
+  if (process.env.LLM_MODEL?.trim()) {
+    return envModel;
+  }
+
   try {
     const runtimeConfig = useRuntimeConfig();
     if (runtimeConfig.llmModel) {
@@ -49,5 +55,5 @@ export function resolveLlmModel(config: LlmConfig = loadLlmConfig()): string {
     // Outside Nuxt runtime (e.g. bun test)
   }
 
-  return config.model;
+  return envModel;
 }

@@ -4,6 +4,7 @@ import {
   DEFAULT_LLM_HOST,
   loadLlmConfig,
   resolveLlmLogHost,
+  resolveLlmModel,
 } from "../../../server/core/llm-provider";
 
 describe("llm-provider", () => {
@@ -39,6 +40,21 @@ describe("llm-provider", () => {
         model: "gpt-4o-mini",
       })
     ).toThrow("LLM_API_KEY is not configured");
+  });
+
+  test("resolveLlmModel prefers LLM_MODEL env over baked default", () => {
+    const previous = process.env.LLM_MODEL;
+    process.env.LLM_MODEL = "openai/gpt-5.4-nano";
+
+    try {
+      expect(resolveLlmModel()).toBe("openai/gpt-5.4-nano");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.LLM_MODEL;
+      } else {
+        process.env.LLM_MODEL = previous;
+      }
+    }
   });
 
   test("createLlmClient accepts custom base URL", () => {

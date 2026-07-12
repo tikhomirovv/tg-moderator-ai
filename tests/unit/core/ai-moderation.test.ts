@@ -33,6 +33,23 @@ describe("buildModerationSystemPrompt", () => {
     expect(prompt).toContain("chat_history");
     expect(prompt).not.toContain("CHAT RULES");
   });
+
+  test("instructs model to use history for intent, tone, and patterns", () => {
+    const prompt = buildModerationSystemPrompt();
+
+    const mustContain = [
+      "intent",
+      "sarcasm",
+      "multi-message",
+      "lower confidence",
+      "reasoning",
+      "MESSAGE TO ANALYZE",
+    ];
+
+    for (const phrase of mustContain) {
+      expect(prompt.toLowerCase()).toContain(phrase.toLowerCase());
+    }
+  });
 });
 
 describe("buildModerationUserPrompt", () => {

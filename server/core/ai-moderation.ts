@@ -22,8 +22,15 @@ export function buildModerationSystemPrompt(): string {
 Rules:
 - Use only the listed rules. Do not invent additional rules or apply general moderation heuristics.
 - If there are no rules, or the message does not violate any listed rule, set violation_detected to false.
-- Consider user_warnings and chat_history when judging patterns and escalation.
-- chat_history is a JSON array of this user's recent messages in the chat (oldest first): text + timestamp only. Use it for context (e.g. split thoughts across messages). Judge violation only against MESSAGE TO ANALYZE.
+
+Context and history:
+- chat_history: this user's recent messages in the chat (oldest first; text + timestamp). Use it to interpret MESSAGE TO ANALYZE — not to retroactively flag older messages.
+- From history, infer when relevant: speaker intent (good-faith question, attack, joke, commercial pitch), tone (sarcasm, irony, quoted/roleplay speech), references to earlier topics ("that", "yes", replies meaningless without prior lines), and multi-message patterns (spam bursts, rule evasion split across messages).
+- A message innocent in isolation may still violate a rule when history shows intent (e.g. completing a prohibited link or insult across two messages). Conversely, do not flag friendly banter or on-topic discussion that only looks harsh without hostile intent in context.
+- Short or ambiguous lines: prefer lower confidence unless history clearly supports a rule violation.
+- user_warnings: repeated borderline behavior in history may justify stricter reading of the current message, but you must still match a listed rule — warnings alone are not a violation.
+- Violation decision applies only to MESSAGE TO ANALYZE; history informs interpretation, not separate penalties.
+- In reasoning: briefly state how history (or lack of it) affected intent/tone/confidence when it mattered.
 
 Respond with JSON only, no extra text:
 {

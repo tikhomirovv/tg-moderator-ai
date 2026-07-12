@@ -13,7 +13,6 @@ export type ReleaseNote = {
   sections: ReleaseNoteSection[];
   bodyMarkdown: string;
   githubReleaseUrl: string;
-  compareUrl: string;
 };
 
 export type PaginatedReleaseNotes = {
@@ -26,8 +25,6 @@ export type PaginatedReleaseNotes = {
   };
 };
 
-const REPO_COMPARE_BASE =
-  "https://github.com/tikhomirovv/tg-moderator-ai/compare";
 const REPO_RELEASE_BASE =
   "https://github.com/tikhomirovv/tg-moderator-ai/releases/tag";
 
@@ -92,10 +89,7 @@ export function parseReleaseSections(body: string): ReleaseNoteSection[] {
   return sections;
 }
 
-export function parseReleaseFile(
-  filePath: string,
-  previousTag?: string
-): ReleaseNote {
+export function parseReleaseFile(filePath: string): ReleaseNote {
   const raw = readFileSync(filePath, "utf8");
   const { meta, body } = parseReleaseFrontmatter(raw);
   const version = meta.version ?? path.basename(filePath, ".md");
@@ -109,9 +103,6 @@ export function parseReleaseFile(
     sections: parseReleaseSections(body),
     bodyMarkdown: body,
     githubReleaseUrl: `${REPO_RELEASE_BASE}/${tag}`,
-    compareUrl: previousTag
-      ? `${REPO_COMPARE_BASE}/${previousTag}...${tag}`
-      : `${REPO_COMPARE_BASE}/${tag}`,
   };
 }
 
@@ -139,17 +130,9 @@ export function loadPaginatedReleaseNotes(options: {
   const releasesDir = options.releasesDir ?? resolveReleasesDirectory();
   const files = listReleaseFiles(releasesDir);
 
-  const all: ReleaseNote[] = [];
-  for (let index = 0; index < files.length; index++) {
-    const file = files[index]!;
-    const previousTag =
-      index < files.length - 1
-        ? parseReleaseFrontmatter(
-            readFileSync(path.join(releasesDir, files[index + 1]!), "utf8")
-          ).meta.tag
-        : undefined;
-    all.push(parseReleaseFile(path.join(releasesDir, file), previousTag));
-  }
+  const all = files.map((file) =>
+    parseReleaseFile(path.join(releasesDir, file))
+  );
 
   const total = all.length;
   const offset = (page - 1) * limit;

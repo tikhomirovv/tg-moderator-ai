@@ -29,24 +29,16 @@
           <time class="text-sm text-gray-500">{{ formatDate(release.date) }}</time>
         </div>
 
-        <div class="flex flex-wrap gap-3 text-sm mb-5">
+        <p class="mb-5 text-sm">
           <a
             :href="release.githubReleaseUrl"
             target="_blank"
             rel="noopener noreferrer"
             class="text-blue-600 hover:underline"
           >
-            GitHub Release
+            Подробнее на GitHub
           </a>
-          <a
-            :href="release.compareUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-blue-600 hover:underline"
-          >
-            Compare changes
-          </a>
-        </div>
+        </p>
 
         <div
           v-for="section in release.sections"
@@ -109,7 +101,6 @@ type ReleaseNote = {
   date: string;
   sections: ReleaseSection[];
   githubReleaseUrl: string;
-  compareUrl: string;
 };
 
 const route = useRoute();

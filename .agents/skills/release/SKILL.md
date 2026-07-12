@@ -187,7 +187,7 @@ Tag `v*` → [`.github/workflows/docker-publish.yml`](../../.github/workflows/do
 
 ## References
 
-- UI: `/release-notes` (link: sidebar version `v…`)
+- UI: `/release-notes` (sidebar version link) — Russian notes; optional «Подробнее на GitHub» link, no compare link
 - User data: [`data/releases/README.md`](../../data/releases/README.md)
 - Technical: [`.docs/releases/README.md`](../../.docs/releases/README.md)
 - Deploy: [`.docs/deploy.md`](../../.docs/deploy.md)

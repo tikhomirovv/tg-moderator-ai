@@ -13,11 +13,11 @@ User (telegram_id)
   → Bot (owner_user_id)
       → bot_members (owner | manager)
       → bot_access_codes (invite)
-      → rules (per bot)
-      → chats → moderation
+      → chats[]
+          → rules[] (per chat)
 ```
 
-Правила хранятся **per bot**; пресеты — константы в `rule-templates.ts`, добавляются по одному из библиотеки на странице правил. Доступ к боту: owner или manager через `bot_members`; join по access code.
+Правила хранятся **per chat**; пресеты — константы в `rule-templates.ts`, добавляются из каталога на странице модерации чата. Доступ к боту: owner или manager через `bot_members`; join по access code.
 
 Публичный endpoint без session: `POST /api/telegram/webhook/*` (Telegram). Защита: per-bot `webhook_secret` в БД + заголовок `X-Telegram-Bot-Api-Secret-Token`.
 

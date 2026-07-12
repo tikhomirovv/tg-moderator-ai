@@ -196,29 +196,9 @@
           </div>
 
           <div>
-            <div class="flex items-center gap-2 mb-1">
-              <label class="block text-sm font-medium text-gray-700"
-                >Criteria</label
-              >
-              <button
-                type="button"
-                class="text-gray-500 hover:text-gray-700 text-sm"
-                title="Подсказка по критериям"
-                @click="showCriteriaHint = !showCriteriaHint"
-              >
-                (?)
-              </button>
-            </div>
-            <p
-              v-if="showCriteriaHint"
-              class="text-xs text-gray-600 bg-gray-50 border rounded p-2 mb-2"
+            <label class="block text-sm font-medium text-gray-700 mb-1"
+              >Criteria</label
             >
-              Модератор учитывает: <strong>текст сообщения</strong>,
-              <strong>Telegram user ID</strong>,
-              <strong>@username</strong> (если задан у отправителя).<br />
-              В критериях можно указать исключения, напр. «не применять к
-              @partner» или «кроме user id 123456789».
-            </p>
             <textarea
               v-model="form.ai_prompt"
               class="w-full border rounded px-3 py-2"
@@ -320,7 +300,6 @@ const saving = ref(false);
 const templateError = ref<string | null>(null);
 const showModal = ref(false);
 const showTemplateLibrary = ref(false);
-const showCriteriaHint = ref(false);
 const templatesLoading = ref(false);
 const addingTemplateId = ref<string | null>(null);
 const templateCatalog = ref<TemplateCatalogItem[]>([]);
@@ -442,7 +421,6 @@ function closeModal() {
   showModal.value = false;
   editingRule.value = null;
   form.value = emptyForm();
-  showCriteriaHint.value = false;
 }
 
 async function saveRule() {

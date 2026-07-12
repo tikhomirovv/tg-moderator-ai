@@ -1,5 +1,5 @@
 {
-  "id": "eb882f54-9bf1-4531-8cdf-5dadf574847a",
+  "id": "b77689b5-cccd-446b-84c3-68a17e77e3e7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -225,74 +225,6 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.chat_rules": {
-      "name": "chat_rules",
-      "schema": "",
-      "columns": {
-        "chat_id": {
-          "name": "chat_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "bot_id": {
-          "name": "bot_id",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "rule_id": {
-          "name": "rule_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "chat_rules_chat_id_chats_id_fk": {
-          "name": "chat_rules_chat_id_chats_id_fk",
-          "tableFrom": "chat_rules",
-          "tableTo": "chats",
-          "columnsFrom": [
-            "chat_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "chat_rules_bot_id_rule_id_rules_bot_id_id_fk": {
-          "name": "chat_rules_bot_id_rule_id_rules_bot_id_id_fk",
-          "tableFrom": "chat_rules",
-          "tableTo": "rules",
-          "columnsFrom": [
-            "bot_id",
-            "rule_id"
-          ],
-          "columnsTo": [
-            "bot_id",
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "chat_rules_chat_id_rule_id_pk": {
-          "name": "chat_rules_chat_id_rule_id_pk",
-          "columns": [
-            "chat_id",
-            "rule_id"
-          ]
-        }
-      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -841,81 +773,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.rule_whitelist": {
-      "name": "rule_whitelist",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "bot_id": {
-          "name": "bot_id",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "rule_id": {
-          "name": "rule_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "entry": {
-          "name": "entry",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "rule_whitelist_rule_entry_unique": {
-          "name": "rule_whitelist_rule_entry_unique",
-          "columns": [
-            {
-              "expression": "rule_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "entry",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "rule_whitelist_bot_id_rule_id_rules_bot_id_id_fk": {
-          "name": "rule_whitelist_bot_id_rule_id_rules_bot_id_id_fk",
-          "tableFrom": "rule_whitelist",
-          "tableTo": "rules",
-          "columnsFrom": [
-            "bot_id",
-            "rule_id"
-          ],
-          "columnsTo": [
-            "bot_id",
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.rules": {
       "name": "rules",
       "schema": "",
@@ -929,6 +786,12 @@
         "bot_id": {
           "name": "bot_id",
           "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "chat_id": {
+          "name": "chat_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
@@ -1000,6 +863,19 @@
           "tableTo": "bots",
           "columnsFrom": [
             "bot_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "rules_chat_id_chats_id_fk": {
+          "name": "rules_chat_id_chats_id_fk",
+          "tableFrom": "rules",
+          "tableTo": "chats",
+          "columnsFrom": [
+            "chat_id"
           ],
           "columnsTo": [
             "id"

@@ -203,17 +203,6 @@ export function getRuleTemplate(templateId: string) {
   return RULE_TEMPLATES.find((template) => template.id === templateId) ?? null;
 }
 
-export function listRuleTemplates(): Omit<RuleTemplateCatalogItem, "added">[] {
-  return RULE_TEMPLATES.map((template) => ({
-    id: template.id,
-    name: template.name,
-    description: template.description,
-    delete_on_violation: template.delete_on_violation,
-    ban_on_violation: template.ban_on_violation,
-    warnings_before_ban: template.warnings_before_ban,
-  }));
-}
-
 export async function listRuleTemplatesForChat(
   botId: string,
   chatInternalId: number,

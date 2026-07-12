@@ -22,10 +22,6 @@ export function buildModerationSystemPrompt(): string {
 Rules:
 - Use only the listed rules. Do not invent additional rules or apply general moderation heuristics.
 - If there are no rules, or the message does not violate any listed rule, set violation_detected to false.
-- You see the message author (telegram user id and @username when available) and the message text.
-- Rule criteria may reference the author (@username, numeric user id) and may include natural-language exceptions for specific authors.
-- When criteria explicitly exempt an author, do not treat that rule as violated for that author.
-- Apply only the listed rules; do not infer extra whitelist or exception logic beyond what criteria state.
 
 Context and history:
 - chat_history: this user's recent messages in the chat (oldest first; text + timestamp). Use it to interpret MESSAGE TO ANALYZE — not to retroactively flag older messages.
@@ -57,9 +53,6 @@ export function buildModerationUserPrompt(
     .join("\n");
 
   const historyJson = JSON.stringify(request.context.chat_history);
-  const usernameLine = request.username
-    ? `@${request.username.replace(/^@/, "")}`
-    : "not set";
 
   return `USER CONTEXT:
 - Previous warnings: ${request.context.user_warnings}
@@ -67,10 +60,6 @@ export function buildModerationUserPrompt(
 
 CHAT RULES (${rules.length}):
 ${rules.length > 0 ? rulesText : "No rules configured"}
-
-MESSAGE AUTHOR:
-- telegram_user_id: ${request.user_id}
-- username: ${usernameLine}
 
 MESSAGE TO ANALYZE:
 "${request.message}"`;

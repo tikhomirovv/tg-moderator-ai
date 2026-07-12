@@ -28,6 +28,12 @@ alwaysApply: false
 - Секреты генерируй сам (`openssl rand -base64 32` для `BETTER_AUTH_SECRET`), не проси пользователя «сходи возьми».
 - Shell не видит `.env` автоматически → `bun --env-file=.env test` или `bun run dev` (Nuxt подхватывает).
 
+## Миграции БД
+
+- Схема меняется **только** incremental миграциями: `db:generate` → `db:migrate`.
+- **Запрещено:** `DROP SCHEMA`, truncate, пересборка `0000_init.sql` для «обновления» существующей БД, скрипт `db:reset`.
+- Политика: [`.docs/database-migrations.md`](.docs/database-migrations.md).
+
 ## Тесты
 
 При правках `server/**` — см. правило `unit-tests` (отдельный glob).

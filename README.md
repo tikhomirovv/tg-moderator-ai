@@ -53,7 +53,7 @@ bun run dev   # порт 3001, миграции автоматически
 
 Полный список переменных — в [`.env.example`](.env.example).
 
-После pull со сменой схемы: **`bun run db:reset`** (полный сброс dev-БД, одна миграция `0000_init.sql`).
+После pull со сменой схемы: **`bun run db:migrate`** (incremental миграции, данные сохраняются). Политика: [.docs/database-migrations.md](.docs/database-migrations.md).
 
 ## Команды
 
@@ -62,7 +62,7 @@ bun run dev          # dev + миграции (порт 3001)
 bun run build
 bun test
 bun run db:migrate
-bun run db:reset
+bun run db:generate   # после правки Drizzle schema
 make docker-build
 ```
 
@@ -79,6 +79,7 @@ Health: `GET /api/health` → `{"ok":true}`. В контейнере порт **
 | Документ | Описание |
 |----------|----------|
 | [Production deploy](.docs/deploy.md) | Пошаговый production deploy (GHCR, env, Traefik, проверки) |
+| [Database migrations](.docs/database-migrations.md) | Incremental миграции, политика no data loss |
 | [deploy/compose.example.yml](deploy/compose.example.yml) | Пример Traefik compose |
 | [AGENTS.md](AGENTS.md) | Контекст для разработки |
 | [.docs/SPEC.md](.docs/SPEC.md) | Спецификация (может отставать от кода) |
@@ -98,7 +99,7 @@ Health: `GET /api/health` → `{"ok":true}`. В контейнере порт **
 ## Устранение неполадок
 
 - **Webhook / бот Problem** — `BASE_URL` публичный HTTPS
-- **БД** — `DATABASE_URL`; после смены схемы — `bun run db:reset` (не incremental migrate)
+- **БД** — `DATABASE_URL`; после смены схемы — `bun run db:migrate` (см. [.docs/database-migrations.md](.docs/database-migrations.md))
 - **LLM** — `LLM_API_KEY`, при gateway — `LLM_BASE_URL` + `LLM_MODEL`
 - **Auth** — `BETTER_AUTH_URL` совпадает с URL в браузере
 

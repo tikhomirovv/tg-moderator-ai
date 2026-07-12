@@ -60,7 +60,12 @@ bun install
 bun run dev
 bun run build
 bun test
+bun run db:migrate
 ```
+
+## Миграции БД
+
+Только **incremental** Drizzle migrations (`db:generate` → `db:migrate`). **Запрещено:** `DROP SCHEMA`, truncate, `db:reset`. Политика: [`.docs/database-migrations.md`](.docs/database-migrations.md).
 
 ## Логирование
 

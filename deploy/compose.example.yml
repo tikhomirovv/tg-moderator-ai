@@ -1,18 +1,23 @@
-# Production deployment example (Traefik + GHCR image)
+# Production deployment example (Traefik + GHCR image + PostgreSQL)
 #
 # 1. Copy to your server: deploy/compose.example.yml → compose.yml
 # 2. Create .env next to compose.yml (never commit secrets)
 # 3. Ensure external Docker network `traefik` exists
-# 4. docker compose up -d
+# 4. Set DATABASE_URL=postgresql://tgmoderator:CHANGE_ME@postgres:5432/tgmoderator
+# 5. docker compose up -d
 
 services:
   app:
     image: ghcr.io/tikhomirovv/tg-moderator-ai:latest
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     env_file:
       - .env
     networks:
       - traefik
+      - backend
     labels:
       - traefik.enable=true
       - traefik.http.routers.tg-moderator.rule=Host(`moderator.example.com`)
@@ -23,6 +28,28 @@ services:
       # - traefik.http.services.tg-moderator.loadbalancer.healthcheck.path=/api/health
       # - traefik.http.services.tg-moderator.loadbalancer.healthcheck.interval=30s
 
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tgmoderator
+      POSTGRES_PASSWORD: CHANGE_ME
+      POSTGRES_DB: tgmoderator
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tgmoderator -d tgmoderator"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
 networks:
   traefik:
     external: true
+  backend:
+    driver: bridge

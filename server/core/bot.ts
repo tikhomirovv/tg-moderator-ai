@@ -1,4 +1,4 @@
-import { TelegramUpdate, TelegramMessage } from "../types/telegram";
+import { TelegramUpdate, TelegramMessage, ChatMemberUpdated } from "../types/telegram";
 import { Bot as DbBot } from "../database/models/bot";
 import { AIModerationRequest, AIModerationResponse } from "../types/moderation";
 import { Bot, Chat as ConfigChat } from "../types/config";
@@ -10,6 +10,12 @@ import { BotRepository } from "../database/repositories/bot-repository";
 import { ChatRepository } from "../database/repositories/chat-repository";
 import { ContextService } from "./context-service";
 import { planViolationModeration } from "./moderation-actions";
+import {
+  activateChatForBot,
+  createDefaultActivateChatDeps,
+  evaluateChatHealth,
+  type ChatActivationErrorCode,
+} from "./chat-activation";
 import {
   buildUserMention,
   buildUserName,
@@ -24,6 +30,11 @@ import {
   buildModerationDecisionRequest,
   saveModerationDecision,
 } from "./moderation-decision";
+import {
+  isChatMemberAdministrator,
+  telegramGetMe,
+  telegramSendMessage,
+} from "../utils/telegram-bot-api";
 
 export class TelegramBot {
   private token: string;
@@ -31,8 +42,8 @@ export class TelegramBot {
   private botConfig: Bot;
   private warningTemplate: string;
   private banTemplate: string;
-  private webhookUrl?: string;
   private contextService: ContextService;
+  private botTelegramUserId?: number;
 
   constructor(token: string, botId: string, botConfig: DbBot) {
     this.token = token;
@@ -59,14 +70,23 @@ export class TelegramBot {
         `Получено обновление для бота ${this.botId}, update_id: ${update.update_id}`
       );
 
-      if (!update.message) {
+      if (update.my_chat_member) {
+        await this.handleMyChatMember(update.my_chat_member);
+        return;
+      }
+
+      const message = update.message ?? update.edited_message;
+      if (!message) {
         logger.debug(
           `Игнорируем обновление без сообщения: update_id=${update.update_id}`
         );
         return;
       }
 
-      const message = update.message;
+      if (isActivateCommand(message.text)) {
+        await this.handleActivateCommand(message);
+        return;
+      }
 
       logger.debug(
         `Обрабатываем сообщение от пользователя ${message.from.id} в чате ${message.chat.id}`
@@ -100,6 +120,204 @@ export class TelegramBot {
     } catch (error) {
       logger.error({ error: error as Error }, "Ошибка обработки обновления");
     }
+  }
+
+  private async handleMyChatMember(update: ChatMemberUpdated): Promise<void> {
+    const telegramChatId = update.chat.id;
+    const newMember = update.new_chat_member;
+
+    if (!newMember.user.is_bot) {
+      return;
+    }
+
+    const botTelegramUserId = await this.resolveBotTelegramUserId();
+    if (newMember.user.id !== botTelegramUserId) {
+      return;
+    }
+
+    if (!isChatMemberAdministrator(newMember)) {
+      await this.refreshRegisteredChatHealth(telegramChatId, botTelegramUserId);
+      return;
+    }
+
+    const deps = createDefaultActivateChatDeps();
+    const result = await activateChatForBot(
+      {
+        botId: this.botId,
+        botToken: this.token,
+        telegramChatId,
+        activatedByTelegramId: update.from.id,
+        botAdminMember: newMember,
+      },
+      deps
+    );
+
+    if (!result.ok) {
+      if (
+        result.code === "not_owner" ||
+        result.code === "not_platform_member"
+      ) {
+        logger.debug(
+          {
+            botId: this.botId,
+            chatId: telegramChatId,
+            fromId: update.from.id,
+            code: result.code,
+          },
+          "Ignored my_chat_member from non-owner platform user"
+        );
+        return;
+      }
+
+      await this.notifyActivationFailure(telegramChatId, result.code, result.message);
+      return;
+    }
+
+    logger.info(
+      {
+        botId: this.botId,
+        chatId: telegramChatId,
+        chatRowId: result.chat.id,
+      },
+      "Chat activated via my_chat_member"
+    );
+  }
+
+  private async handleActivateCommand(message: TelegramMessage): Promise<void> {
+    if (message.chat.type !== "group" && message.chat.type !== "supergroup") {
+      await telegramSendMessage(
+        this.token,
+        message.chat.id,
+        "Команда /activate работает только в группах."
+      );
+      return;
+    }
+
+    const botTelegramUserId = await this.resolveBotTelegramUserId();
+    const deps = createDefaultActivateChatDeps();
+
+    let botMember;
+    try {
+      botMember = await deps.getChatMember(
+        this.token,
+        message.chat.id,
+        botTelegramUserId
+      );
+    } catch (error) {
+      logger.warn(
+        { error: error as Error, chatId: message.chat.id },
+        "Failed to load bot chat member for /activate"
+      );
+      await telegramSendMessage(
+        this.token,
+        message.chat.id,
+        "Не удалось проверить права бота. Попробуйте позже."
+      );
+      return;
+    }
+
+    if (!isChatMemberAdministrator(botMember)) {
+      await telegramSendMessage(
+        this.token,
+        message.chat.id,
+        "Сначала назначьте бота администратором группы с правами удалять сообщения и ограничивать участников."
+      );
+      return;
+    }
+
+    const result = await activateChatForBot(
+      {
+        botId: this.botId,
+        botToken: this.token,
+        telegramChatId: message.chat.id,
+        activatedByTelegramId: message.from.id,
+        botAdminMember: botMember,
+      },
+      deps
+    );
+
+    if (!result.ok) {
+      await this.notifyActivationFailure(
+        message.chat.id,
+        result.code,
+        result.message
+      );
+      return;
+    }
+
+    await telegramSendMessage(
+      this.token,
+      message.chat.id,
+      `Чат «${escapeTelegramHtml(result.chat.name)}» подключён к модерации.`
+    );
+  }
+
+  private async refreshRegisteredChatHealth(
+    telegramChatId: number,
+    botTelegramUserId: number
+  ): Promise<void> {
+    const chatRepo = new ChatRepository();
+    const existing = await chatRepo.findByTelegramChatId(
+      this.botId,
+      telegramChatId
+    );
+    if (!existing) {
+      return;
+    }
+
+    const deps = createDefaultActivateChatDeps();
+    const health = await evaluateChatHealth(
+      this.token,
+      telegramChatId,
+      botTelegramUserId,
+      {
+        getChatMember: deps.getChatMember,
+        getChat: deps.getChat,
+      }
+    );
+
+    await chatRepo.updateHealth(this.botId, telegramChatId, {
+      healthStatus: health.status,
+      healthMessage: health.message,
+      healthCheckedAt: health.checked_at,
+      photoFileId: health.photo_file_id,
+      telegramUsername: health.telegram_username,
+      name: health.name,
+    });
+  }
+
+  private async notifyActivationFailure(
+    telegramChatId: number,
+    code: ChatActivationErrorCode,
+    message: string
+  ): Promise<void> {
+    logger.info(
+      { botId: this.botId, chatId: telegramChatId, code, message },
+      "Chat activation rejected"
+    );
+
+    try {
+      await telegramSendMessage(
+        this.token,
+        telegramChatId,
+        escapeTelegramHtml(message)
+      );
+    } catch (error) {
+      logger.warn(
+        { error: error as Error, chatId: telegramChatId },
+        "Failed to send activation failure message"
+      );
+    }
+  }
+
+  private async resolveBotTelegramUserId(): Promise<number> {
+    if (this.botTelegramUserId) {
+      return this.botTelegramUserId;
+    }
+
+    const me = await telegramGetMe(this.token);
+    this.botTelegramUserId = me.id;
+    return me.id;
   }
 
   private async analyzeAndModerate(
@@ -498,40 +716,16 @@ export class TelegramBot {
     logger.info(`Пользователь ${userId} забанен в чате ${chatId}`);
   }
 
-  async setWebhook(url: string): Promise<void> {
-    try {
-      const response = await fetch(
-        `https://api.telegram.org/bot${this.token}/setWebhook`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            url,
-            allowed_updates: ["message", "edited_message"],
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!data.ok) {
-        throw new Error(`Ошибка установки вебхука: ${data.description}`);
-      }
-
-      this.webhookUrl = url;
-      logger.info(`Вебхук установлен для бота ${this.botId}: ${url}`);
-    } catch (error) {
-      logger.error(
-        { error: error as Error },
-        `Ошибка установки вебхука для бота ${this.botId}`
-      );
-      throw error;
-    }
-  }
-
   getBotId(): string {
     return this.botId;
   }
+}
+
+function isActivateCommand(text: string | undefined): boolean {
+  if (!text) {
+    return false;
+  }
+
+  const command = text.trim().split(/\s+/)[0] ?? "";
+  return command === "/activate" || command.startsWith("/activate@");
 }

@@ -35,10 +35,16 @@ export function toRule(row: RuleRow): Rule {
 
 export function toChat(row: ChatRow, rulesCount = 0): DbChat {
   return {
+    id: row.id,
     chat_id: row.chatId,
     name: row.name,
     silent_mode: row.silentMode,
     rules_count: rulesCount,
+    photo_file_id: row.photoFileId,
+    telegram_username: row.telegramUsername,
+    health_status: row.healthStatus ?? null,
+    health_message: row.healthMessage,
+    health_checked_at: row.healthCheckedAt,
   };
 }
 

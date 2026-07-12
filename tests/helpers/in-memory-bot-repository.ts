@@ -8,6 +8,7 @@ import type {
 export class InMemoryBotRepository {
   private bots = new Map<string, Bot>();
   private memberRoles = new Map<string, "owner" | "manager">();
+  private nextChatRowId = 1;
 
   private memberKey(userId: string, botId: string) {
     return `${userId}:${botId}`;
@@ -46,6 +47,7 @@ export class InMemoryBotRepository {
       owner_user_id: ownerUserId,
       is_active: true,
       chats: (botData.chats ?? []).map((chat) => ({
+        id: this.nextChatRowId++,
         chat_id: chat.chat_id,
         name: chat.name,
         silent_mode: chat.silent_mode ?? false,
@@ -82,6 +84,7 @@ export class InMemoryBotRepository {
     }
     if (updateData.chats !== undefined) {
       bot.chats = updateData.chats.map((chat) => ({
+        id: this.nextChatRowId++,
         chat_id: chat.chat_id,
         name: chat.name,
         silent_mode: chat.silent_mode ?? false,

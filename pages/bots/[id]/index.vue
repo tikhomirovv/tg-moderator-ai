@@ -4,8 +4,11 @@
       <h2 class="text-xl font-semibold">Bot Details</h2>
       <div class="flex gap-2">
         <button
-          @click="showAddChatModal = true"
+          v-if="isOwner"
+          type="button"
           class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+          :disabled="chatActivation.status.value === 'waiting'"
+          @click="startChatActivation"
         >
           Add Chat
         </button>
@@ -37,7 +40,24 @@
 
     <div v-if="loading" class="text-gray-500">Loading...</div>
 
-    <div v-else-if="bot" class="space-y-6">
+    <template v-else>
+      <div
+        v-if="chatActivation.status.value !== 'idle'"
+        class="mb-4 rounded border p-4 text-sm"
+        :class="activationBannerClass"
+      >
+        <p>{{ chatActivation.message.value }}</p>
+        <button
+          v-if="chatActivation.status.value === 'failed' || chatActivation.status.value === 'expired'"
+          type="button"
+          class="mt-2 text-blue-700 hover:underline"
+          @click="retryChatActivation"
+        >
+          Попробовать снова
+        </button>
+      </div>
+
+      <div v-if="bot" class="space-y-6">
       <!-- Основная информация -->
       <div class="bg-white border rounded p-6">
         <h3 class="text-lg font-medium mb-4">Bot Information</h3>
@@ -228,18 +248,46 @@
             :key="chat.chat_id"
             class="border rounded p-3"
           >
-            <div class="flex items-center justify-between">
-              <div class="flex-1">
-                <div class="font-medium">{{ chat.name }}</div>
-                <div class="text-sm text-gray-600">ID: {{ chat.chat_id }}</div>
-                <div class="text-sm text-gray-600">
-                  Rules: {{ chat.rules_count || 0 }}
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-start gap-3 flex-1 min-w-0">
+                <img
+                  v-if="chat.id && chat.photo_file_id"
+                  :src="chatPhotoUrl(chat.id)"
+                  :alt="chat.name"
+                  class="h-10 w-10 rounded-full object-cover bg-gray-100"
+                />
+                <div
+                  v-else
+                  class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500"
+                >
+                  TG
                 </div>
-                <div class="text-sm text-gray-600">
-                  Silent Mode:
-                  <span :class="getSilentModeClass(chat)">
-                    {{ getSilentModeText(chat) }}
-                  </span>
+                <div class="min-w-0">
+                  <div class="font-medium truncate">{{ chat.name }}</div>
+                  <div class="text-sm text-gray-600">ID: {{ chat.chat_id }}</div>
+                  <div class="text-sm text-gray-600">
+                    Rules: {{ chat.rules_count || 0 }}
+                  </div>
+                  <div class="text-sm text-gray-600">
+                    Silent Mode:
+                    <span :class="getSilentModeClass(chat)">
+                      {{ getSilentModeText(chat) }}
+                    </span>
+                  </div>
+                  <div class="mt-1">
+                    <span
+                      class="inline-flex px-2 py-0.5 rounded text-xs font-medium"
+                      :class="chatHealthBadgeClass(chat)"
+                    >
+                      {{ chatHealthLabel(chat) }}
+                    </span>
+                    <p
+                      v-if="chat.health_message && chat.health_status !== 'ok'"
+                      class="text-xs text-red-600 mt-1"
+                    >
+                      {{ chat.health_message }}
+                    </p>
+                  </div>
                 </div>
               </div>
               <div class="flex gap-2">
@@ -393,48 +441,23 @@
       </div>
     </div>
 
-    <div v-else class="text-gray-500">Bot not found</div>
+      <div v-else class="text-gray-500">Bot not found</div>
+    </template>
 
-    <!-- Modal для добавления/редактирования чата -->
+    <!-- Modal for chat silent mode -->
     <div
-      v-if="showAddChatModal"
+      v-if="showAddChatModal && editingChat"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
     >
       <div
         class="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
       >
-        <h3 class="text-lg font-semibold mb-4">
-          {{ editingChat ? "Edit Chat" : "Add New Chat" }}
-        </h3>
+        <h3 class="text-lg font-semibold mb-4">Edit Chat</h3>
 
         <form @submit.prevent="saveChat" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Chat ID</label
-            >
-            <input
-              v-model="newChat.chat_id"
-              type="number"
-              class="w-full border rounded px-3 py-2"
-              placeholder="123456789"
-              required
-            />
-            <p class="text-xs text-gray-500 mt-1">
-              Numeric chat ID from Telegram
-            </p>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Chat Name</label
-            >
-            <input
-              v-model="newChat.name"
-              type="text"
-              class="w-full border rounded px-3 py-2"
-              placeholder="My Chat"
-              required
-            />
+          <div class="text-sm text-gray-600">
+            <div class="font-medium">{{ editingChat?.name }}</div>
+            <div>ID: {{ editingChat?.chat_id }}</div>
           </div>
 
           <!-- Silent mode: DB logging only, no Telegram side effects -->
@@ -473,9 +496,7 @@
               class="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
               :disabled="saving"
             >
-              {{
-                saving ? "Saving..." : editingChat ? "Update Chat" : "Add Chat"
-              }}
+              {{ saving ? "Saving..." : "Update Chat" }}
             </button>
             <button
               type="button"
@@ -506,6 +527,15 @@ const botId = route.params.id as string;
 const bot = ref<any>(null);
 
 usePageTitle(() => bot.value?.name ?? "Бот");
+
+const chatActivation = useChatActivationWait({
+  botId,
+  botUsername: botId,
+  onCompleted: async () => {
+    await loadBot();
+    chatActivation.reset();
+  },
+});
 const loading = ref(false);
 const showAddChatModal = ref(false);
 const editingChat = ref<any>(null);
@@ -570,6 +600,13 @@ const aggregatedStatusClass = computed(() => {
 });
 
 const isOwner = computed(() => bot.value?.my_role === "owner");
+
+const activationBannerClass = computed(() => {
+  const value = chatActivation.status.value;
+  if (value === "waiting") return "border-blue-200 bg-blue-50 text-blue-900";
+  if (value === "completed") return "border-green-200 bg-green-50 text-green-900";
+  return "border-red-200 bg-red-50 text-red-900";
+});
 
 const activeTemplateChips = computed(() =>
   messageTemplateTab.value === "warning"
@@ -702,6 +739,39 @@ async function resetAndSaveMessageTemplates() {
   }
 }
 
+async function startChatActivation() {
+  try {
+    await chatActivation.start();
+  } catch (error: any) {
+    chatActivation.status.value = "failed";
+    chatActivation.message.value =
+      error?.data?.statusMessage || error?.message || "Failed to start chat activation";
+  }
+}
+
+function retryChatActivation() {
+  chatActivation.reset();
+  void startChatActivation();
+}
+
+function chatPhotoUrl(chatRowId: number) {
+  return `/api/bots/${botId}/chats/${chatRowId}/photo`;
+}
+
+function chatHealthLabel(chat: any) {
+  if (chat.health_status === "ok") return "Готов";
+  if (chat.health_status === "degraded") return "Внимание";
+  if (chat.health_status === "unhealthy") return "Не работает";
+  return "Неизвестно";
+}
+
+function chatHealthBadgeClass(chat: any) {
+  if (chat.health_status === "ok") return "bg-green-100 text-green-800";
+  if (chat.health_status === "degraded") return "bg-yellow-100 text-yellow-800";
+  if (chat.health_status === "unhealthy") return "bg-red-100 text-red-800";
+  return "bg-gray-100 text-gray-800";
+}
+
 async function toggleBotStatus() {
   if (!bot.value) return;
 
@@ -758,26 +828,19 @@ function closeChatModal() {
 }
 
 async function saveChat() {
+  if (!editingChat.value) return;
+
   saving.value = true;
   try {
-    const chatData = {
-      ...newChat.value,
-      chat_id: parseInt(newChat.value.chat_id),
-    };
-
     const updatedChats = [...(bot.value.chats || [])];
-
-    if (editingChat.value) {
-      // Обновляем существующий чат
-      const index = updatedChats.findIndex(
-        (c) => c.chat_id === editingChat.value.chat_id
-      );
-      if (index !== -1) {
-        updatedChats[index] = chatData;
-      }
-    } else {
-      // Добавляем новый чат
-      updatedChats.push(chatData);
+    const index = updatedChats.findIndex(
+      (c) => c.chat_id === editingChat.value.chat_id
+    );
+    if (index !== -1) {
+      updatedChats[index] = {
+        ...updatedChats[index],
+        silent_mode: newChat.value.silent_mode,
+      };
     }
 
     const resp = await $fetch<any>(`/api/bots/${botId}`, {

@@ -27,7 +27,7 @@ export async function telegramSetWebhook(
 ): Promise<void> {
   const body: Record<string, unknown> = {
     url,
-    allowed_updates: ["message", "edited_message"],
+    allowed_updates: ["message", "edited_message", "my_chat_member"],
   };
 
   if (secretToken) {

@@ -47,7 +47,7 @@ describe("telegram-webhook utils", () => {
 
     expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({
       url: "https://example.com/api/telegram/webhook/bot-1",
-      allowed_updates: ["message", "edited_message"],
+      allowed_updates: ["message", "edited_message", "my_chat_member"],
       secret_token: "secret-abc",
     });
   });
@@ -71,7 +71,7 @@ describe("telegram-webhook utils", () => {
     );
     expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({
       url: "https://example.com/api/telegram/webhook/bot-1",
-      allowed_updates: ["message", "edited_message"],
+      allowed_updates: ["message", "edited_message", "my_chat_member"],
     });
   });
 

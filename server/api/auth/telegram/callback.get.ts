@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { exchangeTelegramCode, verifyTelegramIdToken } from "../../../utils/telegram-oidc";
+import { resolveReturnToPath } from "../../../../lib/auth-return-to";
 import {
   clearOidcCookies,
   createUserSession,
@@ -11,7 +12,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const code = typeof query.code === "string" ? query.code : null;
   const state = typeof query.state === "string" ? query.state : null;
-  const { state: savedState, codeVerifier } = readOidcCookies(event);
+  const { state: savedState, codeVerifier, returnTo } = readOidcCookies(event);
 
   clearOidcCookies(event);
 
@@ -48,7 +49,7 @@ export default defineEventHandler(async (event) => {
     );
 
     await createUserSession(event, user.id);
-    return sendRedirect(event, "/");
+    return sendRedirect(event, resolveReturnToPath(returnTo));
   } catch (error) {
     throw createError({
       statusCode: 401,

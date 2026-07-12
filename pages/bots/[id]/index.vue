@@ -86,7 +86,7 @@
         <h3 class="text-lg font-medium mb-4">Team Access</h3>
         <div v-if="teamLoading" class="text-gray-500 text-sm">Loading team...</div>
         <div v-else class="space-y-4">
-          <div v-if="accessCode" class="flex flex-wrap items-center gap-3">
+          <div v-if="isOwner && accessCode" class="flex flex-wrap items-center gap-3">
             <div class="text-sm">
               Access code:
               <code class="bg-gray-100 px-2 py-1 rounded">{{ accessCode }}</code>
@@ -106,8 +106,11 @@
               Revoke
             </button>
           </div>
-          <p v-else class="text-sm text-gray-500">
+          <p v-else-if="isOwner" class="text-sm text-gray-500">
             Access code is available to bot owners.
+          </p>
+          <p v-else class="text-sm text-gray-500">
+            Access codes are managed by the bot owner.
           </p>
 
           <div v-if="teamMembers.length" class="space-y-2">
@@ -124,7 +127,7 @@
                 <span class="text-gray-500 ml-2">{{ member.role }}</span>
               </div>
               <button
-                v-if="member.role === 'manager'"
+                v-if="isOwner && member.role === 'manager'"
                 type="button"
                 class="text-red-600 hover:underline"
                 @click="removeMember(member.user_id)"
@@ -412,7 +415,7 @@
             <div v-else class="text-sm text-gray-500">
               No rules available.
               <NuxtLink
-                to="/config/rules"
+                :to="`/bots/${botId}/rules`"
                 class="text-blue-600 hover:underline"
                 >Create rules first</NuxtLink
               >
@@ -507,6 +510,8 @@ const aggregatedStatusClass = computed(() => {
   }
   return "text-red-600";
 });
+
+const isOwner = computed(() => bot.value?.my_role === "owner");
 
 const deliveryProblemMessage = computed(() => {
   const status = bot.value?.delivery_status;

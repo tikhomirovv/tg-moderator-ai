@@ -19,6 +19,5 @@ export default defineEventHandler(async (event) => {
     return;
   }
 
-  const { user } = await requireSession(event);
-  event.context.authUser = user;
+  await requireSession(event);
 });

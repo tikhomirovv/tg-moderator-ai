@@ -7,6 +7,7 @@ import {
 } from "../../utils/bot-lifecycle";
 import { getBotDeliveryHealth, withDeliveryHealth } from "../../utils/bot-delivery";
 import { requireBotAccess } from "../../utils/bot-access";
+import { requireBotIdParam } from "../../utils/get-bot-id-param";
 
 function buildBotResponse(
   bot: NonNullable<Awaited<ReturnType<BotRepository["findById"]>>>,
@@ -17,13 +18,13 @@ function buildBotResponse(
 
 export default defineEventHandler(async (event) => {
   try {
-    const botId = getRouterParam(event, "id");
-    await requireBotAccess(event, botId!);
+    const botId = requireBotIdParam(event);
+    await requireBotAccess(event, botId);
     const body = (await readBody(event)) as UpdateBotRequest;
     const botRepo = new BotRepository();
 
     if (body.is_active !== undefined) {
-      const current = await botRepo.findById(botId!);
+      const current = await botRepo.findById(botId);
       if (!current) {
         throw createError({
           statusCode: 404,
@@ -33,12 +34,12 @@ export default defineEventHandler(async (event) => {
 
       if (body.is_active !== current.is_active) {
         const lifecycle = body.is_active
-          ? await enableBot(botId!)
-          : await disableBot(botId!);
+          ? await enableBot(botId)
+          : await disableBot(botId);
 
         const { is_active: _ignored, ...rest } = body;
         if (Object.keys(rest).length === 0) {
-          const health = await getBotDeliveryHealth(event, botId!);
+          const health = await getBotDeliveryHealth(event, botId);
           return {
             success: true,
             data: buildBotResponse(lifecycle.bot, health),
@@ -49,8 +50,8 @@ export default defineEventHandler(async (event) => {
           };
         }
 
-        const bot = await botRepo.update(botId!, rest);
-        const health = await getBotDeliveryHealth(event, botId!);
+        const bot = await botRepo.update(botId, rest);
+        const health = await getBotDeliveryHealth(event, botId);
         return {
           success: true,
           data: bot ? buildBotResponse(bot, health) : lifecycle.bot,
@@ -60,7 +61,7 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    const bot = await botRepo.update(botId!, body);
+    const bot = await botRepo.update(botId, body);
 
     if (!bot) {
       throw createError({
@@ -69,7 +70,7 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    const health = await getBotDeliveryHealth(event, botId!);
+    const health = await getBotDeliveryHealth(event, botId);
 
     return {
       success: true,

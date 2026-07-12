@@ -140,7 +140,7 @@ describe("dashboard aggregation helpers", () => {
     expect(data.recent_activity).toEqual([]);
   });
 
-  test("buildDashboardData reports empty workspace", () => {
+  test("buildDashboardData reports empty state when user has no bots", () => {
     const data = buildDashboardData({
       bots: [],
       todayTotals: {

@@ -3,17 +3,11 @@ import { loadRuleNameMap, resolveRuleName } from "../../../core/rule-name-lookup
 import { BotRepository } from "../../../database/repositories/bot-repository";
 import { ModerationActionRepository } from "../../../database/repositories/moderation-action-repository";
 import { requireBotAccess } from "../../../utils/bot-access";
+import { requireBotIdParam } from "../../../utils/get-bot-id-param";
 
 export default defineEventHandler(async (event) => {
   try {
-    const botId = getRouterParam(event, "id");
-
-    if (!botId) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: "Bot ID is required",
-      });
-    }
+    const botId = requireBotIdParam(event);
 
     await requireBotAccess(event, botId);
     const botRepo = new BotRepository();

@@ -1,4 +1,5 @@
 import { fetchSession } from "~/lib/fetch-session";
+import { normalizeAuthReturnTo } from "~/lib/auth-return-to";
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const publicPaths = ["/login"];
@@ -10,6 +11,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const session = await fetchSession();
 
   if (!session?.user) {
-    return navigateTo("/login");
+    const returnTo = normalizeAuthReturnTo(to.fullPath);
+    return navigateTo({
+      path: "/login",
+      query: { returnTo },
+    });
   }
 });

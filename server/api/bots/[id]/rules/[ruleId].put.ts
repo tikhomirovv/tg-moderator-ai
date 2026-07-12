@@ -1,9 +1,10 @@
 import { RuleRepository } from "../../../../database/repositories/rule-repository";
 import type { UpdateRuleRequest } from "../../../../database/models/rule";
 import { requireBotAccess } from "../../../../utils/bot-access";
+import { requireBotIdParam } from "../../../../utils/get-bot-id-param";
 
 export default defineEventHandler(async (event) => {
-  const botId = getRouterParam(event, "id");
+  const botId = requireBotIdParam(event);
   const ruleId = getRouterParam(event, "ruleId");
 
   if (!botId || !ruleId) {

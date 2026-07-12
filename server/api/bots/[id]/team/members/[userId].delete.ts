@@ -1,8 +1,9 @@
 import { BotMemberRepository } from "../../../../../database/repositories/bot-member-repository";
 import { requireBotAccess } from "../../../../../utils/bot-access";
+import { requireBotIdParam } from "../../../../../utils/get-bot-id-param";
 
 export default defineEventHandler(async (event) => {
-  const botId = getRouterParam(event, "id");
+  const botId = requireBotIdParam(event);
   const userId = getRouterParam(event, "userId");
 
   if (!botId || !userId) {

@@ -1,12 +1,9 @@
 import { listRuleTemplatesForBot } from "../../../database/rule-templates";
 import { requireBotAccess } from "../../../utils/bot-access";
-import { resolveBotIdFromEvent } from "../../../utils/resolve-bot-id";
+import { requireBotIdParam } from "../../../utils/get-bot-id-param";
 
 export default defineEventHandler(async (event) => {
-  const botId = resolveBotIdFromEvent(event, "rule-templates");
-  if (!botId) {
-    throw createError({ statusCode: 400, statusMessage: "Bot ID is required" });
-  }
+  const botId = requireBotIdParam(event);
 
   await requireBotAccess(event, botId);
   const templates = await listRuleTemplatesForBot(botId);

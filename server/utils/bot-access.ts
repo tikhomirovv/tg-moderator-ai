@@ -2,6 +2,27 @@ import type { H3Event } from "h3";
 import { BotMemberRepository, type BotMemberRole } from "../database/repositories/bot-member-repository";
 import { requireSession } from "./session";
 
+export function enforceBotAccess(
+  role: BotMemberRole | null,
+  allowedRoles?: BotMemberRole[]
+): BotMemberRole {
+  if (!role) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: "No access to this bot",
+    });
+  }
+
+  if (allowedRoles && !allowedRoles.includes(role)) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: "Insufficient bot permissions",
+    });
+  }
+
+  return role;
+}
+
 export async function requireBotAccess(
   event: H3Event,
   botId: string,
@@ -10,26 +31,7 @@ export async function requireBotAccess(
   const { user } = await requireSession(event);
   const memberRepo = new BotMemberRepository();
   const role = await memberRepo.getMemberRole(botId, user.id);
+  const resolvedRole = enforceBotAccess(role, roles);
 
-  if (!role) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: "No access to this bot",
-    });
-  }
-
-  if (roles && !roles.includes(role)) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: "Insufficient bot permissions",
-    });
-  }
-
-  return { user, role };
-}
-
-export async function getAccessibleBotIds(event: H3Event): Promise<string[]> {
-  const { user } = await requireSession(event);
-  const memberRepo = new BotMemberRepository();
-  return memberRepo.getAccessibleBotIds(user.id);
+  return { user, role: resolvedRole };
 }

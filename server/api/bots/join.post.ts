@@ -1,5 +1,6 @@
 import { BotAccessCodeRepository } from "../../database/repositories/bot-access-code-repository";
 import { BotMemberRepository } from "../../database/repositories/bot-member-repository";
+import { joinBotWithAccessCode } from "../../core/bot-team-join";
 import { requireSession } from "../../utils/session";
 
 export default defineEventHandler(async (event) => {
@@ -15,30 +16,25 @@ export default defineEventHandler(async (event) => {
 
   const { user } = await requireSession(event);
   const codeRepo = new BotAccessCodeRepository();
-  const accessCode = await codeRepo.findActiveByCode(code);
+  const memberRepo = new BotMemberRepository();
 
-  if (!accessCode) {
+  const result = await joinBotWithAccessCode(user.id, code, {
+    findActiveByCode: (value) => codeRepo.findActiveByCode(value),
+    getMemberRole: (botId, userId) => memberRepo.getMemberRole(botId, userId),
+    addMember: (botId, userId, role) =>
+      memberRepo.addMember(botId, userId, role),
+  });
+
+  if (!result.ok) {
     throw createError({
       statusCode: 404,
       statusMessage: "Invalid or revoked access code",
     });
   }
 
-  const memberRepo = new BotMemberRepository();
-  const existingRole = await memberRepo.getMemberRole(accessCode.botId, user.id);
-  if (existingRole === "owner") {
-    return {
-      success: true,
-      data: { bot_id: accessCode.botId },
-      message: "You already own this bot",
-    };
-  }
-
-  await memberRepo.addMember(accessCode.botId, user.id, "manager");
-
   return {
     success: true,
-    data: { bot_id: accessCode.botId },
-    message: "Joined bot team",
+    data: { bot_id: result.botId },
+    message: result.alreadyOwner ? "You already own this bot" : "Joined bot team",
   };
 });

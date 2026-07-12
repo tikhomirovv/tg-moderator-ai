@@ -230,7 +230,7 @@ export class UserContextRepository {
   }
 
   /**
-   * Count distinct Telegram user_id values across all bots in a workspace.
+   * Count distinct Telegram user_id values across all of the user's bots.
    * The same user in multiple bots/chats is counted once.
    */
   async countDistinctUsersByBotIds(

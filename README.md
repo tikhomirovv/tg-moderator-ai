@@ -45,7 +45,7 @@ cp .env.example .env
 
 **PostgreSQL локально:** `docker compose up -d postgres`
 
-**Dev HTTPS (webhook):** `bunx localtunnel --port 3001` → `BASE_URL=https://….loca.lt`
+**Dev HTTPS (OIDC + webhook):** `make tunnel` (cloudflared) → `BASE_URL=https://….trycloudflare.com`
 
 ```bash
 bun run dev   # порт 3001, миграции автоматически
@@ -92,17 +92,21 @@ Health: `GET /api/health` → `{"ok":true}`. В контейнере порт **
 | `GET/POST` | `/api/bots` | Список / создание |
 | `GET/PUT` | `/api/bots/:id` | Детали / обновление |
 | `GET` | `/api/bots/:id/logs`, `.../statistics` | Логи, статистика |
-| `GET/POST` | `/api/config/rules` | Список / создание |
-| `PUT/DELETE` | `/api/config/rules/:id` | Обновление / удаление |
+| `GET/POST` | `/api/bots/:id/rules` | Правила бота / создание |
+| `GET/POST` | `/api/bots/:id/rule-templates` | Библиотека пресетов / добавление |
+| `POST` | `/api/bots/join` | Join по access code |
+| `GET` | `/api/dashboard` | Дашборд по ботам пользователя |
 | `POST` | `/api/telegram/webhook/:botId` | Webhook Telegram |
-| `*` | `/api/auth/*` | Better Auth |
+| `GET` | `/api/auth/telegram` | Старт Telegram OIDC |
+| `GET` | `/api/auth/session` | Текущая сессия |
+| `POST` | `/api/auth/sign-out` | Выход |
 
 ## Устранение неполадок
 
 - **Webhook / бот Problem** — `BASE_URL` публичный HTTPS
 - **БД** — `DATABASE_URL`; после смены схемы — `bun run db:migrate` (см. [.docs/database-migrations.md](.docs/database-migrations.md))
 - **LLM** — `LLM_API_KEY`, при gateway — `LLM_BASE_URL` + `LLM_MODEL`
-- **Auth** — `BETTER_AUTH_URL` совпадает с URL в браузере
+- **Auth** — `BASE_URL` публичный HTTPS; `TELEGRAM_LOGIN_BOT_ID` и `TELEGRAM_LOGIN_CLIENT_SECRET` из BotFather Web Login
 
 ## Лицензия
 

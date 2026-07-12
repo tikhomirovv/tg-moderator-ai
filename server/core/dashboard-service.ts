@@ -43,7 +43,7 @@ export interface DashboardData {
   has_bots: boolean;
 }
 
-export interface WorkspaceDailyStatRow {
+export interface UserBotsDailyStatRow {
   date: string;
   messages_processed: number;
   warnings_issued: number;
@@ -51,7 +51,7 @@ export interface WorkspaceDailyStatRow {
   users_banned: number;
 }
 
-export interface WorkspaceTodayTotals {
+export interface UserBotsTodayTotals {
   messages_processed: number;
   warnings_issued: number;
   messages_deleted: number;
@@ -60,8 +60,8 @@ export interface WorkspaceTodayTotals {
 
 export interface DashboardRawInput {
   bots: BotResponse[];
-  todayTotals: WorkspaceTodayTotals;
-  dailyStats: WorkspaceDailyStatRow[];
+  todayTotals: UserBotsTodayTotals;
+  dailyStats: UserBotsDailyStatRow[];
   actionBreakdown: DashboardActionBreakdown;
   recentActions: ModerationAction[];
   usersActive24h: number;
@@ -132,7 +132,7 @@ export function computeBotKpi(bots: BotResponse[]): {
 }
 
 export function buildTrend7d(
-  dailyStats: WorkspaceDailyStatRow[],
+  dailyStats: UserBotsDailyStatRow[],
   referenceDate: Date = new Date()
 ): DashboardTrendDay[] {
   const byDate = new Map(
@@ -193,12 +193,12 @@ export interface DashboardRepositories {
   getTodayTotals(
     botIds: string[],
     date: Date
-  ): Promise<WorkspaceTodayTotals>;
+  ): Promise<UserBotsTodayTotals>;
   getDailyStats(
     botIds: string[],
     startDate: Date,
     endDate: Date
-  ): Promise<WorkspaceDailyStatRow[]>;
+  ): Promise<UserBotsDailyStatRow[]>;
   getActionBreakdown(
     botIds: string[],
     startDate: Date,

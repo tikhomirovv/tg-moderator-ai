@@ -12,13 +12,15 @@ import { logger } from "../core/logger";
 export const SESSION_COOKIE_NAME = "tg_moderator_session";
 const OIDC_STATE_COOKIE = "tg_oidc_state";
 const OIDC_VERIFIER_COOKIE = "tg_oidc_verifier";
+const OIDC_RETURN_TO_COOKIE = "tg_oidc_return_to";
 
 const SESSION_COOKIE_MAX_AGE = 30 * 24 * 60 * 60;
 
 export function setOidcCookies(
   event: H3Event,
   state: string,
-  codeVerifier: string
+  codeVerifier: string,
+  returnTo?: string | null
 ) {
   const cookieOptions = {
     httpOnly: true,
@@ -29,18 +31,23 @@ export function setOidcCookies(
   };
   setCookie(event, OIDC_STATE_COOKIE, state, cookieOptions);
   setCookie(event, OIDC_VERIFIER_COOKIE, codeVerifier, cookieOptions);
+  if (returnTo) {
+    setCookie(event, OIDC_RETURN_TO_COOKIE, returnTo, cookieOptions);
+  }
 }
 
 export function readOidcCookies(event: H3Event) {
   return {
     state: getCookie(event, OIDC_STATE_COOKIE),
     codeVerifier: getCookie(event, OIDC_VERIFIER_COOKIE),
+    returnTo: getCookie(event, OIDC_RETURN_TO_COOKIE),
   };
 }
 
 export function clearOidcCookies(event: H3Event) {
   deleteCookie(event, OIDC_STATE_COOKIE, { path: "/" });
   deleteCookie(event, OIDC_VERIFIER_COOKIE, { path: "/" });
+  deleteCookie(event, OIDC_RETURN_TO_COOKIE, { path: "/" });
 }
 
 export async function createUserSession(
@@ -106,9 +113,4 @@ export async function requireSession(event: H3Event) {
     });
   }
   return { user };
-}
-
-export async function getOptionalSession(event: H3Event) {
-  const user = await getSessionUser(event);
-  return user ? { user } : null;
 }

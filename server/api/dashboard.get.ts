@@ -17,9 +17,9 @@ export default defineEventHandler(async (event) => {
     const data = await loadDashboardData(user.id, {
       findBots: (userId) => botRepo.findAllForUser(userId),
       getTodayTotals: (botIds, date) =>
-        statsRepo.getWorkspaceTodayTotals(botIds, date),
+        statsRepo.getBotTodayTotals(botIds, date),
       getDailyStats: (botIds, startDate, endDate) =>
-        statsRepo.getWorkspaceDailyAggregates(botIds, startDate, endDate),
+        statsRepo.getBotDailyAggregates(botIds, startDate, endDate),
       getActionBreakdown: (botIds, startDate, endDate) =>
         actionRepo.getActionBreakdownByBotIds(botIds, startDate, endDate),
       getRecentActions: (botIds, limit) =>

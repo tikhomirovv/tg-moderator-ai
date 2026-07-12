@@ -6,7 +6,7 @@
         Войдите через Telegram, чтобы управлять ботами модерации.
       </p>
       <a
-        href="/api/auth/telegram"
+        :href="telegramAuthHref"
         class="inline-flex w-full items-center justify-center rounded bg-blue-600 px-4 py-3 text-white hover:bg-blue-700"
       >
         Войти через Telegram
@@ -18,5 +18,15 @@
 <script setup lang="ts">
 definePageMeta({
   layout: false,
+});
+
+const route = useRoute();
+
+const telegramAuthHref = computed(() => {
+  const returnTo = route.query.returnTo;
+  if (typeof returnTo === "string" && returnTo.trim()) {
+    return `/api/auth/telegram?returnTo=${encodeURIComponent(returnTo)}`;
+  }
+  return "/api/auth/telegram";
 });
 </script>

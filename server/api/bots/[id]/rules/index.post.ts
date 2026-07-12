@@ -1,12 +1,10 @@
 import { RuleRepository } from "../../../../database/repositories/rule-repository";
 import type { CreateRuleRequest } from "../../../../database/models/rule";
 import { requireBotAccess } from "../../../../utils/bot-access";
+import { requireBotIdParam } from "../../../../utils/get-bot-id-param";
 
 export default defineEventHandler(async (event) => {
-  const botId = getRouterParam(event, "id");
-  if (!botId) {
-    throw createError({ statusCode: 400, statusMessage: "Bot ID is required" });
-  }
+  const botId = requireBotIdParam(event);
 
   await requireBotAccess(event, botId);
   const body = (await readBody(event)) as Omit<CreateRuleRequest, "id">;

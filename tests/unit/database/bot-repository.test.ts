@@ -1,18 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import { InMemoryBotRepository } from "../../helpers/in-memory-bot-repository";
 import { InMemoryRuleRepository } from "../../helpers/in-memory-rule-repository";
-import { TEST_OWNER_USER_ID } from "../../helpers/constants";
+import { TEST_BOT_ID, TEST_OWNER_USER_ID } from "../../helpers/constants";
 
 describe("BotRepository", () => {
   test("creates bot with chats and per-chat rules", async () => {
     const ruleRepo = new InMemoryRuleRepository();
-    await ruleRepo.create(TEST_OWNER_USER_ID, {
+    await ruleRepo.create(TEST_BOT_ID, {
       id: "11111111-1111-4111-8111-111111111111",
       name: "Spam",
       description: "No spam",
       ai_prompt: "detect spam",
     });
-    await ruleRepo.create(TEST_OWNER_USER_ID, {
+    await ruleRepo.create(TEST_BOT_ID, {
       id: "22222222-2222-4222-8222-222222222222",
       name: "Hate",
       description: "No hate",

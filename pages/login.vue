@@ -11,6 +11,12 @@
       >
         Войти через Telegram
       </a>
+      <p v-if="botLoginDeepLink" class="text-sm text-gray-600">
+        Проблемы со входом?
+        <a :href="botLoginDeepLink" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
+          Получить ссылку у бота
+        </a>
+      </p>
     </div>
   </div>
 </template>
@@ -23,6 +29,13 @@ definePageMeta({
 usePageTitle("Вход");
 
 const route = useRoute();
+const config = useRuntimeConfig();
+
+const botLoginDeepLink = computed(() => {
+  const username = config.public.telegramLoginBotUsername?.trim();
+  if (!username) return "";
+  return `https://t.me/${username}?start=login`;
+});
 
 const telegramAuthHref = computed(() => {
   const returnTo = route.query.returnTo;

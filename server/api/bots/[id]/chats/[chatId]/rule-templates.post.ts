@@ -1,16 +1,17 @@
-import { applyRuleTemplateToChat } from "../../../../../../../database/rule-templates";
-import { requireBotAccess } from "../../../../../../../utils/bot-access";
-import { requireBotIdParam } from "../../../../../../../utils/get-bot-id-param";
-import { requireBotChat } from "../../../../../../../utils/require-bot-chat";
+import { applyRuleTemplateToChat } from "../../../../../database/rule-templates";
+import { requireBotAccess } from "../../../../../utils/bot-access";
+import { requireBotIdParam } from "../../../../../utils/get-bot-id-param";
+import { requireBotChat } from "../../../../../utils/require-bot-chat";
 
 export default defineEventHandler(async (event) => {
   const botId = requireBotIdParam(event);
-  const templateId = getRouterParam(event, "templateId")?.trim();
 
+  const body = (await readBody(event)) as { template_id?: string };
+  const templateId = body?.template_id?.trim();
   if (!templateId) {
     throw createError({
       statusCode: 400,
-      statusMessage: "templateId is required",
+      statusMessage: "template_id is required",
     });
   }
 

@@ -405,8 +405,9 @@ async function addTemplate(templateId: string) {
   addingTemplateId.value = templateId;
   templateError.value = null;
   try {
-    await $fetch(`${rulesApiBase}/from-template/${templateId}`, {
+    await $fetch(`${templatesApiBase}/rule-templates`, {
       method: "POST",
+      body: { template_id: templateId },
     });
     await load();
     await loadTemplateCatalog();

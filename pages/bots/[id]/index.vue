@@ -77,6 +77,88 @@
       </div>
 
       <div class="bg-white border rounded p-6">
+        <h3 class="text-lg font-medium mb-2">Moderation messages</h3>
+        <p class="text-sm text-gray-600 mb-4">
+          Per-bot Warning and Ban texts (Telegram HTML). If
+          <code class="text-xs">{user_mention}</code>
+          is missing from the template, a mention is appended automatically.
+        </p>
+
+        <div class="flex gap-2 mb-4 border-b">
+          <button
+            type="button"
+            class="px-3 py-2 text-sm border-b-2 -mb-px"
+            :class="
+              messageTemplateTab === 'warning'
+                ? 'border-blue-600 text-blue-700 font-medium'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            "
+            @click="messageTemplateTab = 'warning'"
+          >
+            Warning
+          </button>
+          <button
+            type="button"
+            class="px-3 py-2 text-sm border-b-2 -mb-px"
+            :class="
+              messageTemplateTab === 'ban'
+                ? 'border-blue-600 text-blue-700 font-medium'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            "
+            @click="messageTemplateTab = 'ban'"
+          >
+            Ban
+          </button>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-3">
+          <button
+            v-for="chip in activeTemplateChips"
+            :key="chip.key"
+            type="button"
+            class="text-xs px-2 py-1 rounded-full bg-gray-100 hover:bg-gray-200"
+            :title="chip.hint"
+            @click="insertTemplatePlaceholder(chip.key)"
+          >
+            {{ chip.label }}
+          </button>
+        </div>
+
+        <textarea
+          ref="templateTextareaRef"
+          v-model="activeTemplateDraft"
+          rows="8"
+          class="w-full border rounded px-3 py-2 font-mono text-sm"
+        />
+
+        <p v-if="templateSaveError" class="text-sm text-red-600 mt-2">
+          {{ templateSaveError }}
+        </p>
+        <p v-if="templateSaveSuccess" class="text-sm text-green-600 mt-2">
+          Templates saved.
+        </p>
+
+        <div class="flex gap-2 mt-4">
+          <button
+            type="button"
+            class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+            :disabled="savingTemplates"
+            @click="saveMessageTemplates"
+          >
+            {{ savingTemplates ? "Saving..." : "Save" }}
+          </button>
+          <button
+            type="button"
+            class="px-3 py-2 border rounded hover:bg-gray-50 text-sm"
+            :disabled="savingTemplates"
+            @click="resetAndSaveMessageTemplates"
+          >
+            Reset to default
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-white border rounded p-6">
         <h3 class="text-lg font-medium mb-4">Team Access</h3>
         <div v-if="teamLoading" class="text-gray-500 text-sm">Loading team...</div>
         <div v-else class="space-y-4">
@@ -411,6 +493,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
+import {
+  BAN_TEMPLATE_PLACEHOLDERS,
+  DEFAULT_BAN_TEMPLATE_PREVIEW,
+  DEFAULT_WARNING_TEMPLATE_PREVIEW,
+  WARNING_TEMPLATE_PLACEHOLDERS,
+} from "~/lib/bot-message-template-ui";
 
 const route = useRoute();
 const botId = route.params.id as string;
@@ -426,6 +514,13 @@ const accessCode = ref<string | null>(null);
 const teamMembers = ref<any[]>([]);
 const teamLoading = ref(false);
 const statusError = ref("");
+const messageTemplateTab = ref<"warning" | "ban">("warning");
+const warningTemplateDraft = ref("");
+const banTemplateDraft = ref("");
+const templateTextareaRef = ref<HTMLTextAreaElement | null>(null);
+const savingTemplates = ref(false);
+const templateSaveError = ref("");
+const templateSaveSuccess = ref(false);
 const logs = ref<any[]>([]);
 const statistics = ref<any>({
   today: {
@@ -476,6 +571,32 @@ const aggregatedStatusClass = computed(() => {
 
 const isOwner = computed(() => bot.value?.my_role === "owner");
 
+const activeTemplateChips = computed(() =>
+  messageTemplateTab.value === "warning"
+    ? WARNING_TEMPLATE_PLACEHOLDERS
+    : BAN_TEMPLATE_PLACEHOLDERS
+);
+
+const activeTemplateDraft = computed({
+  get() {
+    return messageTemplateTab.value === "warning"
+      ? warningTemplateDraft.value
+      : banTemplateDraft.value;
+  },
+  set(value: string) {
+    if (messageTemplateTab.value === "warning") {
+      warningTemplateDraft.value = value;
+    } else {
+      banTemplateDraft.value = value;
+    }
+  },
+});
+
+const { insertAtCursor: insertTemplatePlaceholder } = useTemplateInsert(
+  templateTextareaRef,
+  activeTemplateDraft
+);
+
 const deliveryProblemMessage = computed(() => {
   const status = bot.value?.delivery_status;
   if (status === "degraded" || status === "unavailable") {
@@ -499,6 +620,7 @@ async function loadBot() {
   try {
     const resp = await $fetch<any>(`/api/bots/${botId}`);
     bot.value = resp?.data;
+    syncMessageTemplateDrafts();
   } catch (error: any) {
     const status = error?.statusCode ?? error?.response?.status;
     if (status !== 404) {
@@ -506,6 +628,77 @@ async function loadBot() {
     }
   } finally {
     loading.value = false;
+  }
+}
+
+function syncMessageTemplateDrafts() {
+  warningTemplateDraft.value =
+    bot.value?.warning_message_template ?? DEFAULT_WARNING_TEMPLATE_PREVIEW;
+  banTemplateDraft.value =
+    bot.value?.ban_message_template ?? DEFAULT_BAN_TEMPLATE_PREVIEW;
+}
+
+async function saveMessageTemplates() {
+  savingTemplates.value = true;
+  templateSaveError.value = "";
+  templateSaveSuccess.value = false;
+
+  try {
+    const resp = await $fetch<any>(`/api/bots/${botId}`, {
+      method: "PUT",
+      body: {
+        warning_message_template: warningTemplateDraft.value.trim() || null,
+        ban_message_template: banTemplateDraft.value.trim() || null,
+      },
+    });
+
+    if (resp?.data) {
+      bot.value = resp.data;
+      syncMessageTemplateDrafts();
+    }
+    templateSaveSuccess.value = true;
+  } catch (error: any) {
+    templateSaveError.value =
+      error?.data?.statusMessage ||
+      error?.message ||
+      "Failed to save message templates";
+  } finally {
+    savingTemplates.value = false;
+  }
+}
+
+function resetMessageTemplates() {
+  warningTemplateDraft.value = DEFAULT_WARNING_TEMPLATE_PREVIEW;
+  banTemplateDraft.value = DEFAULT_BAN_TEMPLATE_PREVIEW;
+}
+
+async function resetAndSaveMessageTemplates() {
+  resetMessageTemplates();
+  savingTemplates.value = true;
+  templateSaveError.value = "";
+  templateSaveSuccess.value = false;
+
+  try {
+    const resp = await $fetch<any>(`/api/bots/${botId}`, {
+      method: "PUT",
+      body: {
+        warning_message_template: null,
+        ban_message_template: null,
+      },
+    });
+
+    if (resp?.data) {
+      bot.value = resp.data;
+      syncMessageTemplateDrafts();
+    }
+    templateSaveSuccess.value = true;
+  } catch (error: any) {
+    templateSaveError.value =
+      error?.data?.statusMessage ||
+      error?.message ||
+      "Failed to reset message templates";
+  } finally {
+    savingTemplates.value = false;
   }
 }
 

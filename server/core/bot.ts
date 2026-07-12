@@ -11,6 +11,16 @@ import { ChatRepository } from "../database/repositories/chat-repository";
 import { ContextService } from "./context-service";
 import { planViolationModeration } from "./moderation-actions";
 import {
+  buildUserMention,
+  buildUserName,
+  DEFAULT_BAN_TEMPLATE,
+  DEFAULT_WARNING_TEMPLATE,
+  escapeTelegramHtml,
+  renderBotMessage,
+  resolveBotMessageTemplate,
+  resolveModerationReplyToMessageId,
+} from "./bot-message-templates";
+import {
   buildModerationDecisionRequest,
   saveModerationDecision,
 } from "./moderation-decision";
@@ -19,6 +29,8 @@ export class TelegramBot {
   private token: string;
   private botId: string;
   private botConfig: Bot;
+  private warningTemplate: string;
+  private banTemplate: string;
   private webhookUrl?: string;
   private contextService: ContextService;
 
@@ -30,6 +42,14 @@ export class TelegramBot {
       name: botConfig.name,
       chats: botConfig.chats,
     };
+    this.warningTemplate = resolveBotMessageTemplate(
+      botConfig.warning_message_template,
+      DEFAULT_WARNING_TEMPLATE
+    );
+    this.banTemplate = resolveBotMessageTemplate(
+      botConfig.ban_message_template,
+      DEFAULT_BAN_TEMPLATE
+    );
     this.contextService = new ContextService();
   }
 
@@ -237,16 +257,11 @@ export class TelegramBot {
         if (plan.telegramBan) {
           await this.banUser(message.chat.id, message.from.id, ruleDisplayName);
 
-          const banText =
-            `🚫 <b>Пользователь заблокирован!</b>\n\n` +
-            `Пользователь <b>${
-              message.from.first_name ||
-              message.from.username ||
-              message.from.id
-            }</b> ` +
-            `заблокирован за нарушение правил чата.\n` +
-            `Количество предупреждений: <b>${userContext.user_warnings}</b>\n` +
-            `Последнее нарушение: <b>${ruleDisplayName}</b>`;
+          const banText = renderBotMessage(this.banTemplate, {
+            user_mention: buildUserMention(message.from),
+            user_name: buildUserName(message.from),
+            rule_name: escapeTelegramHtml(ruleDisplayName),
+          });
 
           await this.sendInfoMessage(message.chat.id, banText);
         }
@@ -270,25 +285,24 @@ export class TelegramBot {
         );
 
         if (plan.telegramWarning) {
-          const warningsLeft =
-            plan.warningsBeforeBan - userContext.user_warnings;
-          const warningText =
-            `⚠️ <b>Предупреждение!</b>\n\n` +
-            `Сообщение нарушает правила чата.\n` +
-            `Нарушение: <b>${ruleDisplayName}</b>\n` +
-            `Уверенность: <b>${Math.round(
-              aiResponse.confidence * 100
-            )}%</b>\n\n` +
-            `Предупреждений: <b>${userContext.user_warnings + 1}/${
-              plan.warningsBeforeBan
-            }</b>\n` +
-            `До блокировки: <b>${warningsLeft - 1}</b>\n\n` +
-            `Пожалуйста, соблюдайте правила чата.`;
+          const warningsCurrent = userContext.user_warnings + 1;
+          const warningsLeft = plan.warningsBeforeBan - warningsCurrent;
+          const warningText = renderBotMessage(this.warningTemplate, {
+            user_mention: buildUserMention(message.from),
+            user_name: buildUserName(message.from),
+            rule_name: escapeTelegramHtml(ruleDisplayName),
+            warnings_current: String(warningsCurrent),
+            warnings_max: String(plan.warningsBeforeBan),
+            warnings_left: String(Math.max(warningsLeft, 0)),
+          });
 
           await this.sendMessage(
             message.chat.id,
             warningText,
-            message.message_id
+            resolveModerationReplyToMessageId(
+              plan.telegramDelete,
+              message.message_id
+            )
           );
         } else {
           logger.warn(

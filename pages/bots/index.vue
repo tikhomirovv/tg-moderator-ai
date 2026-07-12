@@ -232,6 +232,8 @@
 import { ref, onMounted } from "vue";
 import type { BotListItem, BotMemberRole } from "~/types/bot";
 
+usePageTitle("Боты");
+
 type AddModalTab = "create" | "join";
 
 const route = useRoute();

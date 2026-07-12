@@ -416,6 +416,8 @@ const route = useRoute();
 const botId = route.params.id as string;
 
 const bot = ref<any>(null);
+
+usePageTitle(() => bot.value?.name ?? "Бот");
 const loading = ref(false);
 const showAddChatModal = ref(false);
 const editingChat = ref<any>(null);

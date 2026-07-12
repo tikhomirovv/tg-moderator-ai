@@ -20,6 +20,8 @@ definePageMeta({
   layout: false,
 });
 
+usePageTitle("Вход");
+
 const route = useRoute();
 
 const telegramAuthHref = computed(() => {

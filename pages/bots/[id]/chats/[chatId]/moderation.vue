@@ -296,6 +296,10 @@ const templatesApiBase = `/api/bots/${botId}/chats/${telegramChatId}`;
 const rules = ref<any[]>([]);
 const chatName = ref("");
 const loading = ref(false);
+
+usePageTitle(() =>
+  chatName.value ? `Правила · ${chatName.value}` : "Правила"
+);
 const saving = ref(false);
 const templateError = ref<string | null>(null);
 const showModal = ref(false);

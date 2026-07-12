@@ -163,6 +163,8 @@ type DecisionItem = {
 const route = useRoute();
 const botId = route.params.id as string;
 
+usePageTitle("Аудит");
+
 const bot = ref<any>(null);
 const loading = ref(false);
 const decisions = ref<DecisionItem[]>([]);

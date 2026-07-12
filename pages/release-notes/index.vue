@@ -95,6 +95,8 @@ type ReleaseSection = {
   items: string[];
 };
 
+usePageTitle("Что нового");
+
 type ReleaseNote = {
   tag: string;
   version: string;

@@ -2,115 +2,48 @@ import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import { Rule, CreateRuleRequest, UpdateRuleRequest } from "../models/rule";
-import { rules, ruleWhitelist } from "../schema";
+import { rules } from "../schema";
 import { toRule } from "../mappers";
-import { normalizeWhitelistEntry } from "../../core/rule-whitelist";
-
-function normalizeWhitelistInput(entries: string[] | undefined): string[] {
-  if (!entries?.length) {
-    return [];
-  }
-
-  const normalized = entries
-    .map(normalizeWhitelistEntry)
-    .filter((entry): entry is string => entry !== null);
-
-  return [...new Set(normalized)];
-}
 
 export class RuleRepository {
   private get db() {
     return getDatabaseConnection().getDb();
   }
 
-  private async loadWhitelistForRules(
-    botId: string,
-    ruleIds: string[]
-  ): Promise<Map<string, string[]>> {
-    const result = new Map<string, string[]>();
-    if (ruleIds.length === 0) {
-      return result;
-    }
-
-    const rows = await this.db
-      .select()
-      .from(ruleWhitelist)
-      .where(
-        and(
-          eq(ruleWhitelist.botId, botId),
-          inArray(ruleWhitelist.ruleId, ruleIds)
-        )
-      );
-
-    for (const row of rows) {
-      const existing = result.get(row.ruleId) ?? [];
-      existing.push(row.entry);
-      result.set(row.ruleId, existing);
-    }
-
-    return result;
-  }
-
-  private async replaceWhitelist(
-    botId: string,
-    ruleId: string,
-    entries: string[] | undefined
-  ): Promise<void> {
-    await this.db
-      .delete(ruleWhitelist)
-      .where(
-        and(eq(ruleWhitelist.botId, botId), eq(ruleWhitelist.ruleId, ruleId))
-      );
-
-    const normalized = normalizeWhitelistInput(entries);
-    if (normalized.length === 0) {
-      return;
-    }
-
-    await this.db.insert(ruleWhitelist).values(
-      normalized.map((entry) => ({
-        botId,
-        ruleId,
-        entry,
-      }))
-    );
-  }
-
-  async findAll(botId: string): Promise<Rule[]> {
+  async findAllByChat(botId: string, chatInternalId: number): Promise<Rule[]> {
     const rows = await this.db
       .select()
       .from(rules)
-      .where(eq(rules.botId, botId));
+      .where(and(eq(rules.botId, botId), eq(rules.chatId, chatInternalId)));
 
-    const whitelistByRuleId = await this.loadWhitelistForRules(
-      botId,
-      rows.map((row) => row.id)
-    );
-
-    return rows.map((row) =>
-      toRule(row, whitelistByRuleId.get(row.id) ?? [])
-    );
+    return rows.map((row) => toRule(row));
   }
 
-  async findById(id: string, botId: string): Promise<Rule | null> {
+  async findById(
+    id: string,
+    botId: string,
+    chatInternalId: number
+  ): Promise<Rule | null> {
     const [row] = await this.db
       .select()
       .from(rules)
-      .where(and(eq(rules.id, id), eq(rules.botId, botId)))
+      .where(
+        and(
+          eq(rules.id, id),
+          eq(rules.botId, botId),
+          eq(rules.chatId, chatInternalId)
+        )
+      )
       .limit(1);
 
-    if (!row) {
-      return null;
-    }
-
-    const whitelistByRuleId = await this.loadWhitelistForRules(botId, [
-      row.id,
-    ]);
-
-    return toRule(row, whitelistByRuleId.get(row.id) ?? []);
+    return row ? toRule(row) : null;
   }
 
-  async create(botId: string, ruleData: CreateRuleRequest): Promise<Rule> {
+  async create(
+    botId: string,
+    chatInternalId: number,
+    ruleData: CreateRuleRequest
+  ): Promise<Rule> {
     const id = ruleData.id ?? randomUUID();
     const now = new Date();
     const [row] = await this.db
@@ -118,6 +51,7 @@ export class RuleRepository {
       .values({
         id,
         botId,
+        chatId: chatInternalId,
         name: ruleData.name,
         description: ruleData.description,
         aiPrompt: ruleData.ai_prompt,
@@ -130,16 +64,13 @@ export class RuleRepository {
       })
       .returning();
 
-    await this.replaceWhitelist(botId, id, ruleData.whitelist);
-
-    const whitelistByRuleId = await this.loadWhitelistForRules(botId, [id]);
-
-    return toRule(row, whitelistByRuleId.get(id) ?? []);
+    return toRule(row);
   }
 
   async update(
     id: string,
     botId: string,
+    chatInternalId: number,
     updateData: UpdateRuleRequest
   ): Promise<Rule | null> {
     const updateValues: Partial<typeof rules.$inferInsert> = {
@@ -169,44 +100,52 @@ export class RuleRepository {
     const [row] = await this.db
       .update(rules)
       .set(updateValues)
-      .where(and(eq(rules.id, id), eq(rules.botId, botId)))
+      .where(
+        and(
+          eq(rules.id, id),
+          eq(rules.botId, botId),
+          eq(rules.chatId, chatInternalId)
+        )
+      )
       .returning();
 
-    if (!row) {
-      return null;
-    }
-
-    if (updateData.whitelist !== undefined) {
-      await this.replaceWhitelist(botId, id, updateData.whitelist);
-    }
-
-    const whitelistByRuleId = await this.loadWhitelistForRules(botId, [id]);
-
-    return toRule(row, whitelistByRuleId.get(id) ?? []);
+    return row ? toRule(row) : null;
   }
 
-  async delete(id: string, botId: string): Promise<boolean> {
+  async delete(
+    id: string,
+    botId: string,
+    chatInternalId: number
+  ): Promise<boolean> {
     const deleted = await this.db
       .delete(rules)
-      .where(and(eq(rules.id, id), eq(rules.botId, botId)))
+      .where(
+        and(
+          eq(rules.id, id),
+          eq(rules.botId, botId),
+          eq(rules.chatId, chatInternalId)
+        )
+      )
       .returning({ id: rules.id });
     return deleted.length > 0;
   }
 
-  async findActive(botId: string): Promise<Rule[]> {
+  async findActiveForChat(
+    botId: string,
+    chatInternalId: number
+  ): Promise<Rule[]> {
     const rows = await this.db
       .select()
       .from(rules)
-      .where(and(eq(rules.botId, botId), eq(rules.isActive, true)));
+      .where(
+        and(
+          eq(rules.botId, botId),
+          eq(rules.chatId, chatInternalId),
+          eq(rules.isActive, true)
+        )
+      );
 
-    const whitelistByRuleId = await this.loadWhitelistForRules(
-      botId,
-      rows.map((row) => row.id)
-    );
-
-    return rows.map((row) =>
-      toRule(row, whitelistByRuleId.get(row.id) ?? [])
-    );
+    return rows.map((row) => toRule(row));
   }
 
   async findByIds(ids: string[], botId: string): Promise<Rule[]> {
@@ -216,20 +155,6 @@ export class RuleRepository {
       .from(rules)
       .where(and(eq(rules.botId, botId), inArray(rules.id, ids)));
 
-    const whitelistByRuleId = await this.loadWhitelistForRules(
-      botId,
-      rows.map((row) => row.id)
-    );
-
-    return rows.map((row) =>
-      toRule(row, whitelistByRuleId.get(row.id) ?? [])
-    );
-  }
-
-  async getWhitelistByRuleIds(
-    botId: string,
-    ruleIds: string[]
-  ): Promise<Map<string, string[]>> {
-    return this.loadWhitelistForRules(botId, ruleIds);
+    return rows.map((row) => toRule(row));
   }
 }

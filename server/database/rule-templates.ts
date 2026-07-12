@@ -203,14 +203,26 @@ export function getRuleTemplate(templateId: string) {
   return RULE_TEMPLATES.find((template) => template.id === templateId) ?? null;
 }
 
-export async function listRuleTemplatesForBot(
+export function listRuleTemplates(): Omit<RuleTemplateCatalogItem, "added">[] {
+  return RULE_TEMPLATES.map((template) => ({
+    id: template.id,
+    name: template.name,
+    description: template.description,
+    delete_on_violation: template.delete_on_violation,
+    ban_on_violation: template.ban_on_violation,
+    warnings_before_ban: template.warnings_before_ban,
+  }));
+}
+
+export async function listRuleTemplatesForChat(
   botId: string,
+  chatInternalId: number,
   deps?: {
-    ruleRepo?: Pick<RuleRepository, "findAll">;
+    ruleRepo?: Pick<RuleRepository, "findAllByChat">;
   }
 ): Promise<RuleTemplateCatalogItem[]> {
   const ruleRepo = deps?.ruleRepo ?? new RuleRepository();
-  const existing = await ruleRepo.findAll(botId);
+  const existing = await ruleRepo.findAllByChat(botId, chatInternalId);
   const existingNames = new Set(existing.map((rule) => rule.name));
 
   return RULE_TEMPLATES.map((template) => ({
@@ -224,11 +236,12 @@ export async function listRuleTemplatesForBot(
   }));
 }
 
-export async function applyRuleTemplateToBot(
+export async function applyRuleTemplateToChat(
   botId: string,
+  chatInternalId: number,
   templateId: string,
   deps?: {
-    ruleRepo?: Pick<RuleRepository, "create" | "findAll">;
+    ruleRepo?: Pick<RuleRepository, "create" | "findAllByChat">;
   }
 ): Promise<
   | { added: true; rule: Awaited<ReturnType<RuleRepository["create"]>> }
@@ -240,13 +253,13 @@ export async function applyRuleTemplateToBot(
   }
 
   const ruleRepo = deps?.ruleRepo ?? new RuleRepository();
-  const existing = await ruleRepo.findAll(botId);
+  const existing = await ruleRepo.findAllByChat(botId, chatInternalId);
   if (existing.some((rule) => rule.name === template.name)) {
     return { added: false, reason: "already_exists" };
   }
 
-  logger.info({ botId, templateId }, "Adding rule template to bot");
+  logger.info({ botId, chatInternalId, templateId }, "Adding rule template to chat");
   const { id: _templateSlug, ...ruleData } = template;
-  const rule = await ruleRepo.create(botId, ruleData);
+  const rule = await ruleRepo.create(botId, chatInternalId, ruleData);
   return { added: true, rule };
 }

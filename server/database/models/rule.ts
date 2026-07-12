@@ -1,5 +1,6 @@
 export interface Rule {
   id: string;
+  chat_id: number;
   name: string;
   description: string;
   ai_prompt: string;
@@ -7,7 +8,6 @@ export interface Rule {
   delete_on_violation: boolean;
   ban_on_violation: boolean;
   warnings_before_ban: number | null;
-  whitelist: string[];
   created_at: Date;
   updated_at: Date;
 }
@@ -20,7 +20,6 @@ export interface CreateRuleRequest {
   delete_on_violation?: boolean;
   ban_on_violation?: boolean;
   warnings_before_ban?: number | null;
-  whitelist?: string[];
 }
 
 export interface UpdateRuleRequest {
@@ -31,5 +30,4 @@ export interface UpdateRuleRequest {
   delete_on_violation?: boolean;
   ban_on_violation?: boolean;
   warnings_before_ban?: number | null;
-  whitelist?: string[];
 }

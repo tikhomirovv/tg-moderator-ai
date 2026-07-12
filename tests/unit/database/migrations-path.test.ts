@@ -17,7 +17,10 @@ describe("resolveMigrationsFolder", () => {
       readFileSync(path.join(folder, "meta/_journal.json"), "utf8")
     ) as { entries: Array<{ tag: string }> };
 
-    expect(journal.entries).toHaveLength(1);
+    expect(journal.entries.length).toBeGreaterThanOrEqual(2);
     expect(journal.entries.some((e) => e.tag === "0000_init")).toBe(true);
+    expect(
+      journal.entries.some((e) => e.tag === "0001_bouncy_giant_man")
+    ).toBe(true);
   });
 });

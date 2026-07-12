@@ -2,7 +2,6 @@
 export interface Chat {
   chat_id: number;
   name: string;
-  rules: string[];
   /** When true, violations are logged in DB only — no Telegram delete/ban/warn. */
   silent_mode?: boolean;
 }

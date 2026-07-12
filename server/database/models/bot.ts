@@ -1,8 +1,8 @@
 export interface Chat {
   chat_id: number;
   name: string;
-  rules: string[];
   silent_mode: boolean;
+  rules_count: number;
 }
 
 export interface Bot {
@@ -20,13 +20,21 @@ export interface Bot {
 export interface CreateBotRequest {
   id: string;
   name: string;
-  chats: Chat[];
+  chats: Array<{
+    chat_id: number;
+    name: string;
+    silent_mode?: boolean;
+  }>;
   token?: string;
 }
 
 export interface UpdateBotRequest {
   name?: string;
-  chats?: Chat[];
+  chats?: Array<{
+    chat_id: number;
+    name: string;
+    silent_mode?: boolean;
+  }>;
   token?: string;
   is_active?: boolean;
 }

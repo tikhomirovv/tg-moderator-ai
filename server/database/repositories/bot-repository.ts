@@ -7,13 +7,46 @@ import {
   BotResponse,
   Chat,
 } from "../models/bot";
-import { bots, chats, chatRules } from "../schema";
+import { bots, chats, rules } from "../schema";
 import { toBot, toBotResponse, toChat } from "../mappers";
 import { BotMemberRepository } from "./bot-member-repository";
+
+type IncomingChat = {
+  chat_id: number;
+  name: string;
+  silent_mode?: boolean;
+};
 
 export class BotRepository {
   private get db() {
     return getDatabaseConnection().getDb();
+  }
+
+  private async loadRuleCountsByInternalChatId(
+    botId: string,
+    internalChatIds: number[]
+  ): Promise<Map<number, number>> {
+    const counts = new Map<number, number>();
+    if (internalChatIds.length === 0) {
+      return counts;
+    }
+
+    const rows = await this.db
+      .select({
+        chatId: rules.chatId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(rules)
+      .where(
+        and(eq(rules.botId, botId), inArray(rules.chatId, internalChatIds))
+      )
+      .groupBy(rules.chatId);
+
+    for (const row of rows) {
+      counts.set(row.chatId, row.count);
+    }
+
+    return counts;
   }
 
   private async loadChatsForBot(botId: string): Promise<Chat[]> {
@@ -26,47 +59,50 @@ export class BotRepository {
       return [];
     }
 
-    const chatIds = chatRows.map((chat) => chat.id);
-    const ruleRows = await this.db
-      .select()
-      .from(chatRules)
-      .where(inArray(chatRules.chatId, chatIds));
+    const ruleCounts = await this.loadRuleCountsByInternalChatId(
+      botId,
+      chatRows.map((chat) => chat.id)
+    );
 
-    const rulesByChatId = new Map<number, string[]>();
-    for (const row of ruleRows) {
-      const existing = rulesByChatId.get(row.chatId) ?? [];
-      existing.push(row.ruleId);
-      rulesByChatId.set(row.chatId, existing);
-    }
-
-    return chatRows.map((row) => toChat(row, rulesByChatId.get(row.id) ?? []));
+    return chatRows.map((row) =>
+      toChat(row, ruleCounts.get(row.id) ?? 0)
+    );
   }
 
-  private async replaceChats(
-    botId: string,
-    chatList: Chat[]
-  ): Promise<void> {
-    await this.db.delete(chats).where(eq(chats.botId, botId));
+  private async syncChats(botId: string, chatList: IncomingChat[]): Promise<void> {
+    const existing = await this.db
+      .select()
+      .from(chats)
+      .where(eq(chats.botId, botId));
+
+    const existingByTelegramId = new Map(
+      existing.map((chat) => [chat.chatId, chat])
+    );
+    const incomingIds = new Set(chatList.map((chat) => chat.chat_id));
+
+    for (const chat of existing) {
+      if (!incomingIds.has(chat.chatId)) {
+        await this.db.delete(chats).where(eq(chats.id, chat.id));
+      }
+    }
 
     for (const chat of chatList) {
-      const [inserted] = await this.db
-        .insert(chats)
-        .values({
+      const found = existingByTelegramId.get(chat.chat_id);
+      if (found) {
+        await this.db
+          .update(chats)
+          .set({
+            name: chat.name,
+            silentMode: chat.silent_mode ?? false,
+          })
+          .where(eq(chats.id, found.id));
+      } else {
+        await this.db.insert(chats).values({
           botId,
           chatId: chat.chat_id,
           name: chat.name,
           silentMode: chat.silent_mode ?? false,
-        })
-        .returning({ id: chats.id });
-
-      if (chat.rules.length > 0) {
-        await this.db.insert(chatRules).values(
-          chat.rules.map((ruleId) => ({
-            chatId: inserted.id,
-            botId,
-            ruleId,
-          }))
-        );
+        });
       }
     }
   }
@@ -128,7 +164,7 @@ export class BotRepository {
     const memberRepo = new BotMemberRepository();
     await memberRepo.addMember(botData.id, ownerUserId, "owner");
 
-    await this.replaceChats(botData.id, botData.chats);
+    await this.syncChats(botData.id, botData.chats);
     const chatList = await this.loadChatsForBot(botData.id);
     return {
       ...toBotResponse(row, chatList),
@@ -160,7 +196,7 @@ export class BotRepository {
     if (!row) return null;
 
     if (chatList !== undefined) {
-      await this.replaceChats(id, chatList);
+      await this.syncChats(id, chatList);
     }
 
     const loadedChats = await this.loadChatsForBot(id);

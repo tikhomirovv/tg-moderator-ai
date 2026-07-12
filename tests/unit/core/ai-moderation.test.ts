@@ -44,6 +44,8 @@ describe("buildModerationSystemPrompt", () => {
       "lower confidence",
       "reasoning",
       "MESSAGE TO ANALYZE",
+      "natural-language exceptions",
+      "telegram user id",
     ];
 
     for (const phrase of mustContain) {
@@ -85,6 +87,25 @@ describe("buildModerationUserPrompt", () => {
     expect(prompt).toContain("2026-07-11T10:00:00.000Z");
     expect(prompt).not.toContain("JSON response only");
     expect(prompt).not.toContain("You are a chat moderator");
+  });
+
+  test("includes message author block with username and user id", () => {
+    const prompt = buildModerationUserPrompt(
+      {
+        message: "buy now",
+        user_id: 123456789,
+        username: "partner",
+        context: {
+          user_warnings: 0,
+          chat_history: [],
+        },
+      },
+      []
+    );
+
+    expect(prompt).toContain("MESSAGE AUTHOR:");
+    expect(prompt).toContain("telegram_user_id: 123456789");
+    expect(prompt).toContain("username: @partner");
   });
 });
 

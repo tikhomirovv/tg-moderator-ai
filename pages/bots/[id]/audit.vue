@@ -69,7 +69,7 @@
                 </span>
               </td>
               <td class="px-4 py-3 text-gray-700">
-                {{ item.rule_violated || "—" }}
+                {{ formatRuleLabel(item) }}
               </td>
               <td class="px-4 py-3">
                 {{ Math.round(item.ai_confidence * 100) }}%
@@ -102,8 +102,8 @@
             {{ chatName(item.chat_id) }} · user {{ item.user_id }}
           </div>
           <div class="text-sm">{{ displayText(item.message_text, `msg-${item._id}`) }}</div>
-          <div v-if="item.rule_violated" class="text-sm">
-            Rule: <span class="font-medium">{{ item.rule_violated }}</span>
+          <div v-if="item.rule_violated || item.rule_name" class="text-sm">
+            Rule: <span class="font-medium">{{ formatRuleLabel(item) }}</span>
             · {{ Math.round(item.ai_confidence * 100) }}%
           </div>
           <div class="text-sm text-gray-700">
@@ -155,6 +155,7 @@ type DecisionItem = {
   message_text: string;
   violation_detected: boolean;
   rule_violated?: string;
+  rule_name?: string | null;
   ai_confidence: number;
   ai_reasoning: string;
   timestamp: string;
@@ -210,6 +211,16 @@ function resultBadgeClass(violation: boolean) {
 function chatName(chatId: number) {
   const chat = bot.value?.chats?.find((c: any) => c.chat_id === chatId);
   return chat?.name || `Chat ${chatId}`;
+}
+
+function formatRuleLabel(item: DecisionItem) {
+  if (item.rule_name) {
+    return item.rule_name;
+  }
+  if (item.rule_violated) {
+    return "Unknown rule";
+  }
+  return "—";
 }
 
 async function loadBot(options: { afterWorkspaceSwitch?: boolean } = {}) {

@@ -1,4 +1,6 @@
 import { logger } from "../../../core/logger";
+import { loadRuleNameMap, resolveRuleName } from "../../../core/rule-name-lookup";
+import { BotRepository } from "../../../database/repositories/bot-repository";
 import { ModerationActionRepository } from "../../../database/repositories/moderation-action-repository";
 
 export default defineEventHandler(async (event) => {
@@ -12,12 +14,24 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    const workspaceId = getWorkspaceId(event);
+    const botRepo = new BotRepository();
+    const bot = await botRepo.findById(botId, workspaceId);
+
+    if (!bot) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Bot not found",
+      });
+    }
+
     const actionRepo = new ModerationActionRepository();
-
-    // Получаем последние действия модерации для всех чатов бота
     const allActions = await actionRepo.getActionsByBot(botId, 50);
+    const ruleNames = await loadRuleNameMap(
+      workspaceId,
+      allActions.map((action) => action.rule_violated)
+    );
 
-    // Преобразуем в формат для фронтенда
     const logs = allActions.map((action) => ({
       id: action._id,
       action:
@@ -39,6 +53,7 @@ export default defineEventHandler(async (event) => {
       timestamp: action.timestamp.toISOString(),
       details: {
         rule_violated: action.rule_violated,
+        rule_name: resolveRuleName(action.rule_violated, ruleNames),
         ai_confidence: action.ai_confidence,
         ai_reasoning: action.ai_reasoning,
       },
@@ -51,6 +66,10 @@ export default defineEventHandler(async (event) => {
       },
     };
   } catch (error) {
+    if (error && typeof error === "object" && "statusCode" in error) {
+      throw error;
+    }
+
     logger.error({ error: error as Error }, "Error loading logs");
     throw createError({
       statusCode: 500,

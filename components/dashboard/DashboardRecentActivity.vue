@@ -44,7 +44,7 @@
               </span>
             </td>
             <td class="py-2 text-gray-600">
-              {{ item.rule_violated || "—" }}
+              {{ item.rule_name || (item.rule_violated ? "Unknown rule" : "—") }}
             </td>
           </tr>
         </tbody>

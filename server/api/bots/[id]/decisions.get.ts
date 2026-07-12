@@ -5,6 +5,10 @@ import {
   buildDecisionsPagination,
   parseDecisionsQuery,
 } from "../../../utils/decisions-query";
+import {
+  enrichWithRuleName,
+  loadRuleNameMap,
+} from "../../../core/rule-name-lookup";
 
 export default defineEventHandler(async (event) => {
   try {
@@ -33,11 +37,16 @@ export default defineEventHandler(async (event) => {
     );
     const decisionRepo = new ModerationDecisionRepository();
     const { items, total } = await decisionRepo.listByBot(botId, { page, limit });
+    const ruleNames = await loadRuleNameMap(
+      workspaceId,
+      items.map((item) => item.rule_violated)
+    );
+    const enrichedItems = items.map((item) => enrichWithRuleName(item, ruleNames));
 
     return {
       success: true,
       data: {
-        items,
+        items: enrichedItems,
         pagination: buildDecisionsPagination(page, limit, total),
       },
     };

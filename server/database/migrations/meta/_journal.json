@@ -15,6 +15,13 @@
       "when": 1783844801789,
       "tag": "0001_wakeful_roughhouse",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783940000000,
+      "tag": "0002_rules_uuid",
+      "breakpoints": true
     }
   ]
 }

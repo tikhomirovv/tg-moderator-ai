@@ -1,4 +1,4 @@
-import { requireWorkspaceSession } from "../utils/session";
+import { requireSession } from "../utils/session";
 
 export default defineEventHandler(async (event) => {
   const path = event.path;
@@ -19,8 +19,5 @@ export default defineEventHandler(async (event) => {
     return;
   }
 
-  const { workspaceId, session, user } = await requireWorkspaceSession(event);
-  event.context.workspaceId = workspaceId;
-  event.context.authSession = session;
-  event.context.authUser = user;
+  await requireSession(event);
 });

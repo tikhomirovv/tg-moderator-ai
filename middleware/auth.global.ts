@@ -1,25 +1,20 @@
-import { fetchAuthSession } from "~/lib/fetch-auth-session";
+import { fetchSession } from "~/lib/fetch-session";
+import { normalizeAuthReturnTo } from "~/lib/auth-return-to";
 
 export default defineNuxtRouteMiddleware(async (to) => {
-  const publicPaths = [
-    "/login",
-    "/register",
-    "/forgot-password",
-    "/reset-password",
-    "/accept-invitation",
-  ];
+  const publicPaths = ["/login"];
 
   if (publicPaths.some((path) => to.path.startsWith(path))) {
     return;
   }
 
-  const session = await fetchAuthSession();
+  const session = await fetchSession();
 
   if (!session?.user) {
-    return navigateTo("/login");
-  }
-
-  if (!session.user.emailVerified) {
-    return navigateTo("/login?verify=required");
+    const returnTo = normalizeAuthReturnTo(to.fullPath);
+    return navigateTo({
+      path: "/login",
+      query: { returnTo },
+    });
   }
 });

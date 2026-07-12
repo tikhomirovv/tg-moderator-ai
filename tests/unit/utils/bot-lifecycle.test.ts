@@ -7,7 +7,7 @@ import {
   reconcileBotWebhook,
 } from "../../../server/utils/bot-lifecycle";
 import { InMemoryBotRepository } from "../../helpers/in-memory-bot-repository";
-import { TEST_WORKSPACE_ID } from "../../helpers/constants";
+import { TEST_OWNER_USER_ID } from "../../helpers/constants";
 
 const originalBaseUrl = process.env.BASE_URL;
 
@@ -26,7 +26,7 @@ function asBotRepository(repo: InMemoryBotRepository): BotRepository {
 describe("bot lifecycle", () => {
   test("disable removes webhook and sets bot inactive", async () => {
     const botRepo = new InMemoryBotRepository();
-    await botRepo.create(TEST_WORKSPACE_ID, {
+    await botRepo.create(TEST_OWNER_USER_ID, {
       id: "disable-bot",
       name: "Disable me",
       token: "secret",
@@ -39,7 +39,7 @@ describe("bot lifecycle", () => {
       return new Response(JSON.stringify({ ok: true }));
     };
 
-    const result = await disableBot("disable-bot", TEST_WORKSPACE_ID, {
+    const result = await disableBot("disable-bot", {
       botRepo: asBotRepository(botRepo),
       fetchFn,
     });
@@ -48,7 +48,7 @@ describe("bot lifecycle", () => {
     expect(result.webhookRegistered).toBe(false);
     expect(fetchCalls[0]).toContain("/deleteWebhook");
 
-    const stored = await botRepo.findById("disable-bot", TEST_WORKSPACE_ID);
+    const stored = await botRepo.findById("disable-bot");
     expect(stored?.is_active).toBe(false);
   });
 
@@ -56,18 +56,18 @@ describe("bot lifecycle", () => {
     process.env.BASE_URL = "https://example.com";
 
     const botRepo = new InMemoryBotRepository();
-    await botRepo.create(TEST_WORKSPACE_ID, {
+    await botRepo.create(TEST_OWNER_USER_ID, {
       id: "enable-bot",
       name: "Enable me",
       token: "secret",
       chats: [],
     });
-    await botRepo.update("enable-bot", TEST_WORKSPACE_ID, { is_active: false });
+    await botRepo.update("enable-bot", { is_active: false });
 
     const fetchFn = async () =>
       new Response(JSON.stringify({ ok: true }));
 
-    const result = await enableBot("enable-bot", TEST_WORKSPACE_ID, {
+    const result = await enableBot("enable-bot", {
       botRepo: asBotRepository(botRepo),
       fetchFn,
     });
@@ -81,15 +81,15 @@ describe("bot lifecycle", () => {
     delete process.env.BASE_URL;
 
     const botRepo = new InMemoryBotRepository();
-    await botRepo.create(TEST_WORKSPACE_ID, {
+    await botRepo.create(TEST_OWNER_USER_ID, {
       id: "warn-bot",
       name: "Warn me",
       token: "secret",
       chats: [],
     });
-    await botRepo.update("warn-bot", TEST_WORKSPACE_ID, { is_active: false });
+    await botRepo.update("warn-bot", { is_active: false });
 
-    const result = await enableBot("warn-bot", TEST_WORKSPACE_ID, {
+    const result = await enableBot("warn-bot", {
       botRepo: asBotRepository(botRepo),
       fetchFn: async () => new Response(JSON.stringify({ ok: true })),
     });
@@ -103,25 +103,25 @@ describe("bot lifecycle", () => {
     process.env.BASE_URL = "https://example.com";
 
     const botRepo = new InMemoryBotRepository();
-    await botRepo.create(TEST_WORKSPACE_ID, {
+    await botRepo.create(TEST_OWNER_USER_ID, {
       id: "rollback-bot",
       name: "Rollback",
       token: "secret",
       chats: [],
     });
-    await botRepo.update("rollback-bot", TEST_WORKSPACE_ID, { is_active: false });
+    await botRepo.update("rollback-bot", { is_active: false });
 
     const fetchFn = async () =>
       new Response(JSON.stringify({ ok: false, description: "invalid url" }));
 
     await expect(
-      enableBot("rollback-bot", TEST_WORKSPACE_ID, {
+      enableBot("rollback-bot", {
         botRepo: asBotRepository(botRepo),
         fetchFn,
       })
     ).rejects.toBeInstanceOf(BotLifecycleError);
 
-    const stored = await botRepo.findById("rollback-bot", TEST_WORKSPACE_ID);
+    const stored = await botRepo.findById("rollback-bot");
     expect(stored?.is_active).toBe(false);
   });
 

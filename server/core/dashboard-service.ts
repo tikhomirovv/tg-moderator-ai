@@ -43,7 +43,7 @@ export interface DashboardData {
   has_bots: boolean;
 }
 
-export interface WorkspaceDailyStatRow {
+export interface UserBotsDailyStatRow {
   date: string;
   messages_processed: number;
   warnings_issued: number;
@@ -51,7 +51,7 @@ export interface WorkspaceDailyStatRow {
   users_banned: number;
 }
 
-export interface WorkspaceTodayTotals {
+export interface UserBotsTodayTotals {
   messages_processed: number;
   warnings_issued: number;
   messages_deleted: number;
@@ -60,8 +60,8 @@ export interface WorkspaceTodayTotals {
 
 export interface DashboardRawInput {
   bots: BotResponse[];
-  todayTotals: WorkspaceTodayTotals;
-  dailyStats: WorkspaceDailyStatRow[];
+  todayTotals: UserBotsTodayTotals;
+  dailyStats: UserBotsDailyStatRow[];
   actionBreakdown: DashboardActionBreakdown;
   recentActions: ModerationAction[];
   usersActive24h: number;
@@ -132,7 +132,7 @@ export function computeBotKpi(bots: BotResponse[]): {
 }
 
 export function buildTrend7d(
-  dailyStats: WorkspaceDailyStatRow[],
+  dailyStats: UserBotsDailyStatRow[],
   referenceDate: Date = new Date()
 ): DashboardTrendDay[] {
   const byDate = new Map(
@@ -189,16 +189,16 @@ export function buildDashboardData(input: DashboardRawInput): DashboardData {
 }
 
 export interface DashboardRepositories {
-  findBots(workspaceId: string): Promise<BotResponse[]>;
+  findBots(userId: string): Promise<BotResponse[]>;
   getTodayTotals(
     botIds: string[],
     date: Date
-  ): Promise<WorkspaceTodayTotals>;
+  ): Promise<UserBotsTodayTotals>;
   getDailyStats(
     botIds: string[],
     startDate: Date,
     endDate: Date
-  ): Promise<WorkspaceDailyStatRow[]>;
+  ): Promise<UserBotsDailyStatRow[]>;
   getActionBreakdown(
     botIds: string[],
     startDate: Date,
@@ -213,11 +213,11 @@ export interface DashboardRepositories {
 }
 
 export async function loadDashboardData(
-  workspaceId: string,
+  userId: string,
   repos: DashboardRepositories,
   referenceDate: Date = new Date()
 ): Promise<DashboardData> {
-  const bots = await repos.findBots(workspaceId);
+  const bots = await repos.findBots(userId);
   const botIds = bots.map((bot) => bot.id);
   const { start, end } = getLast7DayRange(referenceDate);
 
@@ -233,7 +233,7 @@ export async function loadDashboardData(
     repos.getDailyStats(botIds, start, end),
     repos.getActionBreakdown(botIds, start, end),
     repos.getRecentActions(botIds, 20),
-    // Distinct Telegram user_id across workspace bots — same user in multiple chats counts once.
+    // Distinct Telegram user_id across accessible bots — same user in multiple chats counts once.
     repos.countActiveUsers24h(botIds),
     repos.countBannedUsers(botIds),
   ]);

@@ -1,6 +1,6 @@
 # Production deploy — tg-moderator-ai
 
-Self-hosted production guide. Образ приложения в Docker; PostgreSQL, Traefik и SMTP — **снаружи**, настраиваются администратором.
+Self-hosted production guide. Образ приложения в Docker; PostgreSQL и Traefik — **снаружи**, настраиваются администратором.
 
 См. также: [deploy/compose.example.yml](../deploy/compose.example.yml) — пример Traefik compose.
 
@@ -11,14 +11,14 @@ Self-hosted production guide. Образ приложения в Docker; Postgre
 | Nuxt 4 / Nitro app | Docker-контейнер из GHCR |
 | PostgreSQL | Ваш сервер / managed DB (`DATABASE_URL`) |
 | HTTPS / reverse proxy | Traefik (или аналог) |
-| SMTP | Prod-почта (verify, reset, invitations) |
+| SMTP | Не используется (вход через Telegram OIDC) |
 | LLM API | OpenAI-compatible (`LLM_API_KEY`, опционально `LLM_BASE_URL`) |
 | Telegram | Webhook на публичный `BASE_URL` |
 
 При старте контейнера:
 
 1. **Миграции БД** (`docker/entrypoint.sh`)
-2. Запуск Nitro на `PORT` (по умолчанию **3000**)
+2. Запуск Nitro на порту **3000** (зашит в Docker-образе, не в `.env`)
 3. **`setupWebhooks()`** — reconcile webhook для active-ботов
 
 ## 2. Требования
@@ -27,7 +27,7 @@ Self-hosted production guide. Образ приложения в Docker; Postgre
 - Домен с **HTTPS** (Let's Encrypt через Traefik или иной способ)
 - PostgreSQL 14+ (доступен из сети контейнера)
 - Traefik уже настроен (external network `traefik`)
-- API-ключ LLM, SMTP для auth-писем
+- API-ключ LLM; Telegram Web Login credentials (`TELEGRAM_LOGIN_*`)
 
 ## 3. Образ GHCR
 
@@ -59,25 +59,24 @@ git push origin v1.2.3
 
 | Переменная | Обязательно | Назначение |
 |------------|-------------|------------|
-| `BASE_URL` | да | Публичный HTTPS URL (Telegram webhook) |
-| `BETTER_AUTH_URL` | да | Тот же URL, что открывают пользователи в браузере |
-| `BETTER_AUTH_SECRET` | да | `openssl rand -base64 32` |
+| `BASE_URL` | да | Публичный HTTPS URL (Telegram webhook + OIDC callback) |
+| `TELEGRAM_LOGIN_BOT_ID` | да | Numeric bot id из BotFather Web Login |
+| `TELEGRAM_LOGIN_CLIENT_SECRET` | да | Web Login secret (не moderation bot token) |
 | `DATABASE_URL` | да | PostgreSQL connection string |
 | `LLM_API_KEY` | да | Ключ LLM API |
 | `LLM_BASE_URL` | нет | OpenRouter / Polza / custom gateway |
 | `LLM_MODEL` | нет | Модель (default в `.env.example`) |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` | да (prod) | Почта; dev — Mailpit |
-| `PORT` | нет | В контейнере: `3000` |
-| `BETTER_AUTH_TRUSTED_ORIGINS` | нет | Доп. origins через запятую, если прокси/домен нестандартный |
+| `LOG_LEVEL` | нет | `info` / `debug` |
 
 В production обычно:
 
 ```env
 BASE_URL=https://moderator.example.com
-BETTER_AUTH_URL=https://moderator.example.com
+TELEGRAM_LOGIN_BOT_ID=123456789
+TELEGRAM_LOGIN_CLIENT_SECRET=...
 ```
 
-`BETTER_AUTH_TRUSTED_ORIGINS` — когда браузер ходит с origin, отличного от `BETTER_AUTH_URL` (localtunnel в dev, кастомный proxy host).
+Redirect URI в BotFather: `{BASE_URL}/api/auth/telegram/callback`
 
 ## 5. Деплой с Traefik (пошагово)
 
@@ -105,11 +104,9 @@ curl -fsS https://moderator.example.com/api/health
 Чеклист:
 
 1. **Health** — `GET /api/health` → `{"ok":true}`
-2. **Auth** — логин в админку, email verify работает (SMTP)
+2. **Auth** — логин через Telegram в админке
 3. **Бот** — Enable → в логах `Webhook set for bot …`
 4. **Telegram** — тестовое сообщение в чат с правилами
-
-`GET /api/auth/ok` — встроенный health Better Auth.
 
 ## 7. Обновление версии
 
@@ -132,7 +129,7 @@ docker run --rm -p 3000:3000 --env-file .env ghcr.io/tikhomirovv/tg-moderator-ai
 | Симптом | Что проверить |
 |---------|----------------|
 | Бот «Problem», webhook не ставится | `BASE_URL` — публичный HTTPS; совпадает с URL в Telegram |
-| Auth redirect loop | `BETTER_AUTH_URL` = URL в браузере; `BETTER_AUTH_SECRET` задан |
+| Auth redirect loop | `BASE_URL` = URL в браузере; OIDC callback в BotFather совпадает |
 | `pull denied` | Видимость GHCR package → Public |
 | Миграции / БД | `DATABASE_URL` доступен; логи entrypoint при старте |
 | LLM не отвечает | `LLM_API_KEY`, при gateway — `LLM_BASE_URL` + `LLM_MODEL` |
@@ -145,3 +142,14 @@ docker run --rm -p 3000:3000 --env-file .env ghcr.io/tikhomirovv/tg-moderator-ai
 | Docker / production | **3000** |
 
 Корневой `docker-compose.yml` в репозитории — **только локальный PostgreSQL** для разработки, не production stack.
+
+## Dev HTTPS (cloudflared)
+
+Для локальной разработки webhook и Telegram OIDC нужен публичный HTTPS:
+
+```bash
+bun run dev          # порт 3001
+make tunnel          # cloudflared → скопировать URL в BASE_URL
+```
+
+Подробнее: [technical-design.md](technical-design.md#dev-https-tunnel). **localtunnel не используем.**

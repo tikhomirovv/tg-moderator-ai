@@ -29,8 +29,9 @@ COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENV NODE_ENV=production
+ARG PORT=3000
 ENV HOST=0.0.0.0
-ENV PORT=3000
+ENV PORT=${PORT}
 
 EXPOSE 3000
 

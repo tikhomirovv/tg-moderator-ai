@@ -5,20 +5,22 @@ import {
   resolveRuleName,
 } from "../../../server/core/rule-name-lookup";
 import { InMemoryRuleRepository } from "../../helpers/in-memory-rule-repository";
-import { TEST_WORKSPACE_ID } from "../../helpers/constants";
+import { TEST_BOT_ID } from "../../helpers/constants";
 
 describe("rule-name-lookup", () => {
   test("loadRuleNameMap resolves ids to names", async () => {
     const ruleRepo = new InMemoryRuleRepository();
-    const spam = await ruleRepo.create(TEST_WORKSPACE_ID, {
+    const spam = await ruleRepo.create(TEST_BOT_ID, {
       name: "Spam",
       description: "No spam",
       ai_prompt: "spam",
     });
 
     const names = await loadRuleNameMap(
-      TEST_WORKSPACE_ID,
-      [spam.id, "missing-id"],
+      [
+        { botId: TEST_BOT_ID, ruleId: spam.id },
+        { botId: TEST_BOT_ID, ruleId: "missing-id" },
+      ],
       { ruleRepo }
     );
 

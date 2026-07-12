@@ -12,7 +12,7 @@ GitHub Release and git tags use the **technical** report in [`.docs/releases/`](
 
 ## Content rules
 
-- **Russian**, for workspace admins using the product
+- **Russian**, for bot owners and managers using the product
 - **No** table/column names, API paths, migration files, CI, internal codenames
 - Describe **what changed for the user** (bots, rules, moderation, UI)
 

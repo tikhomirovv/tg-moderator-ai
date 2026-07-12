@@ -9,21 +9,16 @@ import {
   enrichWithRuleName,
   loadRuleNameMap,
 } from "../../../core/rule-name-lookup";
+import { requireBotAccess } from "../../../utils/bot-access";
+import { requireBotIdParam } from "../../../utils/get-bot-id-param";
 
 export default defineEventHandler(async (event) => {
   try {
-    const botId = getRouterParam(event, "id");
+    const botId = requireBotIdParam(event);
 
-    if (!botId) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: "Bot ID is required",
-      });
-    }
-
-    const workspaceId = getWorkspaceId(event);
+    await requireBotAccess(event, botId);
     const botRepo = new BotRepository();
-    const bot = await botRepo.findById(botId, workspaceId);
+    const bot = await botRepo.findById(botId);
 
     if (!bot) {
       throw createError({
@@ -38,8 +33,7 @@ export default defineEventHandler(async (event) => {
     const decisionRepo = new ModerationDecisionRepository();
     const { items, total } = await decisionRepo.listByBot(botId, { page, limit });
     const ruleNames = await loadRuleNameMap(
-      workspaceId,
-      items.map((item) => item.rule_violated)
+      items.map((item) => ({ botId, ruleId: item.rule_violated }))
     );
     const enrichedItems = items.map((item) => enrichWithRuleName(item, ruleNames));
 

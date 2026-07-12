@@ -3,19 +3,14 @@ import { ChatStatisticsRepository } from "../../../database/repositories/chat-st
 import { ModerationActionRepository } from "../../../database/repositories/moderation-action-repository";
 import { UserContextRepository } from "../../../database/repositories/user-context-repository";
 import { UserMessageRepository } from "../../../database/repositories/user-message-repository";
+import { requireBotAccess } from "../../../utils/bot-access";
+import { requireBotIdParam } from "../../../utils/get-bot-id-param";
 
 export default defineEventHandler(async (event) => {
   try {
-    const botId = getRouterParam(event, "id");
+    const botId = requireBotIdParam(event);
 
-    if (!botId) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: "Bot ID is required",
-      });
-    }
-
-    const statsRepo = new ChatStatisticsRepository();
+    await requireBotAccess(event, botId);
     const actionRepo = new ModerationActionRepository();
     const userContextRepo = new UserContextRepository();
     const messageRepo = new UserMessageRepository();

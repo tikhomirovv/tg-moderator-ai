@@ -72,7 +72,7 @@ export function toBot(row: BotRow, chats: DbChat[]): import("./models/bot").Bot 
     name: row.name,
     chats,
     token: row.token ?? undefined,
-    workspace_id: row.workspaceId,
+    owner_user_id: row.ownerUserId,
     is_active: row.isActive,
     webhook_secret: row.webhookSecret,
     created_at: row.createdAt,

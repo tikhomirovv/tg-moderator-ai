@@ -13,19 +13,11 @@ export interface Bot {
   chats: Chat[];
 }
 
-export interface BotsConfig {
-  bots: Bot[];
-}
-
 export interface Rule {
   id: string;
   name: string;
   description: string;
   ai_prompt: string;
-}
-
-export interface RulesConfig {
-  rules: Record<string, Rule>;
 }
 
 export interface BotToken {

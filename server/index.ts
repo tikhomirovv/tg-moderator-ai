@@ -47,43 +47,6 @@ export async function handleTelegramUpdate(
   }
 }
 
-// Получение списка активных ботов
-export async function getActiveBots(): Promise<string[]> {
-  try {
-    const botRepo = new BotRepository();
-    const activeBots = await botRepo.findActive();
-    return activeBots.map((bot) => bot.id);
-  } catch (error) {
-    logger.error({ error: error as Error }, "Error getting active bots");
-    return [];
-  }
-}
-
-// Получение информации о боте
-export async function getBotInfo(
-  botId: string
-): Promise<{ id: string; isRunning: boolean } | null> {
-  try {
-    const botRepo = new BotRepository();
-    const bot = await botRepo.findByIdWithToken(botId);
-
-    if (!bot) {
-      return null;
-    }
-
-    return {
-      id: bot.id,
-      isRunning: bot.is_active,
-    };
-  } catch (error) {
-    logger.error(
-      { error: error as Error },
-      `Error getting bot info for ${botId}`
-    );
-    return null;
-  }
-}
-
 // Reconcile webhooks for all active bots on startup
 export async function setupWebhooks(baseUrl?: string): Promise<void> {
   const resolvedBaseUrl = baseUrl ?? getWebhookBaseUrl();

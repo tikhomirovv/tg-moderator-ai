@@ -30,5 +30,6 @@ bun run db:migrate
 - New files in `server/database/migrations/` (incremental only after initial deploy)
 - Backward-compatible changes, or explicit data-migration steps inside migration SQL
 - Fixing journal conflicts with a new migration — not by wiping the database
+- **Baseline reset before first production:** rewriting `0000_init.sql` is allowed only with explicit `DROP SCHEMA public` + `db:migrate` on all environments (no prod yet)
 
 Production containers run `db:migrate` on start (see `deploy/`); no destructive reset step.

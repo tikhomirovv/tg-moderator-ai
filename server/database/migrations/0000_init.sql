@@ -1,7 +1,24 @@
 CREATE TYPE "public"."action_type" AS ENUM('warning', 'delete', 'ban');--> statement-breakpoint
+CREATE TYPE "public"."bot_member_role" AS ENUM('owner', 'manager');--> statement-breakpoint
+CREATE TABLE "bot_access_codes" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"bot_id" varchar(64) NOT NULL,
+	"code" text NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"revoked_at" timestamp with time zone
+);
+--> statement-breakpoint
+CREATE TABLE "bot_members" (
+	"bot_id" varchar(64) NOT NULL,
+	"user_id" text NOT NULL,
+	"role" "bot_member_role" NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "bot_members_bot_id_user_id_pk" PRIMARY KEY("bot_id","user_id")
+);
+--> statement-breakpoint
 CREATE TABLE "bots" (
 	"id" varchar(64) PRIMARY KEY NOT NULL,
-	"workspace_id" text NOT NULL,
+	"owner_user_id" text NOT NULL,
 	"name" text NOT NULL,
 	"token" text,
 	"webhook_secret" text,
@@ -12,8 +29,8 @@ CREATE TABLE "bots" (
 --> statement-breakpoint
 CREATE TABLE "chat_rules" (
 	"chat_id" integer NOT NULL,
-	"workspace_id" text NOT NULL,
-	"rule_id" varchar(64) NOT NULL,
+	"bot_id" varchar(64) NOT NULL,
+	"rule_id" uuid NOT NULL,
 	CONSTRAINT "chat_rules_chat_id_rule_id_pk" PRIMARY KEY("chat_id","rule_id")
 );
 --> statement-breakpoint
@@ -46,7 +63,7 @@ CREATE TABLE "moderation_actions" (
 	"user_id" bigint NOT NULL,
 	"message_id" bigint NOT NULL,
 	"action_type" "action_type" NOT NULL,
-	"rule_violated" varchar(64),
+	"rule_violated" uuid,
 	"ai_confidence" real NOT NULL,
 	"ai_reasoning" text NOT NULL,
 	"timestamp" timestamp with time zone NOT NULL,
@@ -54,16 +71,32 @@ CREATE TABLE "moderation_actions" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "moderation_decisions" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"bot_id" varchar(64) NOT NULL,
+	"chat_id" bigint NOT NULL,
+	"user_id" bigint NOT NULL,
+	"message_id" bigint NOT NULL,
+	"message_text" text NOT NULL,
+	"violation_detected" boolean NOT NULL,
+	"rule_violated" uuid,
+	"ai_confidence" real NOT NULL,
+	"ai_reasoning" text NOT NULL,
+	"rules_applied" jsonb NOT NULL,
+	"timestamp" timestamp with time zone NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "rule_whitelist" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"workspace_id" text NOT NULL,
-	"rule_id" varchar(64) NOT NULL,
+	"bot_id" varchar(64) NOT NULL,
+	"rule_id" uuid NOT NULL,
 	"entry" varchar(255) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "rules" (
-	"id" varchar(64) NOT NULL,
-	"workspace_id" text NOT NULL,
+	"id" uuid NOT NULL,
+	"bot_id" varchar(64) NOT NULL,
 	"name" text NOT NULL,
 	"description" text NOT NULL,
 	"ai_prompt" text NOT NULL,
@@ -73,7 +106,7 @@ CREATE TABLE "rules" (
 	"warnings_before_ban" integer,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "rules_workspace_id_id_pk" PRIMARY KEY("workspace_id","id")
+	CONSTRAINT "rules_bot_id_id_pk" PRIMARY KEY("bot_id","id")
 );
 --> statement-breakpoint
 CREATE TABLE "user_contexts" (
@@ -87,7 +120,7 @@ CREATE TABLE "user_contexts" (
 	"warnings_count" integer DEFAULT 0 NOT NULL,
 	"is_banned" boolean DEFAULT false NOT NULL,
 	"banned_at" timestamp with time zone,
-	"banned_by" varchar(64),
+	"banned_by" uuid,
 	"last_activity" timestamp with time zone NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
@@ -107,103 +140,48 @@ CREATE TABLE "user_messages" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "account" (
+CREATE TABLE "sessions" (
 	"id" text PRIMARY KEY NOT NULL,
-	"account_id" text NOT NULL,
-	"provider_id" text NOT NULL,
 	"user_id" text NOT NULL,
-	"access_token" text,
-	"refresh_token" text,
-	"id_token" text,
-	"access_token_expires_at" timestamp with time zone,
-	"refresh_token_expires_at" timestamp with time zone,
-	"scope" text,
-	"password" text,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "invitation" (
-	"id" text PRIMARY KEY NOT NULL,
-	"organization_id" text NOT NULL,
-	"email" text NOT NULL,
-	"role" text,
-	"status" text NOT NULL,
-	"expires_at" timestamp with time zone NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"inviter_id" text NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "member" (
-	"id" text PRIMARY KEY NOT NULL,
-	"organization_id" text NOT NULL,
-	"user_id" text NOT NULL,
-	"role" text NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "organization" (
-	"id" text PRIMARY KEY NOT NULL,
-	"name" text NOT NULL,
-	"slug" text NOT NULL,
-	"logo" text,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"metadata" text,
-	CONSTRAINT "organization_slug_unique" UNIQUE("slug")
-);
---> statement-breakpoint
-CREATE TABLE "session" (
-	"id" text PRIMARY KEY NOT NULL,
-	"expires_at" timestamp with time zone NOT NULL,
 	"token" text NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"expires_at" timestamp with time zone NOT NULL,
 	"ip_address" text,
 	"user_agent" text,
-	"user_id" text NOT NULL,
-	"active_organization_id" text,
-	CONSTRAINT "session_token_unique" UNIQUE("token")
-);
---> statement-breakpoint
-CREATE TABLE "user" (
-	"id" text PRIMARY KEY NOT NULL,
-	"name" text NOT NULL,
-	"email" text NOT NULL,
-	"email_verified" boolean DEFAULT false NOT NULL,
-	"image" text,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "user_email_unique" UNIQUE("email")
-);
---> statement-breakpoint
-CREATE TABLE "verification" (
-	"id" text PRIMARY KEY NOT NULL,
-	"identifier" text NOT NULL,
-	"value" text NOT NULL,
-	"expires_at" timestamp with time zone NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "bots" ADD CONSTRAINT "bots_workspace_id_organization_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE TABLE "users" (
+	"id" text PRIMARY KEY NOT NULL,
+	"telegram_id" bigint NOT NULL,
+	"username" text,
+	"name" text NOT NULL,
+	"photo_url" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "bot_access_codes" ADD CONSTRAINT "bot_access_codes_bot_id_bots_id_fk" FOREIGN KEY ("bot_id") REFERENCES "public"."bots"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "bot_members" ADD CONSTRAINT "bot_members_bot_id_bots_id_fk" FOREIGN KEY ("bot_id") REFERENCES "public"."bots"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "bot_members" ADD CONSTRAINT "bot_members_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "bots" ADD CONSTRAINT "bots_owner_user_id_users_id_fk" FOREIGN KEY ("owner_user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "chat_rules" ADD CONSTRAINT "chat_rules_chat_id_chats_id_fk" FOREIGN KEY ("chat_id") REFERENCES "public"."chats"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "chat_rules" ADD CONSTRAINT "chat_rules_workspace_id_rule_id_rules_workspace_id_id_fk" FOREIGN KEY ("workspace_id","rule_id") REFERENCES "public"."rules"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "chat_rules" ADD CONSTRAINT "chat_rules_bot_id_rule_id_rules_bot_id_id_fk" FOREIGN KEY ("bot_id","rule_id") REFERENCES "public"."rules"("bot_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "chats" ADD CONSTRAINT "chats_bot_id_bots_id_fk" FOREIGN KEY ("bot_id") REFERENCES "public"."bots"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "rule_whitelist" ADD CONSTRAINT "rule_whitelist_workspace_id_rule_id_rules_workspace_id_id_fk" FOREIGN KEY ("workspace_id","rule_id") REFERENCES "public"."rules"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "rules" ADD CONSTRAINT "rules_workspace_id_organization_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "invitation" ADD CONSTRAINT "invitation_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "invitation" ADD CONSTRAINT "invitation_inviter_id_user_id_fk" FOREIGN KEY ("inviter_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "member" ADD CONSTRAINT "member_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "member" ADD CONSTRAINT "member_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE UNIQUE INDEX "bots_workspace_id_unique" ON "bots" USING btree ("workspace_id","id");--> statement-breakpoint
+ALTER TABLE "rule_whitelist" ADD CONSTRAINT "rule_whitelist_bot_id_rule_id_rules_bot_id_id_fk" FOREIGN KEY ("bot_id","rule_id") REFERENCES "public"."rules"("bot_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "rules" ADD CONSTRAINT "rules_bot_id_bots_id_fk" FOREIGN KEY ("bot_id") REFERENCES "public"."bots"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "bot_access_codes_code_unique" ON "bot_access_codes" USING btree ("code");--> statement-breakpoint
 CREATE UNIQUE INDEX "chat_statistics_unique" ON "chat_statistics" USING btree ("bot_id","chat_id","date");--> statement-breakpoint
 CREATE INDEX "chat_statistics_date" ON "chat_statistics" USING btree ("date");--> statement-breakpoint
 CREATE UNIQUE INDEX "chats_bot_chat_unique" ON "chats" USING btree ("bot_id","chat_id");--> statement-breakpoint
 CREATE INDEX "moderation_actions_bot_chat_ts" ON "moderation_actions" USING btree ("bot_id","chat_id","timestamp");--> statement-breakpoint
 CREATE INDEX "moderation_actions_bot_user_ts" ON "moderation_actions" USING btree ("bot_id","chat_id","user_id","timestamp");--> statement-breakpoint
 CREATE INDEX "moderation_actions_type" ON "moderation_actions" USING btree ("action_type");--> statement-breakpoint
+CREATE INDEX "moderation_actions_created_at" ON "moderation_actions" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "moderation_decisions_bot_ts" ON "moderation_decisions" USING btree ("bot_id","timestamp");--> statement-breakpoint
+CREATE INDEX "moderation_decisions_bot_chat_ts" ON "moderation_decisions" USING btree ("bot_id","chat_id","timestamp");--> statement-breakpoint
+CREATE INDEX "moderation_decisions_created_at" ON "moderation_decisions" USING btree ("created_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "rule_whitelist_rule_entry_unique" ON "rule_whitelist" USING btree ("rule_id","entry");--> statement-breakpoint
 CREATE UNIQUE INDEX "user_contexts_unique" ON "user_contexts" USING btree ("bot_id","chat_id","user_id");--> statement-breakpoint
 CREATE INDEX "user_contexts_last_activity" ON "user_contexts" USING btree ("last_activity");--> statement-breakpoint
@@ -212,9 +190,6 @@ CREATE UNIQUE INDEX "user_messages_unique" ON "user_messages" USING btree ("bot_
 CREATE INDEX "user_messages_user_ts" ON "user_messages" USING btree ("bot_id","chat_id","user_id","timestamp");--> statement-breakpoint
 CREATE INDEX "user_messages_ts" ON "user_messages" USING btree ("timestamp");--> statement-breakpoint
 CREATE INDEX "user_messages_deleted" ON "user_messages" USING btree ("is_deleted");--> statement-breakpoint
-CREATE INDEX "account_user_id_idx" ON "account" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "invitation_organization_id_idx" ON "invitation" USING btree ("organization_id");--> statement-breakpoint
-CREATE INDEX "member_organization_id_idx" ON "member" USING btree ("organization_id");--> statement-breakpoint
-CREATE INDEX "member_user_id_idx" ON "member" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "session_user_id_idx" ON "session" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "verification_identifier_idx" ON "verification" USING btree ("identifier");
+CREATE UNIQUE INDEX "sessions_token_unique" ON "sessions" USING btree ("token");--> statement-breakpoint
+CREATE INDEX "sessions_user_id_idx" ON "sessions" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "users_telegram_id_unique" ON "users" USING btree ("telegram_id");

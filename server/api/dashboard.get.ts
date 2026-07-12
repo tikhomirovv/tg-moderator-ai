@@ -4,21 +4,22 @@ import { BotRepository } from "../database/repositories/bot-repository";
 import { ChatStatisticsRepository } from "../database/repositories/chat-statistics-repository";
 import { ModerationActionRepository } from "../database/repositories/moderation-action-repository";
 import { UserContextRepository } from "../database/repositories/user-context-repository";
+import { requireSession } from "../utils/session";
 
 export default defineEventHandler(async (event) => {
   try {
-    const workspaceId = getWorkspaceId(event);
+    const { user } = await requireSession(event);
     const botRepo = new BotRepository();
     const statsRepo = new ChatStatisticsRepository();
     const actionRepo = new ModerationActionRepository();
     const userContextRepo = new UserContextRepository();
 
-    const data = await loadDashboardData(workspaceId, {
-      findBots: (id) => botRepo.findAll(id),
+    const data = await loadDashboardData(user.id, {
+      findBots: (userId) => botRepo.findAllForUser(userId),
       getTodayTotals: (botIds, date) =>
-        statsRepo.getWorkspaceTodayTotals(botIds, date),
+        statsRepo.getBotTodayTotals(botIds, date),
       getDailyStats: (botIds, startDate, endDate) =>
-        statsRepo.getWorkspaceDailyAggregates(botIds, startDate, endDate),
+        statsRepo.getBotDailyAggregates(botIds, startDate, endDate),
       getActionBreakdown: (botIds, startDate, endDate) =>
         actionRepo.getActionBreakdownByBotIds(botIds, startDate, endDate),
       getRecentActions: (botIds, limit) =>
@@ -34,8 +35,10 @@ export default defineEventHandler(async (event) => {
     });
 
     const ruleNames = await loadRuleNameMap(
-      workspaceId,
-      data.recent_activity.map((item) => item.rule_violated)
+      data.recent_activity.map((item) => ({
+        botId: item.bot_id,
+        ruleId: item.rule_violated,
+      }))
     );
     data.recent_activity = data.recent_activity.map((item) => ({
       ...item,

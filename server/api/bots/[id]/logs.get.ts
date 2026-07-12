@@ -2,21 +2,16 @@ import { logger } from "../../../core/logger";
 import { loadRuleNameMap, resolveRuleName } from "../../../core/rule-name-lookup";
 import { BotRepository } from "../../../database/repositories/bot-repository";
 import { ModerationActionRepository } from "../../../database/repositories/moderation-action-repository";
+import { requireBotAccess } from "../../../utils/bot-access";
+import { requireBotIdParam } from "../../../utils/get-bot-id-param";
 
 export default defineEventHandler(async (event) => {
   try {
-    const botId = getRouterParam(event, "id");
+    const botId = requireBotIdParam(event);
 
-    if (!botId) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: "Bot ID is required",
-      });
-    }
-
-    const workspaceId = getWorkspaceId(event);
+    await requireBotAccess(event, botId);
     const botRepo = new BotRepository();
-    const bot = await botRepo.findById(botId, workspaceId);
+    const bot = await botRepo.findById(botId);
 
     if (!bot) {
       throw createError({
@@ -28,8 +23,7 @@ export default defineEventHandler(async (event) => {
     const actionRepo = new ModerationActionRepository();
     const allActions = await actionRepo.getActionsByBot(botId, 50);
     const ruleNames = await loadRuleNameMap(
-      workspaceId,
-      allActions.map((action) => action.rule_violated)
+      allActions.map((action) => ({ botId, ruleId: action.rule_violated }))
     );
 
     const logs = allActions.map((action) => ({
@@ -62,7 +56,7 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       data: {
-        logs: logs,
+        logs,
       },
     };
   } catch (error) {

@@ -1,26 +1,35 @@
 import type {
   Bot,
   BotResponse,
-  Chat,
   CreateBotRequest,
   UpdateBotRequest,
 } from "../../server/database/models/bot";
 
 export class InMemoryBotRepository {
   private bots = new Map<string, Bot>();
+  private memberRoles = new Map<string, "owner" | "manager">();
 
-  async findAll(workspaceId: string): Promise<BotResponse[]> {
-    return [...this.bots.values()]
-      .filter((bot) => bot.workspace_id === workspaceId)
-      .map((bot) => this.toResponse(bot));
+  private memberKey(userId: string, botId: string) {
+    return `${userId}:${botId}`;
   }
 
-  async findById(id: string, workspaceId: string): Promise<BotResponse | null> {
+  async findAllForUser(userId: string): Promise<BotResponse[]> {
+    return [...this.bots.values()]
+      .filter((bot) => this.memberRoles.has(this.memberKey(userId, bot.id)))
+      .map((bot) => this.toResponse(bot, userId));
+  }
+
+  async findById(id: string): Promise<BotResponse | null> {
     const bot = this.bots.get(id);
-    if (!bot || bot.workspace_id !== workspaceId) {
-      return null;
-    }
-    return this.toResponse(bot);
+    return bot ? this.toResponse(bot) : null;
+  }
+
+  async addMember(
+    userId: string,
+    botId: string,
+    role: "owner" | "manager"
+  ): Promise<void> {
+    this.memberRoles.set(this.memberKey(userId, botId), role);
   }
 
   async findByIdWithToken(id: string): Promise<Bot | null> {
@@ -28,29 +37,26 @@ export class InMemoryBotRepository {
     return bot ? { ...bot, chats: bot.chats.map((chat) => ({ ...chat })) } : null;
   }
 
-  async create(workspaceId: string, botData: CreateBotRequest): Promise<BotResponse> {
+  async create(ownerUserId: string, botData: CreateBotRequest): Promise<BotResponse> {
     const now = new Date();
     const bot: Bot = {
       id: botData.id,
       name: botData.name,
       token: botData.token,
-      workspace_id: workspaceId,
+      owner_user_id: ownerUserId,
       is_active: true,
       chats: botData.chats.map((chat) => ({ ...chat, rules: [...chat.rules] })),
       created_at: now,
       updated_at: now,
     };
     this.bots.set(botData.id, bot);
-    return this.toResponse(bot);
+    this.memberRoles.set(this.memberKey(ownerUserId, botData.id), "owner");
+    return this.toResponse(bot, ownerUserId);
   }
 
-  async update(
-    id: string,
-    workspaceId: string,
-    updateData: UpdateBotRequest
-  ): Promise<BotResponse | null> {
+  async update(id: string, updateData: UpdateBotRequest): Promise<BotResponse | null> {
     const bot = this.bots.get(id);
-    if (!bot || bot.workspace_id !== workspaceId) {
+    if (!bot) {
       return null;
     }
 
@@ -81,16 +87,19 @@ export class InMemoryBotRepository {
     }
   }
 
-  private toResponse(bot: Bot): BotResponse {
+  private toResponse(bot: Bot, userId?: string): BotResponse {
+    const myRole = userId
+      ? this.memberRoles.get(this.memberKey(userId, bot.id))
+      : undefined;
+
     return {
       id: bot.id,
       name: bot.name,
       chats: bot.chats.map((chat) => ({ ...chat, rules: [...chat.rules] })),
       is_active: bot.is_active,
+      my_role: myRole,
       created_at: bot.created_at,
       updated_at: bot.updated_at,
     };
   }
 }
-
-export type InMemoryBotRepositoryChat = Chat;

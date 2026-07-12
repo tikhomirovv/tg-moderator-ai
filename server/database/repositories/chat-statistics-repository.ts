@@ -234,7 +234,7 @@ export class ChatStatisticsRepository {
     );
   }
 
-  async getWorkspaceDailyAggregates(
+  async getBotDailyAggregates(
     botIds: string[],
     startDate: Date,
     endDate: Date
@@ -279,7 +279,7 @@ export class ChatStatisticsRepository {
     }));
   }
 
-  async getWorkspaceTodayTotals(
+  async getBotTodayTotals(
     botIds: string[],
     date: Date
   ): Promise<{

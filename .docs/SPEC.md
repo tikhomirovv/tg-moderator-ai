@@ -1,5 +1,8 @@
 # Telegram AI Moderator Bot - Спецификация
 
+> **Архив.** Ранняя версия (MongoDB, workspace, `/api/config/*`).  
+> Актуально: [project-overview.md](project-overview.md) · [prd.md](prd.md) · [technical-design.md](technical-design.md) · [AGENTS.md](../AGENTS.md)
+
 ## Обзор проекта
 
 Telegram-бот модератор с искусственным интеллектом для автоматической модерации чатов на основе конфигурируемых правил.

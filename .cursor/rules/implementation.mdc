@@ -23,10 +23,10 @@ alwaysApply: false
 
 ## `.env`
 
-- **Читать и редактировать** `.env` самостоятельно, когда нужно для dev (ключи, `DATABASE_URL`, `BETTER_AUTH_SECRET`, SMTP).
+- **Читать и редактировать** `.env` самостоятельно, когда нужно для dev (ключи, `DATABASE_URL`, `TELEGRAM_LOGIN_*`, `BASE_URL`).
 - **Не коммитить** `.env` — в git только `.env.example` без секретов.
-- Секреты генерируй сам (`openssl rand -base64 32` для `BETTER_AUTH_SECRET`), не проси пользователя «сходи возьми».
 - Shell не видит `.env` автоматически → `bun --env-file=.env test` или `bun run dev` (Nuxt подхватывает).
+- Dev HTTPS: `make tunnel` (cloudflared). **Не localtunnel.** См. [`.docs/technical-design.md`](.docs/technical-design.md).
 
 ## Миграции БД
 

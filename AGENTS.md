@@ -9,18 +9,25 @@ Self-hosted админка + Telegram webhook: AI-модерация чатов 
 **Доменная модель:**
 
 ```
-User → Workspace (Better Auth Organization) → bots[] → chats[] → rules[] (ID из библиотеки workspace)
+User (telegram_id)
+  → Bot (owner_user_id)
+      → bot_members (owner | manager)
+      → bot_access_codes (invite)
+      → rules (per bot)
+      → chats → moderation
 ```
 
-Правила — в workspace; применяются **на чат** (у одного бота в разных чатах — разные наборы).
+Правила хранятся **per bot**; пресеты — константы в `rule-templates.ts`, добавляются по одному из библиотеки на странице правил. Доступ к боту: owner или manager через `bot_members`; join по access code.
 
 Публичный endpoint без session: `POST /api/telegram/webhook/*` (Telegram). Защита: per-bot `webhook_secret` в БД + заголовок `X-Telegram-Bot-Api-Secret-Token`.
+
+Подробнее: [`.docs/project-overview.md`](.docs/project-overview.md) · [`.docs/technical-design.md`](.docs/technical-design.md)
 
 ## Стек
 
 - Bun, Nuxt 4, Nitro, Vue 3, Tailwind
 - PostgreSQL, Drizzle
-- Better Auth (email + password; Organization = Workspace в UI)
+- Telegram OIDC login (`TELEGRAM_LOGIN_BOT_ID`, `TELEGRAM_LOGIN_CLIENT_SECRET`, `BASE_URL`)
 - LLM: OpenAI-compatible API via `LLM_API_KEY`, optional `LLM_BASE_URL` (OpenRouter/Polza), `LLM_MODEL`
 
 Код и коммиты: **English**. Общение с пользователем: **RU**.
@@ -49,8 +56,7 @@ User → Workspace (Better Auth Organization) → bots[] → chats[] → rules[]
 
 - App: `bun run dev` → порт **3001** (`nuxt.config.ts`)
 - PostgreSQL на Orange Pi: `pi.home` / `192.168.0.200`, порт **54321**, db/user `tgmoderator`
-- Mailpit: `pi.home:1025`, UI `https://mail.pi.home/`
-- Dev HTTPS tunnel: **localtunnel only** — `bunx localtunnel --port 3001` → `BASE_URL=https://….loca.lt`
+- Dev HTTPS tunnel: `make tunnel` (cloudflared, HTTP/2) → `BASE_URL=https://….trycloudflare.com`
 - Переменные: `.env.example` → локальный `.env`
 
 ## Команды

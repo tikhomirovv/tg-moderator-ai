@@ -18,14 +18,19 @@ export interface Bot {
 }
 
 export interface CreateBotRequest {
+  token: string;
+}
+
+/** Resolved bot identity after Telegram getMe — used by repository create. */
+export interface CreateBotInput {
   id: string;
   name: string;
-  chats: Array<{
+  token: string;
+  chats?: Array<{
     chat_id: number;
     name: string;
     silent_mode?: boolean;
   }>;
-  token?: string;
 }
 
 export interface UpdateBotRequest {

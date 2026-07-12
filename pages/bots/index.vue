@@ -125,47 +125,18 @@
         >
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Bot ID</label
-            >
-            <div class="relative">
-              <span class="absolute left-3 top-2 text-gray-500">@</span>
-              <input
-                v-model="newBot.id"
-                type="text"
-                class="w-full border rounded px-3 py-2 pl-8"
-                placeholder="my_bot"
-                required
-                @input="formatBotId"
-              />
-            </div>
-            <p class="text-xs text-gray-500 mt-1">Enter without @ symbol</p>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Bot Name</label
-            >
-            <input
-              v-model="newBot.name"
-              type="text"
-              class="w-full border rounded px-3 py-2"
-              placeholder="My Telegram Bot"
-              required
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
               >Bot Token</label
             >
             <input
-              v-model="newBot.token"
+              v-model="newBotToken"
               type="password"
               class="w-full border rounded px-3 py-2"
               placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
               required
             />
-            <p class="text-xs text-gray-500 mt-1">Get token from @BotFather</p>
+            <p class="text-xs text-gray-500 mt-1">
+              Bot @username and display name are resolved automatically from the token.
+            </p>
           </div>
 
           <p v-if="createError" class="text-sm text-red-600">{{ createError }}</p>
@@ -248,13 +219,7 @@ const addModalTab = ref<AddModalTab>("create");
 const createError = ref("");
 const joinError = ref("");
 const joinCode = ref("");
-
-const newBot = ref({
-  id: "",
-  name: "",
-  token: "",
-  chats: [] as BotListItem["chats"],
-});
+const newBotToken = ref("");
 
 function roleLabel(role: BotMemberRole | undefined) {
   if (role === "owner") return "Owner";
@@ -267,13 +232,6 @@ function roleBadgeClass(role: BotMemberRole | undefined) {
     return "bg-green-100 text-green-800";
   }
   return "bg-blue-100 text-blue-800";
-}
-
-function formatBotId() {
-  if (newBot.value.id.startsWith("@")) {
-    newBot.value.id = newBot.value.id.substring(1);
-  }
-  newBot.value.id = newBot.value.id.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
 }
 
 function openAddModal(tab: AddModalTab) {
@@ -322,10 +280,10 @@ async function createBot() {
   try {
     await $fetch("/api/bots", {
       method: "POST",
-      body: newBot.value,
+      body: { token: newBotToken.value.trim() },
     });
 
-    newBot.value = { id: "", name: "", token: "", chats: [] };
+    newBotToken.value = "";
     closeAddModal();
     await load();
   } catch (error) {

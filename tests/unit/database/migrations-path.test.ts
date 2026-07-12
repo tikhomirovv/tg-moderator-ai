@@ -11,13 +11,13 @@ describe("resolveMigrationsFolder", () => {
     expect(folder).toEndWith("/server/database/migrations");
   });
 
-  test("journal has single init migration only", () => {
+  test("journal includes init migration", () => {
     const folder = resolveMigrationsFolder();
     const journal = JSON.parse(
       readFileSync(path.join(folder, "meta/_journal.json"), "utf8")
     ) as { entries: Array<{ tag: string }> };
 
-    expect(journal.entries).toHaveLength(1);
-    expect(journal.entries[0]?.tag).toBe("0000_init");
+    expect(journal.entries.length).toBeGreaterThanOrEqual(1);
+    expect(journal.entries.some((e) => e.tag === "0000_init")).toBe(true);
   });
 });

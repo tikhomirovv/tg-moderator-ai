@@ -18,7 +18,7 @@ Self-hosted production guide. Образ приложения в Docker; Postgre
 При старте контейнера:
 
 1. **Миграции БД** (`docker/entrypoint.sh`)
-2. Запуск Nitro на `PORT` (по умолчанию **3000**)
+2. Запуск Nitro на порту **3000** (зашит в Docker-образе, не в `.env`)
 3. **`setupWebhooks()`** — reconcile webhook для active-ботов
 
 ## 2. Требования
@@ -66,8 +66,7 @@ git push origin v1.2.3
 | `LLM_API_KEY` | да | Ключ LLM API |
 | `LLM_BASE_URL` | нет | OpenRouter / Polza / custom gateway |
 | `LLM_MODEL` | нет | Модель (default в `.env.example`) |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` | да (prod) | Почта; dev — Mailpit |
-| `PORT` | нет | В контейнере: `3000` |
+| `LOG_LEVEL` | нет | `info` / `debug` |
 | `BETTER_AUTH_TRUSTED_ORIGINS` | нет | Доп. origins через запятую, если прокси/домен нестандартный |
 
 В production обычно:

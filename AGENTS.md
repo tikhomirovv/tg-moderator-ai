@@ -17,7 +17,7 @@ User (telegram_id)
       → chats → moderation
 ```
 
-Правила хранятся **per bot**; шаблоны — константы в коде (`rule-templates.ts`), применяются копированием. Доступ к боту: owner или manager через `bot_members`; join по access code.
+Правила хранятся **per bot**; пресеты — константы в `rule-templates.ts`, добавляются по одному из библиотеки на странице правил. Доступ к боту: owner или manager через `bot_members`; join по access code.
 
 Публичный endpoint без session: `POST /api/telegram/webhook/*` (Telegram). Защита: per-bot `webhook_secret` в БД + заголовок `X-Telegram-Bot-Api-Secret-Token`.
 

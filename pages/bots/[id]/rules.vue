@@ -9,10 +9,9 @@
         <button
           type="button"
           class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
-          :disabled="applyingTemplates"
-          @click="applyTemplates"
+          @click="openTemplateLibrary"
         >
-          {{ applyingTemplates ? "Applying..." : "Apply templates" }}
+          Rule library
         </button>
         <NuxtLink
           :to="`/bots/${botId}`"
@@ -27,6 +26,10 @@
           Add Rule
         </button>
       </div>
+    </div>
+
+    <div v-if="templateError" class="bg-red-50 border border-red-200 text-red-700 rounded p-3 text-sm">
+      {{ templateError }}
     </div>
 
     <div v-if="loading" class="text-gray-500">Loading...</div>
@@ -83,7 +86,90 @@
     </div>
 
     <div v-if="!loading && rules.length === 0" class="text-gray-500">
-      No rules yet. Create your first moderation rule.
+      No rules yet. Add a custom rule or pick presets from the rule library.
+    </div>
+
+    <div
+      v-if="showTemplateLibrary"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+    >
+      <div
+        class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+      >
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 class="text-lg font-semibold">Rule library</h3>
+            <p class="text-sm text-gray-600 mt-1">
+              Preset moderation rules. Review each template and add only the
+              ones you need.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="text-sm text-gray-500 hover:text-gray-800"
+            @click="closeTemplateLibrary"
+          >
+            Close
+          </button>
+        </div>
+
+        <div v-if="templatesLoading" class="text-gray-500 text-sm">
+          Loading templates...
+        </div>
+
+        <div v-else class="space-y-3">
+          <div
+            v-for="template in templateCatalog"
+            :key="template.id"
+            class="border rounded p-4"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <h4 class="font-medium">{{ template.name }}</h4>
+                <p class="text-sm text-gray-600 mt-1">
+                  {{ template.description }}
+                </p>
+                <div class="text-xs text-gray-500 mt-2 space-y-1">
+                  <div>
+                    Delete on violation:
+                    <span class="font-medium">{{
+                      template.delete_on_violation ? "Yes" : "No"
+                    }}</span>
+                  </div>
+                  <div>
+                    Ban on violation:
+                    <span class="font-medium">{{
+                      template.ban_on_violation ? "Yes" : "No"
+                    }}</span>
+                    <span v-if="template.ban_on_violation">
+                      (after {{ template.warnings_before_ban ?? 3 }} warnings)
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="shrink-0 px-3 py-2 rounded text-sm"
+                :class="
+                  template.added
+                    ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                "
+                :disabled="template.added || addingTemplateId === template.id"
+                @click="addTemplate(template.id)"
+              >
+                {{
+                  template.added
+                    ? "Added"
+                    : addingTemplateId === template.id
+                      ? "Adding..."
+                      : "Add"
+                }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div
@@ -261,9 +347,23 @@ interface RuleForm {
 const rules = ref<any[]>([]);
 const loading = ref(false);
 const saving = ref(false);
-const applyingTemplates = ref(false);
+const templateError = ref<string | null>(null);
 const showModal = ref(false);
+const showTemplateLibrary = ref(false);
+const templatesLoading = ref(false);
+const addingTemplateId = ref<string | null>(null);
+const templateCatalog = ref<TemplateCatalogItem[]>([]);
 const editingRule = ref<any | null>(null);
+
+interface TemplateCatalogItem {
+  id: string;
+  name: string;
+  description: string;
+  delete_on_violation: boolean;
+  ban_on_violation: boolean;
+  warnings_before_ban: number | null;
+  added: boolean;
+}
 
 const emptyForm = (): RuleForm => ({
   name: "",
@@ -289,15 +389,61 @@ async function load() {
   }
 }
 
-async function applyTemplates() {
-  applyingTemplates.value = true;
+function readFetchError(error: unknown, fallback: string) {
+  const fetchError = error as {
+    data?: { statusMessage?: string; message?: string };
+    statusMessage?: string;
+    message?: string;
+  };
+  return (
+    fetchError.data?.statusMessage ||
+    fetchError.statusMessage ||
+    fetchError.data?.message ||
+    fetchError.message ||
+    fallback
+  );
+}
+
+async function loadTemplateCatalog() {
+  templatesLoading.value = true;
   try {
-    await $fetch(`/api/bots/${botId}/rules/apply-template`, { method: "POST" });
-    await load();
+    const resp = await $fetch<{
+      data?: { templates?: TemplateCatalogItem[] };
+    }>(`/api/bots/${botId}/rule-templates`);
+    templateCatalog.value = resp?.data?.templates ?? [];
   } catch (error) {
-    console.error("Error applying templates:", error);
+    templateError.value = readFetchError(error, "Failed to load rule library");
+    console.error("Error loading rule templates:", error);
   } finally {
-    applyingTemplates.value = false;
+    templatesLoading.value = false;
+  }
+}
+
+async function openTemplateLibrary() {
+  templateError.value = null;
+  showTemplateLibrary.value = true;
+  await loadTemplateCatalog();
+}
+
+function closeTemplateLibrary() {
+  showTemplateLibrary.value = false;
+}
+
+async function addTemplate(templateId: string) {
+  addingTemplateId.value = templateId;
+  templateError.value = null;
+  try {
+    await $fetch(`/api/bots/${botId}/rule-templates`, {
+      method: "POST",
+      body: { template_id: templateId },
+    });
+    await load();
+    await loadTemplateCatalog();
+  } catch (error) {
+    templateError.value = readFetchError(error, "Failed to add rule template");
+    console.error("Error adding template:", error);
+  } finally {
+    addingTemplateId.value = null;
   }
 }
 

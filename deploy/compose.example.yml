@@ -11,10 +11,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    environment:
-      # Container listens on 3000; Traefik routes HTTPS to this port
-      PORT: "3000"
-      HOST: "0.0.0.0"
     networks:
       - traefik
     labels:

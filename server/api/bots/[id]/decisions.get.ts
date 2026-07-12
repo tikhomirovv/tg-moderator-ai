@@ -1,10 +1,10 @@
-import { BotRepository } from "../../database/repositories/bot-repository";
-import { ModerationDecisionRepository } from "../../database/repositories/moderation-decision-repository";
-import { logger } from "../../core/logger";
+import { BotRepository } from "../../../database/repositories/bot-repository";
+import { ModerationDecisionRepository } from "../../../database/repositories/moderation-decision-repository";
+import { logger } from "../../../core/logger";
 import {
   buildDecisionsPagination,
   parseDecisionsQuery,
-} from "../../utils/decisions-query";
+} from "../../../utils/decisions-query";
 
 export default defineEventHandler(async (event) => {
   try {

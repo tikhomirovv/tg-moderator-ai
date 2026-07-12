@@ -1,4 +1,4 @@
-export const MAX_USER_MESSAGES_PER_SCOPE = 100;
+export { USER_MESSAGES_PER_SCOPE as MAX_USER_MESSAGES_PER_SCOPE } from "./retention-policy";
 
 export type ChatHistoryEntry = {
   text: string;

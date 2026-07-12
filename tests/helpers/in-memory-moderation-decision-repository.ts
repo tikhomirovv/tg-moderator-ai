@@ -18,7 +18,7 @@ export class InMemoryModerationDecisionRepository {
     const row: ModerationDecision = {
       _id: String(nextId++),
       ...data,
-      created_at: new Date(),
+      created_at: data.timestamp,
     };
     this.rows.push(row);
     return row;

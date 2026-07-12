@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, desc, countDistinct, sql, inArray } from "drizzle-orm";
+import { and, eq, gte, lte, desc, countDistinct, sql, inArray, lt } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   ModerationAction,
@@ -236,5 +236,14 @@ export class ModerationActionRepository {
       breakdown[row.action_type] = row.count;
     }
     return breakdown;
+  }
+
+  async deleteOlderThan(cutoff: Date): Promise<number> {
+    const deleted = await this.db
+      .delete(moderationActions)
+      .where(lt(moderationActions.createdAt, cutoff))
+      .returning({ id: moderationActions.id });
+
+    return deleted.length;
   }
 }

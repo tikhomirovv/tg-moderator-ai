@@ -226,7 +226,7 @@ export class TelegramBot {
         userWarningsBefore: userContext.user_warnings,
       });
 
-      const ruleLabel = aiResponse.rule_violated || "unknown";
+      const ruleLabel = violatedRule?.name ?? aiResponse.rule_violated ?? "unknown";
 
       if (plan.logBan) {
         await this.contextService.handleUserBan(

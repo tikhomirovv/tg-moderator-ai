@@ -1,6 +1,7 @@
 import {
   pgTable,
   varchar,
+  uuid,
   text,
   boolean,
   timestamp,
@@ -27,7 +28,7 @@ export const actionTypeEnum = pgEnum("action_type", [
 export const rules = pgTable(
   "rules",
   {
-    id: varchar("id", { length: 64 }).notNull(),
+    id: uuid("id").notNull(),
     workspaceId: text("workspace_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
@@ -49,7 +50,7 @@ export const ruleWhitelist = pgTable(
   {
     id: serial("id").primaryKey(),
     workspaceId: text("workspace_id").notNull(),
-    ruleId: varchar("rule_id", { length: 64 }).notNull(),
+    ruleId: uuid("rule_id").notNull(),
     entry: varchar("entry", { length: 255 }).notNull(),
   },
   (table) => [
@@ -106,7 +107,7 @@ export const chatRules = pgTable(
       .notNull()
       .references(() => chats.id, { onDelete: "cascade" }),
     workspaceId: text("workspace_id").notNull(),
-    ruleId: varchar("rule_id", { length: 64 }).notNull(),
+    ruleId: uuid("rule_id").notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.chatId, table.ruleId] }),
@@ -126,7 +127,7 @@ export const moderationActions = pgTable(
     userId: bigint("user_id", { mode: "number" }).notNull(),
     messageId: bigint("message_id", { mode: "number" }).notNull(),
     actionType: actionTypeEnum("action_type").notNull(),
-    ruleViolated: varchar("rule_violated", { length: 64 }),
+    ruleViolated: uuid("rule_violated"),
     aiConfidence: real("ai_confidence").notNull(),
     aiReasoning: text("ai_reasoning").notNull(),
     timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
@@ -160,7 +161,7 @@ export const moderationDecisions = pgTable(
     messageId: bigint("message_id", { mode: "number" }).notNull(),
     messageText: text("message_text").notNull(),
     violationDetected: boolean("violation_detected").notNull(),
-    ruleViolated: varchar("rule_violated", { length: 64 }),
+    ruleViolated: uuid("rule_violated"),
     aiConfidence: real("ai_confidence").notNull(),
     aiReasoning: text("ai_reasoning").notNull(),
     rulesApplied: jsonb("rules_applied").$type<string[]>().notNull(),
@@ -193,7 +194,7 @@ export const userContexts = pgTable(
     warningsCount: integer("warnings_count").notNull().default(0),
     isBanned: boolean("is_banned").notNull().default(false),
     bannedAt: timestamp("banned_at", { withTimezone: true }),
-    bannedBy: varchar("banned_by", { length: 64 }),
+    bannedBy: uuid("banned_by"),
     lastActivity: timestamp("last_activity", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

@@ -3,6 +3,7 @@ import type {
   Rule,
   UpdateRuleRequest,
 } from "../../server/database/models/rule";
+import { randomUUID } from "node:crypto";
 import { normalizeWhitelistEntry } from "../../server/core/rule-whitelist";
 
 function ruleKey(workspaceId: string, id: string) {
@@ -46,7 +47,7 @@ export class InMemoryRuleRepository {
 
   async create(workspaceId: string, ruleData: CreateRuleRequest): Promise<Rule> {
     const now = new Date();
-    const id = ruleData.id ?? `rule-${this.rules.size + 1}`;
+    const id = ruleData.id ?? randomUUID();
     const rule: Rule = {
       id,
       name: ruleData.name,

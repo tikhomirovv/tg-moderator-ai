@@ -3,7 +3,6 @@ import { logger } from "../core/logger";
 
 const defaultRules = [
   {
-    id: "spam",
     name: "Спам и реклама",
     description: "Запрещены повторяющиеся сообщения, реклама без разрешения",
     ai_prompt:
@@ -13,7 +12,6 @@ const defaultRules = [
     warnings_before_ban: 3,
   },
   {
-    id: "hate_speech",
     name: "Ненавистнические высказывания",
     description: "Запрещены оскорбления, дискриминация, призывы к насилию",
     ai_prompt:
@@ -23,7 +21,6 @@ const defaultRules = [
     warnings_before_ban: 2,
   },
   {
-    id: "advertising",
     name: "Реклама",
     description: "Коммерческая реклама без разрешения администрации",
     ai_prompt:
@@ -33,7 +30,6 @@ const defaultRules = [
     warnings_before_ban: null,
   },
   {
-    id: "gaming_violations",
     name: "Нарушения в игровых чатах",
     description: "Спам в игровых командах, оскорбления игроков",
     ai_prompt:

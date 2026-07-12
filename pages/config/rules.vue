@@ -21,7 +21,6 @@
         <div class="flex items-start justify-between mb-2 gap-2">
           <div>
             <h3 class="font-medium">{{ rule.name }}</h3>
-            <p class="text-xs text-gray-500">ID: {{ rule.id }}</p>
           </div>
           <div class="flex gap-2 shrink-0">
             <button

@@ -1,4 +1,5 @@
 import { loadDashboardData } from "../core/dashboard-service";
+import { loadRuleNameMap, resolveRuleName } from "../core/rule-name-lookup";
 import { BotRepository } from "../database/repositories/bot-repository";
 import { ChatStatisticsRepository } from "../database/repositories/chat-statistics-repository";
 import { ModerationActionRepository } from "../database/repositories/moderation-action-repository";
@@ -31,6 +32,15 @@ export default defineEventHandler(async (event) => {
           bannedOnly: true,
         }),
     });
+
+    const ruleNames = await loadRuleNameMap(
+      workspaceId,
+      data.recent_activity.map((item) => item.rule_violated)
+    );
+    data.recent_activity = data.recent_activity.map((item) => ({
+      ...item,
+      rule_name: resolveRuleName(item.rule_violated, ruleNames),
+    }));
 
     return {
       success: true,

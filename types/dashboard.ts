@@ -28,6 +28,7 @@ export interface DashboardRecentActivityItem {
   chat_id: number;
   action_type: "warning" | "delete" | "ban";
   rule_violated?: string;
+  rule_name?: string | null;
   timestamp: string;
 }
 

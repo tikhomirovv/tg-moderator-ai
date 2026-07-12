@@ -1,0 +1,181 @@
+<template>
+  <div class="max-w-3xl mx-auto">
+    <header class="mb-8">
+      <h2 class="text-2xl font-semibold text-gray-900">Что нового</h2>
+      <p class="mt-2 text-gray-600">
+        История релизов tg-moderator-ai. Образ Docker публикуется в GHCR при
+        теге <code class="text-sm bg-gray-100 px-1 rounded">v*</code>.
+      </p>
+    </header>
+
+    <div v-if="loading" class="text-gray-500">Загрузка...</div>
+
+    <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 rounded p-4">
+      {{ error }}
+    </div>
+
+    <div v-else-if="releases.length === 0" class="text-gray-500 text-center py-12">
+      Пока нет опубликованных релизов.
+    </div>
+
+    <div v-else class="space-y-10">
+      <article
+        v-for="release in releases"
+        :key="release.tag"
+        class="border-b border-gray-200 pb-10 last:border-b-0"
+      >
+        <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-1">
+          <h3 class="text-xl font-semibold text-gray-900">{{ release.tag }}</h3>
+          <time class="text-sm text-gray-500">{{ formatDate(release.date) }}</time>
+        </div>
+
+        <div class="flex flex-wrap gap-3 text-sm mb-5">
+          <a
+            :href="release.githubReleaseUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-blue-600 hover:underline"
+          >
+            GitHub Release
+          </a>
+          <a
+            :href="release.compareUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-blue-600 hover:underline"
+          >
+            Compare changes
+          </a>
+        </div>
+
+        <div
+          v-for="section in release.sections"
+          :key="`${release.tag}-${section.title}`"
+          class="mb-5"
+        >
+          <h4 class="text-sm font-semibold uppercase tracking-wide text-gray-700 mb-2">
+            {{ section.title }}
+          </h4>
+          <ul class="space-y-2">
+            <li
+              v-for="(item, index) in section.items"
+              :key="`${release.tag}-${section.title}-${index}`"
+              class="text-gray-800 text-sm leading-relaxed pl-4 border-l-2 border-gray-200"
+            >
+              {{ item }}
+            </li>
+          </ul>
+        </div>
+      </article>
+    </div>
+
+    <nav
+      v-if="pagination.total_pages > 1"
+      class="flex items-center justify-between border-t border-gray-200 pt-6 mt-8"
+      aria-label="Навигация по релизам"
+    >
+      <button
+        type="button"
+        class="px-3 py-2 border rounded text-sm disabled:opacity-40 hover:bg-gray-50"
+        :disabled="pagination.page <= 1"
+        @click="goToPage(pagination.page - 1)"
+      >
+        Назад
+      </button>
+      <span class="text-sm text-gray-600">
+        Страница {{ pagination.page }} из {{ pagination.total_pages }}
+      </span>
+      <button
+        type="button"
+        class="px-3 py-2 border rounded text-sm disabled:opacity-40 hover:bg-gray-50"
+        :disabled="pagination.page >= pagination.total_pages"
+        @click="goToPage(pagination.page + 1)"
+      >
+        Вперёд
+      </button>
+    </nav>
+  </div>
+</template>
+
+<script setup lang="ts">
+type ReleaseSection = {
+  title: string;
+  items: string[];
+};
+
+type ReleaseNote = {
+  tag: string;
+  version: string;
+  date: string;
+  sections: ReleaseSection[];
+  githubReleaseUrl: string;
+  compareUrl: string;
+};
+
+const route = useRoute();
+const router = useRouter();
+
+const loading = ref(false);
+const error = ref("");
+const releases = ref<ReleaseNote[]>([]);
+const pagination = ref({
+  page: 1,
+  limit: 5,
+  total: 0,
+  total_pages: 1,
+});
+
+const page = computed(() => {
+  const value = Number.parseInt(String(route.query.page ?? "1"), 10);
+  return Number.isFinite(value) && value > 0 ? value : 1;
+});
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("ru-RU", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+async function loadReleases(targetPage = page.value) {
+  loading.value = true;
+  error.value = "";
+
+  try {
+    const resp = await $fetch<{
+      success: boolean;
+      data: {
+        items: ReleaseNote[];
+        pagination: typeof pagination.value;
+      };
+    }>("/api/releases", {
+      query: { page: targetPage, limit: 5 },
+    });
+
+    releases.value = resp?.data?.items ?? [];
+    pagination.value = resp?.data?.pagination ?? pagination.value;
+  } catch (loadError: unknown) {
+    console.error(loadError);
+    error.value = "Не удалось загрузить release notes.";
+    releases.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function goToPage(targetPage: number) {
+  await router.push({
+    path: "/release-notes",
+    query: targetPage > 1 ? { page: targetPage } : {},
+  });
+}
+
+watch(page, (targetPage) => {
+  void loadReleases(targetPage);
+});
+
+onMounted(() => {
+  void loadReleases(page.value);
+});
+</script>

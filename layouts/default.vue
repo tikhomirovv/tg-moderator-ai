@@ -35,9 +35,15 @@
           active-class="bg-gray-100 font-medium"
           >Rules</NuxtLink
         >
+        <NuxtLink
+          to="/release-notes"
+          class="block px-3 py-2 rounded hover:bg-gray-100"
+          active-class="bg-gray-100 font-medium"
+          >Что нового</NuxtLink
+        >
       </nav>
 
-      <div class="p-4 text-xs text-gray-500 border-t">v0.1.0</div>
+      <div class="p-4 text-xs text-gray-500 border-t">v{{ appVersion }}</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0">
@@ -101,6 +107,8 @@ const { data: session, refresh: refreshSession } = await useAsyncData(
   "layout-auth-session",
   () => fetchAuthSession()
 );
+const runtimeConfig = useRuntimeConfig();
+const appVersion = computed(() => runtimeConfig.public.appVersion as string);
 const showWorkspaceModal = ref(false);
 const showInviteModal = ref(false);
 const workspaceSwitcher = ref<{ reload: () => Promise<void> } | null>(null);

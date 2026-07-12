@@ -1,9 +1,14 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import pkg from "./package.json";
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-08-11",
   devtools: { enabled: true },
   modules: ["@nuxtjs/tailwindcss", "@nuxt/fonts"],
   runtimeConfig: {
+    public: {
+      appVersion: pkg.version,
+    },
     // Переменные только для сервера
     llmApiKey: process.env.LLM_API_KEY,
     llmBaseUrl: process.env.LLM_BASE_URL,

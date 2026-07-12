@@ -19,14 +19,12 @@ export class TelegramBot {
   private token: string;
   private botId: string;
   private botConfig: Bot;
-  private workspaceId: string;
   private webhookUrl?: string;
   private contextService: ContextService;
 
   constructor(token: string, botId: string, botConfig: DbBot) {
     this.token = token;
     this.botId = botId;
-    this.workspaceId = botConfig.workspace_id;
     this.botConfig = {
       id: botConfig.id,
       name: botConfig.name,
@@ -105,7 +103,7 @@ export class TelegramBot {
       const ruleRepo = new RuleRepository();
       const loadedRules = await ruleRepo.findByIds(
         chatConfig.rules || [],
-        this.workspaceId
+        this.botId
       );
 
       const whitelistByRuleId = new Map(
@@ -359,7 +357,6 @@ export class TelegramBot {
         return null;
       }
 
-      this.workspaceId = updatedBotConfig.workspace_id;
       this.botConfig = {
         id: updatedBotConfig.id,
         name: updatedBotConfig.name,

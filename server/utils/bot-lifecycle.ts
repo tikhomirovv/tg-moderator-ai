@@ -80,17 +80,16 @@ export async function registerBotWebhook(
 
 export async function enableBot(
   botId: string,
-  workspaceId: string,
   deps?: Partial<LifecycleDeps>
 ): Promise<BotLifecycleResult> {
   const { botRepo, fetchFn } = getDeps(deps);
   const current = await botRepo.findByIdWithToken(botId);
 
-  if (!current || current.workspace_id !== workspaceId) {
+  if (!current) {
     throw new BotLifecycleError(404, "Bot not found");
   }
 
-  const updated = await botRepo.update(botId, workspaceId, { is_active: true });
+  const updated = await botRepo.update(botId, { is_active: true });
   if (!updated) {
     throw new BotLifecycleError(404, "Bot not found");
   }
@@ -107,7 +106,7 @@ export async function enableBot(
       warning: registration.warning,
     };
   } catch (error) {
-    await botRepo.update(botId, workspaceId, { is_active: false });
+    await botRepo.update(botId, { is_active: false });
     throw new BotLifecycleError(
       502,
       error instanceof Error ? error.message : "Failed to set webhook"
@@ -117,17 +116,16 @@ export async function enableBot(
 
 export async function disableBot(
   botId: string,
-  workspaceId: string,
   deps?: Partial<LifecycleDeps>
 ): Promise<BotLifecycleResult> {
   const { botRepo, fetchFn } = getDeps(deps);
   const current = await botRepo.findByIdWithToken(botId);
 
-  if (!current || current.workspace_id !== workspaceId) {
+  if (!current) {
     throw new BotLifecycleError(404, "Bot not found");
   }
 
-  const updated = await botRepo.update(botId, workspaceId, { is_active: false });
+  const updated = await botRepo.update(botId, { is_active: false });
   if (!updated) {
     throw new BotLifecycleError(404, "Bot not found");
   }
@@ -141,7 +139,7 @@ export async function disableBot(
     logger.info(`Webhook removed for bot ${botId}`);
     return { bot: updated, webhookRegistered: false };
   } catch (error) {
-    await botRepo.update(botId, workspaceId, { is_active: true });
+    await botRepo.update(botId, { is_active: true });
     throw new BotLifecycleError(
       502,
       error instanceof Error ? error.message : "Failed to delete webhook"

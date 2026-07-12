@@ -10,13 +10,16 @@ import {
   getWebhookBaseUrl,
   telegramGetWebhookInfo,
 } from "./telegram-webhook";
+import { requireBotAccess } from "./bot-access";
 
-export async function getBotDeliveryHealthForWorkspace(
-  botId: string,
-  workspaceId: string
+export async function getBotDeliveryHealth(
+  event: Parameters<typeof requireBotAccess>[0],
+  botId: string
 ): Promise<BotDeliveryHealth> {
+  await requireBotAccess(event, botId);
+
   const botRepo = new BotRepository();
-  const bot = await botRepo.findById(botId, workspaceId);
+  const bot = await botRepo.findById(botId);
 
   if (!bot) {
     throw createError({

@@ -7,7 +7,7 @@ describe("database mappers", () => {
     const rule = toRule(
       {
         id: "spam",
-        workspaceId: "ws-1",
+        botId: "bot-1",
         name: "Spam",
         description: "No spam",
         aiPrompt: "detect spam",

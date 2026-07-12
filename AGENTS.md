@@ -9,10 +9,15 @@ Self-hosted админка + Telegram webhook: AI-модерация чатов 
 **Доменная модель:**
 
 ```
-User → Workspace (Better Auth Organization) → bots[] → chats[] → rules[] (ID из библиотеки workspace)
+User (telegram_id)
+  → Bot (owner_user_id)
+      → bot_members (owner | manager)
+      → bot_access_codes (invite)
+      → rules (per bot)
+      → chats → moderation
 ```
 
-Правила — в workspace; применяются **на чат** (у одного бота в разных чатах — разные наборы).
+Правила хранятся **per bot**; шаблоны — константы в коде (`rule-templates.ts`), применяются копированием. Доступ к боту: owner или manager через `bot_members`; join по access code.
 
 Публичный endpoint без session: `POST /api/telegram/webhook/*` (Telegram). Защита: per-bot `webhook_secret` в БД + заголовок `X-Telegram-Bot-Api-Secret-Token`.
 
@@ -20,7 +25,7 @@ User → Workspace (Better Auth Organization) → bots[] → chats[] → rules[]
 
 - Bun, Nuxt 4, Nitro, Vue 3, Tailwind
 - PostgreSQL, Drizzle
-- Better Auth (email + password; Organization = Workspace в UI)
+- Telegram OIDC login (`TELEGRAM_LOGIN_BOT_ID`, `TELEGRAM_LOGIN_CLIENT_SECRET`, `BASE_URL`)
 - LLM: OpenAI-compatible API via `LLM_API_KEY`, optional `LLM_BASE_URL` (OpenRouter/Polza), `LLM_MODEL`
 
 Код и коммиты: **English**. Общение с пользователем: **RU**.

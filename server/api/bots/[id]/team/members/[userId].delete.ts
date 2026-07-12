@@ -1,0 +1,41 @@
+import { BotMemberRepository } from "../../../../../database/repositories/bot-member-repository";
+import { requireBotAccess } from "../../../../../utils/bot-access";
+
+export default defineEventHandler(async (event) => {
+  const botId = getRouterParam(event, "id");
+  const userId = getRouterParam(event, "userId");
+
+  if (!botId || !userId) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Bot ID and user ID are required",
+    });
+  }
+
+  const { user, role } = await requireBotAccess(event, botId, ["owner"]);
+  if (userId === user.id) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Owner cannot remove themselves",
+    });
+  }
+
+  const memberRepo = new BotMemberRepository();
+  const targetRole = await memberRepo.getMemberRole(botId, userId);
+  if (targetRole === "owner") {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Cannot remove bot owner",
+    });
+  }
+
+  const removed = await memberRepo.removeMember(botId, userId);
+  if (!removed) {
+    throw createError({ statusCode: 404, statusMessage: "Member not found" });
+  }
+
+  return {
+    success: true,
+    message: "Member removed",
+  };
+});

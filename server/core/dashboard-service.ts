@@ -189,7 +189,7 @@ export function buildDashboardData(input: DashboardRawInput): DashboardData {
 }
 
 export interface DashboardRepositories {
-  findBots(workspaceId: string): Promise<BotResponse[]>;
+  findBots(userId: string): Promise<BotResponse[]>;
   getTodayTotals(
     botIds: string[],
     date: Date
@@ -213,11 +213,11 @@ export interface DashboardRepositories {
 }
 
 export async function loadDashboardData(
-  workspaceId: string,
+  userId: string,
   repos: DashboardRepositories,
   referenceDate: Date = new Date()
 ): Promise<DashboardData> {
-  const bots = await repos.findBots(workspaceId);
+  const bots = await repos.findBots(userId);
   const botIds = bots.map((bot) => bot.id);
   const { start, end } = getLast7DayRange(referenceDate);
 
@@ -233,7 +233,7 @@ export async function loadDashboardData(
     repos.getDailyStats(botIds, start, end),
     repos.getActionBreakdown(botIds, start, end),
     repos.getRecentActions(botIds, 20),
-    // Distinct Telegram user_id across workspace bots — same user in multiple chats counts once.
+    // Distinct Telegram user_id across accessible bots — same user in multiple chats counts once.
     repos.countActiveUsers24h(botIds),
     repos.countBannedUsers(botIds),
   ]);

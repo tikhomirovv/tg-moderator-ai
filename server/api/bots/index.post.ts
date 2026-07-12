@@ -1,18 +1,16 @@
 import { BotRepository } from "../../database/repositories/bot-repository";
 import { CreateBotRequest } from "../../database/models/bot";
 import { registerBotWebhook } from "../../utils/bot-lifecycle";
-import {
-  getBotDeliveryHealthForWorkspace,
-  withDeliveryHealth,
-} from "../../utils/bot-delivery";
+import { getBotDeliveryHealth, withDeliveryHealth } from "../../utils/bot-delivery";
+import { requireSession } from "../../utils/session";
 
 export default defineEventHandler(async (event) => {
   try {
     const body = (await readBody(event)) as CreateBotRequest;
-    const workspaceId = getWorkspaceId(event);
+    const { user } = await requireSession(event);
     const botRepo = new BotRepository();
 
-    const bot = await botRepo.create(workspaceId, body);
+    const bot = await botRepo.create(user.id, body);
 
     let warning: string | undefined;
     if (bot.is_active) {
@@ -30,7 +28,7 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    const health = await getBotDeliveryHealthForWorkspace(bot.id, workspaceId);
+    const health = await getBotDeliveryHealth(event, bot.id);
 
     return {
       success: true,

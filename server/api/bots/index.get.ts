@@ -1,15 +1,16 @@
 import { BotRepository } from "../../database/repositories/bot-repository";
+import { requireSession } from "../../utils/session";
 
 export default defineEventHandler(async (event) => {
   try {
-    const workspaceId = getWorkspaceId(event);
+    const { user } = await requireSession(event);
     const botRepo = new BotRepository();
-    const bots = await botRepo.findAll(workspaceId);
+    const bots = await botRepo.findAllForUser(user.id);
 
     return {
       success: true,
       data: {
-        bots: bots,
+        bots,
       },
     };
   } catch (error) {

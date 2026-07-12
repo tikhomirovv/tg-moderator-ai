@@ -146,7 +146,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { shouldRedirectFromBotDetail } from "~/lib/workspace-bot-route";
 
 type DecisionItem = {
   _id?: string;
@@ -223,20 +222,13 @@ function formatRuleLabel(item: DecisionItem) {
   return "—";
 }
 
-async function loadBot(options: { afterWorkspaceSwitch?: boolean } = {}) {
+async function loadBot() {
   try {
     const resp = await $fetch<any>(`/api/bots/${botId}`);
     bot.value = resp?.data;
   } catch (error: any) {
     const status = error?.statusCode ?? error?.response?.status;
-    const botMissing = status === 404;
-
-    if (options.afterWorkspaceSwitch && shouldRedirectFromBotDetail(!botMissing)) {
-      await navigateTo("/bots");
-      return;
-    }
-
-    if (!botMissing) {
+    if (status !== 404) {
       console.error("Error loading bot:", error);
     }
   }
@@ -266,13 +258,5 @@ async function goToPage(page: number) {
 onMounted(async () => {
   await loadBot();
   await loadDecisions();
-});
-
-useOnWorkspaceSwitch(async () => {
-  await loadBot({ afterWorkspaceSwitch: true });
-  if (bot.value) {
-    pagination.value.page = 1;
-    await loadDecisions(1);
-  }
 });
 </script>

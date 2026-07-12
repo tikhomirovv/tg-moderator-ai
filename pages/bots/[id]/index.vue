@@ -21,6 +21,18 @@
           {{ bot?.is_active ? "Disable" : "Enable" }}
         </button>
         <NuxtLink
+          :to="`/bots/${botId}/rules`"
+          class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
+        >
+          Rules
+        </NuxtLink>
+        <NuxtLink
+          :to="`/bots/${botId}/audit`"
+          class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
+        >
+          Audit
+        </NuxtLink>
+        <NuxtLink
           to="/bots"
           class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
         >
@@ -65,6 +77,60 @@
             >
             <div class="text-sm text-gray-600">
               {{ formatDate(bot.created_at) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white border rounded p-6">
+        <h3 class="text-lg font-medium mb-4">Team Access</h3>
+        <div v-if="teamLoading" class="text-gray-500 text-sm">Loading team...</div>
+        <div v-else class="space-y-4">
+          <div v-if="accessCode" class="flex flex-wrap items-center gap-3">
+            <div class="text-sm">
+              Access code:
+              <code class="bg-gray-100 px-2 py-1 rounded">{{ accessCode }}</code>
+            </div>
+            <button
+              type="button"
+              class="text-sm text-blue-600 hover:underline"
+              @click="copyAccessCode"
+            >
+              Copy
+            </button>
+            <button
+              type="button"
+              class="text-sm text-red-600 hover:underline"
+              @click="revokeAccessCode"
+            >
+              Revoke
+            </button>
+          </div>
+          <p v-else class="text-sm text-gray-500">
+            Access code is available to bot owners.
+          </p>
+
+          <div v-if="teamMembers.length" class="space-y-2">
+            <h4 class="text-sm font-medium text-gray-700">Members</h4>
+            <div
+              v-for="member in teamMembers"
+              :key="member.user_id"
+              class="flex items-center justify-between text-sm border rounded px-3 py-2"
+            >
+              <div>
+                <span class="font-medium">
+                  {{ member.username ? `@${member.username}` : member.name }}
+                </span>
+                <span class="text-gray-500 ml-2">{{ member.role }}</span>
+              </div>
+              <button
+                v-if="member.role === 'manager'"
+                type="button"
+                class="text-red-600 hover:underline"
+                @click="removeMember(member.user_id)"
+              >
+                Remove
+              </button>
             </div>
           </div>
         </div>
@@ -379,7 +445,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import { shouldRedirectFromBotDetail } from "~/lib/workspace-bot-route";
 
 const route = useRoute();
 const botId = route.params.id as string;
@@ -390,6 +455,9 @@ const showAddChatModal = ref(false);
 const editingChat = ref<any>(null);
 const saving = ref(false);
 const availableRules = ref<any[]>([]);
+const accessCode = ref<string | null>(null);
+const teamMembers = ref<any[]>([]);
+const teamLoading = ref(false);
 const statusError = ref("");
 const logs = ref<any[]>([]);
 const statistics = ref<any>({
@@ -458,22 +526,14 @@ function formatDate(dateString: string) {
   });
 }
 
-async function loadBot(options: { afterWorkspaceSwitch?: boolean } = {}) {
+async function loadBot() {
   loading.value = true;
   try {
     const resp = await $fetch<any>(`/api/bots/${botId}`);
     bot.value = resp?.data;
   } catch (error: any) {
     const status = error?.statusCode ?? error?.response?.status;
-    const botMissing = status === 404;
-
-    // After workspace switch, redirect when bot does not exist in new workspace.
-    if (options.afterWorkspaceSwitch && shouldRedirectFromBotDetail(!botMissing)) {
-      await navigateTo("/bots");
-      return;
-    }
-
-    if (!botMissing) {
+    if (status !== 404) {
       console.error("Error loading bot:", error);
     }
   } finally {
@@ -483,7 +543,7 @@ async function loadBot(options: { afterWorkspaceSwitch?: boolean } = {}) {
 
 async function loadRules() {
   try {
-    const resp = await $fetch<any>("/api/config/rules");
+    const resp = await $fetch<any>(`/api/bots/${botId}/rules`);
     availableRules.value = resp?.data?.rules || [];
   } catch (error) {
     console.error("Error loading rules:", error);
@@ -633,17 +693,51 @@ function getSilentModeText(chat: any) {
   }
 }
 
-onMounted(loadBot);
-onMounted(loadRules);
-onMounted(loadLogs);
-onMounted(loadStatistics);
-
-useOnWorkspaceSwitch(async () => {
-  await loadBot({ afterWorkspaceSwitch: true });
-  if (bot.value) {
-    await loadRules();
-    await loadLogs();
-    await loadStatistics();
+async function loadTeam() {
+  teamLoading.value = true;
+  try {
+    const [codeResp, membersResp] = await Promise.all([
+      $fetch<any>(`/api/bots/${botId}/team/access-code`).catch(() => null),
+      $fetch<any>(`/api/bots/${botId}/team/members`),
+    ]);
+    accessCode.value = codeResp?.data?.code ?? null;
+    teamMembers.value = membersResp?.data?.members ?? [];
+  } catch (error) {
+    console.error("Error loading team:", error);
+  } finally {
+    teamLoading.value = false;
   }
+}
+
+async function copyAccessCode() {
+  if (!accessCode.value) return;
+  await navigator.clipboard.writeText(accessCode.value);
+}
+
+async function revokeAccessCode() {
+  try {
+    const resp = await $fetch<any>(`/api/bots/${botId}/team/access-code/revoke`, {
+      method: "POST",
+    });
+    accessCode.value = resp?.data?.code ?? null;
+  } catch (error) {
+    console.error("Error revoking access code:", error);
+  }
+}
+
+async function removeMember(userId: string) {
+  try {
+    await $fetch(`/api/bots/${botId}/team/members/${userId}`, {
+      method: "DELETE",
+    });
+    await loadTeam();
+  } catch (error) {
+    console.error("Error removing member:", error);
+  }
+}
+
+onMounted(async () => {
+  await loadBot();
+  await Promise.all([loadRules(), loadLogs(), loadStatistics(), loadTeam()]);
 });
 </script>

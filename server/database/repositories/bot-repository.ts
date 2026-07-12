@@ -1,4 +1,4 @@
-import { eq, inArray, and, gte, lte, desc, sql, countDistinct } from "drizzle-orm";
+import { eq, inArray, and, sql } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   Bot,
@@ -9,6 +9,7 @@ import {
 } from "../models/bot";
 import { bots, chats, chatRules } from "../schema";
 import { toBot, toBotResponse, toChat } from "../mappers";
+import { BotMemberRepository } from "./bot-member-repository";
 
 export class BotRepository {
   private get db() {
@@ -43,7 +44,6 @@ export class BotRepository {
 
   private async replaceChats(
     botId: string,
-    workspaceId: string,
     chatList: Chat[]
   ): Promise<void> {
     await this.db.delete(chats).where(eq(chats.botId, botId));
@@ -63,7 +63,7 @@ export class BotRepository {
         await this.db.insert(chatRules).values(
           chat.rules.map((ruleId) => ({
             chatId: inserted.id,
-            workspaceId,
+            botId,
             ruleId,
           }))
         );
@@ -71,11 +71,9 @@ export class BotRepository {
     }
   }
 
-  async findAll(workspaceId: string): Promise<BotResponse[]> {
-    const botRows = await this.db
-      .select()
-      .from(bots)
-      .where(eq(bots.workspaceId, workspaceId));
+  async findAllForUser(userId: string): Promise<BotResponse[]> {
+    const memberRepo = new BotMemberRepository();
+    const botRows = await memberRepo.findBotsForUser(userId);
     const result: BotResponse[] = [];
 
     for (const row of botRows) {
@@ -86,11 +84,11 @@ export class BotRepository {
     return result;
   }
 
-  async findById(id: string, workspaceId: string): Promise<BotResponse | null> {
+  async findById(id: string): Promise<BotResponse | null> {
     const [row] = await this.db
       .select()
       .from(bots)
-      .where(and(eq(bots.id, id), eq(bots.workspaceId, workspaceId)))
+      .where(eq(bots.id, id))
       .limit(1);
     if (!row) return null;
 
@@ -107,7 +105,7 @@ export class BotRepository {
   }
 
   async create(
-    workspaceId: string,
+    ownerUserId: string,
     botData: CreateBotRequest
   ): Promise<BotResponse> {
     const now = new Date();
@@ -115,7 +113,7 @@ export class BotRepository {
       .insert(bots)
       .values({
         id: botData.id,
-        workspaceId,
+        ownerUserId,
         name: botData.name,
         token: botData.token,
         isActive: true,
@@ -124,14 +122,16 @@ export class BotRepository {
       })
       .returning();
 
-    await this.replaceChats(botData.id, workspaceId, botData.chats);
+    const memberRepo = new BotMemberRepository();
+    await memberRepo.addMember(botData.id, ownerUserId, "owner");
+
+    await this.replaceChats(botData.id, botData.chats);
     const chatList = await this.loadChatsForBot(botData.id);
     return toBotResponse(row, chatList);
   }
 
   async update(
     id: string,
-    workspaceId: string,
     updateData: UpdateBotRequest
   ): Promise<BotResponse | null> {
     const { chats: chatList, ...botFields } = updateData;
@@ -148,13 +148,13 @@ export class BotRepository {
     const [row] = await this.db
       .update(bots)
       .set(updateValues)
-      .where(and(eq(bots.id, id), eq(bots.workspaceId, workspaceId)))
+      .where(eq(bots.id, id))
       .returning();
 
     if (!row) return null;
 
     if (chatList !== undefined) {
-      await this.replaceChats(id, workspaceId, chatList);
+      await this.replaceChats(id, chatList);
     }
 
     const loadedChats = await this.loadChatsForBot(id);
@@ -181,10 +181,10 @@ export class BotRepository {
       .where(eq(bots.id, id));
   }
 
-  async delete(id: string, workspaceId: string): Promise<boolean> {
+  async delete(id: string): Promise<boolean> {
     const deleted = await this.db
       .delete(bots)
-      .where(and(eq(bots.id, id), eq(bots.workspaceId, workspaceId)))
+      .where(eq(bots.id, id))
       .returning({ id: bots.id });
     return deleted.length > 0;
   }

@@ -10,7 +10,7 @@ export interface Bot {
   name: string;
   chats: Chat[];
   token?: string;
-  workspace_id: string;
+  owner_user_id: string;
   is_active: boolean;
   webhook_secret?: string | null;
   created_at: Date;

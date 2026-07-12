@@ -3,6 +3,7 @@ import { ChatStatisticsRepository } from "../../../database/repositories/chat-st
 import { ModerationActionRepository } from "../../../database/repositories/moderation-action-repository";
 import { UserContextRepository } from "../../../database/repositories/user-context-repository";
 import { UserMessageRepository } from "../../../database/repositories/user-message-repository";
+import { requireBotAccess } from "../../../utils/bot-access";
 
 export default defineEventHandler(async (event) => {
   try {
@@ -15,7 +16,7 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    const statsRepo = new ChatStatisticsRepository();
+    await requireBotAccess(event, botId);
     const actionRepo = new ModerationActionRepository();
     const userContextRepo = new UserContextRepository();
     const messageRepo = new UserMessageRepository();

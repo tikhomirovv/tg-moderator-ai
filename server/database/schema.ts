@@ -17,7 +17,7 @@ import {
   primaryKey,
   foreignKey,
 } from "drizzle-orm/pg-core";
-import { organization } from "./auth-schema";
+import { users } from "./auth-schema";
 
 export const actionTypeEnum = pgEnum("action_type", [
   "warning",
@@ -25,13 +25,32 @@ export const actionTypeEnum = pgEnum("action_type", [
   "ban",
 ]);
 
+export const botMemberRoleEnum = pgEnum("bot_member_role", ["owner", "manager"]);
+
+export const bots = pgTable("bots", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  ownerUserId: text("owner_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  token: text("token"),
+  webhookSecret: text("webhook_secret"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const rules = pgTable(
   "rules",
   {
     id: uuid("id").notNull(),
-    workspaceId: text("workspace_id")
+    botId: varchar("bot_id", { length: 64 })
       .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
+      .references(() => bots.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description").notNull(),
     aiPrompt: text("ai_prompt").notNull(),
@@ -39,24 +58,28 @@ export const rules = pgTable(
     deleteOnViolation: boolean("delete_on_violation").notNull().default(false),
     banOnViolation: boolean("ban_on_violation").notNull().default(false),
     warningsBeforeBan: integer("warnings_before_ban"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (table) => [primaryKey({ columns: [table.workspaceId, table.id] })]
+  (table) => [primaryKey({ columns: [table.botId, table.id] })]
 );
 
 export const ruleWhitelist = pgTable(
   "rule_whitelist",
   {
     id: serial("id").primaryKey(),
-    workspaceId: text("workspace_id").notNull(),
+    botId: varchar("bot_id", { length: 64 }).notNull(),
     ruleId: uuid("rule_id").notNull(),
     entry: varchar("entry", { length: 255 }).notNull(),
   },
   (table) => [
     foreignKey({
-      columns: [table.workspaceId, table.ruleId],
-      foreignColumns: [rules.workspaceId, rules.id],
+      columns: [table.botId, table.ruleId],
+      foreignColumns: [rules.botId, rules.id],
     }).onDelete("cascade"),
     uniqueIndex("rule_whitelist_rule_entry_unique").on(
       table.ruleId,
@@ -65,23 +88,37 @@ export const ruleWhitelist = pgTable(
   ]
 );
 
-export const bots = pgTable(
-  "bots",
+export const botMembers = pgTable(
+  "bot_members",
   {
-    id: varchar("id", { length: 64 }).primaryKey(),
-    workspaceId: text("workspace_id")
+    botId: varchar("bot_id", { length: 64 })
       .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    token: text("token"),
-    webhookSecret: text("webhook_secret"),
-    isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+      .references(() => bots.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: botMemberRoleEnum("role").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (table) => [
-    uniqueIndex("bots_workspace_id_unique").on(table.workspaceId, table.id),
-  ]
+  (table) => [primaryKey({ columns: [table.botId, table.userId] })]
+);
+
+export const botAccessCodes = pgTable(
+  "bot_access_codes",
+  {
+    id: serial("id").primaryKey(),
+    botId: varchar("bot_id", { length: 64 })
+      .notNull()
+      .references(() => bots.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (table) => [uniqueIndex("bot_access_codes_code_unique").on(table.code)]
 );
 
 export const chats = pgTable(
@@ -106,14 +143,14 @@ export const chatRules = pgTable(
     chatId: integer("chat_id")
       .notNull()
       .references(() => chats.id, { onDelete: "cascade" }),
-    workspaceId: text("workspace_id").notNull(),
+    botId: varchar("bot_id", { length: 64 }).notNull(),
     ruleId: uuid("rule_id").notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.chatId, table.ruleId] }),
     foreignKey({
-      columns: [table.workspaceId, table.ruleId],
-      foreignColumns: [rules.workspaceId, rules.id],
+      columns: [table.botId, table.ruleId],
+      foreignColumns: [rules.botId, rules.id],
     }).onDelete("cascade"),
   ]
 );
@@ -132,7 +169,9 @@ export const moderationActions = pgTable(
     aiReasoning: text("ai_reasoning").notNull(),
     timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
     moderatorBotId: varchar("moderator_bot_id", { length: 64 }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     index("moderation_actions_bot_chat_ts").on(
@@ -196,8 +235,12 @@ export const userContexts = pgTable(
     bannedAt: timestamp("banned_at", { withTimezone: true }),
     bannedBy: uuid("banned_by"),
     lastActivity: timestamp("last_activity", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     uniqueIndex("user_contexts_unique").on(
@@ -223,7 +266,9 @@ export const userMessages = pgTable(
     isDeleted: boolean("is_deleted").notNull().default(false),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     deletedReason: text("deleted_reason"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     uniqueIndex("user_messages_unique").on(
@@ -254,8 +299,12 @@ export const chatStatistics = pgTable(
     messagesDeleted: integer("messages_deleted").notNull().default(0),
     usersBanned: integer("users_banned").notNull().default(0),
     uniqueUsers: integer("unique_users").notNull().default(0),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     uniqueIndex("chat_statistics_unique").on(

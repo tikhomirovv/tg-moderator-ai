@@ -1,26 +1,25 @@
 import type {
   Bot,
   BotResponse,
-  Chat,
   CreateBotRequest,
   UpdateBotRequest,
 } from "../../server/database/models/bot";
 
 export class InMemoryBotRepository {
   private bots = new Map<string, Bot>();
+  private members = new Map<string, Set<string>>();
 
-  async findAll(workspaceId: string): Promise<BotResponse[]> {
-    return [...this.bots.values()]
-      .filter((bot) => bot.workspace_id === workspaceId)
+  async findAllForUser(userId: string): Promise<BotResponse[]> {
+    const botIds = this.members.get(userId) ?? new Set<string>();
+    return [...botIds]
+      .map((id) => this.bots.get(id))
+      .filter((bot): bot is Bot => Boolean(bot))
       .map((bot) => this.toResponse(bot));
   }
 
-  async findById(id: string, workspaceId: string): Promise<BotResponse | null> {
+  async findById(id: string): Promise<BotResponse | null> {
     const bot = this.bots.get(id);
-    if (!bot || bot.workspace_id !== workspaceId) {
-      return null;
-    }
-    return this.toResponse(bot);
+    return bot ? this.toResponse(bot) : null;
   }
 
   async findByIdWithToken(id: string): Promise<Bot | null> {
@@ -28,29 +27,28 @@ export class InMemoryBotRepository {
     return bot ? { ...bot, chats: bot.chats.map((chat) => ({ ...chat })) } : null;
   }
 
-  async create(workspaceId: string, botData: CreateBotRequest): Promise<BotResponse> {
+  async create(ownerUserId: string, botData: CreateBotRequest): Promise<BotResponse> {
     const now = new Date();
     const bot: Bot = {
       id: botData.id,
       name: botData.name,
       token: botData.token,
-      workspace_id: workspaceId,
+      owner_user_id: ownerUserId,
       is_active: true,
       chats: botData.chats.map((chat) => ({ ...chat, rules: [...chat.rules] })),
       created_at: now,
       updated_at: now,
     };
     this.bots.set(botData.id, bot);
+    const memberSet = this.members.get(ownerUserId) ?? new Set<string>();
+    memberSet.add(botData.id);
+    this.members.set(ownerUserId, memberSet);
     return this.toResponse(bot);
   }
 
-  async update(
-    id: string,
-    workspaceId: string,
-    updateData: UpdateBotRequest
-  ): Promise<BotResponse | null> {
+  async update(id: string, updateData: UpdateBotRequest): Promise<BotResponse | null> {
     const bot = this.bots.get(id);
-    if (!bot || bot.workspace_id !== workspaceId) {
+    if (!bot) {
       return null;
     }
 
@@ -92,5 +90,3 @@ export class InMemoryBotRepository {
     };
   }
 }
-
-export type InMemoryBotRepositoryChat = Chat;

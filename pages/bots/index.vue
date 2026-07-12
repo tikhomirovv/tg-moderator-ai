@@ -201,5 +201,4 @@ function refresh() {
 }
 
 onMounted(load);
-useOnWorkspaceSwitch(() => load());
 </script>

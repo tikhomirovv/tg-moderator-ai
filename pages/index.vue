@@ -26,7 +26,7 @@
       class="bg-white border rounded p-8 text-center"
     >
       <p class="text-gray-600 mb-4">
-        No bots in this workspace yet. Add a bot to start moderating chats.
+        No bots yet. Create a bot or join a team to start moderating chats.
       </p>
       <NuxtLink
         to="/bots"
@@ -84,5 +84,4 @@ async function load() {
 }
 
 onMounted(load);
-useOnWorkspaceSwitch(() => load());
 </script>

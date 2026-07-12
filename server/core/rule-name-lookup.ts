@@ -2,26 +2,36 @@ import { RuleRepository } from "../database/repositories/rule-repository";
 
 export type RuleNameLookup = Pick<RuleRepository, "findByIds">;
 
-/** Resolve rule ids to display names for a workspace. */
+/** Resolve rule ids to display names across one or more bots. */
 export async function loadRuleNameMap(
-  workspaceId: string,
-  ruleIds: Array<string | null | undefined>,
+  entries: Array<{ botId: string; ruleId: string | null | undefined }>,
   deps?: { ruleRepo?: RuleNameLookup }
 ): Promise<Map<string, string>> {
-  const uniqueIds = [
-    ...new Set(
-      ruleIds.filter((id): id is string => typeof id === "string" && id.length > 0)
-    ),
-  ];
+  const byBot = new Map<string, Set<string>>();
 
-  if (uniqueIds.length === 0) {
-    return new Map();
+  for (const entry of entries) {
+    if (!entry.ruleId) {
+      continue;
+    }
+    const ids = byBot.get(entry.botId) ?? new Set<string>();
+    ids.add(entry.ruleId);
+    byBot.set(entry.botId, ids);
+  }
+
+  const names = new Map<string, string>();
+  if (byBot.size === 0) {
+    return names;
   }
 
   const ruleRepo = deps?.ruleRepo ?? new RuleRepository();
-  const rules = await ruleRepo.findByIds(uniqueIds, workspaceId);
+  for (const [botId, ruleIds] of byBot) {
+    const rules = await ruleRepo.findByIds([...ruleIds], botId);
+    for (const rule of rules) {
+      names.set(rule.id, rule.name);
+    }
+  }
 
-  return new Map(rules.map((rule) => [rule.id, rule.name]));
+  return names;
 }
 
 export function resolveRuleName(

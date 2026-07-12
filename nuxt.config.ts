@@ -16,8 +16,8 @@ export default defineNuxtConfig({
     databaseUrl:
       process.env.DATABASE_URL ||
       "postgresql://tgmoderator:tgmoderator@localhost:5432/tgmoderator",
-    betterAuthSecret: process.env.BETTER_AUTH_SECRET,
-    betterAuthUrl: process.env.BETTER_AUTH_URL || "http://localhost:3001",
+    telegramLoginBotId: process.env.TELEGRAM_LOGIN_BOT_ID,
+    telegramLoginClientSecret: process.env.TELEGRAM_LOGIN_CLIENT_SECRET,
   },
   routeRules: {
     "/api/auth/**": { cors: true },

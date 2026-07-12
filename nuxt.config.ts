@@ -3,6 +3,12 @@ import pkg from "./package.json";
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-08-11",
+  app: {
+    head: {
+      title: "TG Moderator",
+      titleTemplate: "%s · TG Moderator",
+    },
+  },
   devtools: { enabled: true },
   modules: ["@nuxtjs/tailwindcss", "@nuxt/fonts"],
   runtimeConfig: {

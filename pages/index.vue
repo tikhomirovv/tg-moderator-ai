@@ -61,6 +61,8 @@
 import { ref, onMounted } from "vue";
 import type { DashboardData } from "~/types/dashboard";
 
+usePageTitle("Панель");
+
 const dashboard = ref<DashboardData | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);

@@ -109,7 +109,7 @@ export class ContextService {
     chatId: number,
     userId: number,
     messageId: number,
-    ruleViolated: string,
+    ruleViolated: string | undefined,
     aiConfidence: number,
     aiReasoning: string
   ) {
@@ -144,7 +144,7 @@ export class ContextService {
     chatId: number,
     userId: number,
     messageId: number,
-    ruleViolated: string,
+    ruleViolated: string | undefined,
     aiConfidence: number,
     aiReasoning: string
   ) {
@@ -185,27 +185,26 @@ export class ContextService {
     botId: string,
     chatId: number,
     messageId: number,
-    reason: string
+    deleteReason: string,
+    ruleId?: string
   ) {
     try {
-      // Помечаем сообщение как удаленное
       await this.userMessageRepo.markAsDeleted(
         botId,
         chatId,
         messageId,
-        reason
+        deleteReason
       );
 
-      // Создаем запись о действии модерации
       await this.moderationActionRepo.create({
         bot_id: botId,
         chat_id: chatId,
-        user_id: 0, // Будет заполнено из сообщения
+        user_id: 0,
         message_id: messageId,
         action_type: "delete",
-        rule_violated: reason,
+        rule_violated: ruleId,
         ai_confidence: 1.0,
-        ai_reasoning: reason,
+        ai_reasoning: deleteReason,
         timestamp: new Date(),
         moderator_bot_id: botId,
       });
@@ -214,7 +213,7 @@ export class ContextService {
       await this.incrementDeletedMessageCount(botId, chatId);
 
       logger.info(
-        `Сообщение удалено: bot=${botId}, chat=${chatId}, msg=${messageId}, reason=${reason}`
+        `Сообщение удалено: bot=${botId}, chat=${chatId}, msg=${messageId}, reason=${deleteReason}`
       );
     } catch (error) {
       logger.error(
@@ -229,7 +228,7 @@ export class ContextService {
     botId: string,
     chatId: number,
     userId: number,
-    ruleId: string
+    ruleId?: string
   ) {
     try {
       // Баним пользователя
@@ -244,7 +243,9 @@ export class ContextService {
         action_type: "ban",
         rule_violated: ruleId,
         ai_confidence: 1.0,
-        ai_reasoning: `User banned for violating rule: ${ruleId}`,
+        ai_reasoning: ruleId
+          ? `User banned for violating rule: ${ruleId}`
+          : "User banned for violating chat rules",
         timestamp: new Date(),
         moderator_bot_id: botId,
       });

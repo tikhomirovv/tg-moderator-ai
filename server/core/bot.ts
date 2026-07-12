@@ -226,18 +226,20 @@ export class TelegramBot {
         userWarningsBefore: userContext.user_warnings,
       });
 
-      const ruleLabel = violatedRule?.name ?? aiResponse.rule_violated ?? "unknown";
+      const ruleId = aiResponse.rule_violated ?? violatedRule?.id;
+      const ruleDisplayName =
+        violatedRule?.name ?? aiResponse.rule_violated ?? "unknown";
 
       if (plan.logBan) {
         await this.contextService.handleUserBan(
           this.botId,
           message.chat.id,
           message.from.id,
-          ruleLabel
+          ruleId
         );
 
         if (plan.telegramBan) {
-          await this.banUser(message.chat.id, message.from.id, ruleLabel);
+          await this.banUser(message.chat.id, message.from.id, ruleDisplayName);
 
           const banText =
             `🚫 <b>Пользователь заблокирован!</b>\n\n` +
@@ -248,7 +250,7 @@ export class TelegramBot {
             }</b> ` +
             `заблокирован за нарушение правил чата.\n` +
             `Количество предупреждений: <b>${userContext.user_warnings}</b>\n` +
-            `Последнее нарушение: <b>${ruleLabel}</b>`;
+            `Последнее нарушение: <b>${ruleDisplayName}</b>`;
 
           await this.sendInfoMessage(message.chat.id, banText);
         }
@@ -266,7 +268,7 @@ export class TelegramBot {
           message.chat.id,
           message.from.id,
           message.message_id,
-          ruleLabel,
+          ruleId,
           aiResponse.confidence,
           aiResponse.reasoning
         );
@@ -277,7 +279,7 @@ export class TelegramBot {
           const warningText =
             `⚠️ <b>Предупреждение!</b>\n\n` +
             `Сообщение нарушает правила чата.\n` +
-            `Нарушение: <b>${ruleLabel}</b>\n` +
+            `Нарушение: <b>${ruleDisplayName}</b>\n` +
             `Уверенность: <b>${Math.round(
               aiResponse.confidence * 100
             )}%</b>\n\n` +
@@ -303,7 +305,7 @@ export class TelegramBot {
           message.chat.id,
           message.from.id,
           message.message_id,
-          ruleLabel,
+          ruleId,
           aiResponse.confidence,
           aiResponse.reasoning
         );
@@ -318,7 +320,8 @@ export class TelegramBot {
           this.botId,
           message.chat.id,
           message.message_id,
-          `Violation: ${ruleLabel}`
+          `Violation: ${ruleDisplayName}`,
+          ruleId
         );
       }
 
@@ -327,7 +330,8 @@ export class TelegramBot {
           botId: this.botId,
           chatId: message.chat.id,
           userId: message.from.id,
-          rule: ruleLabel,
+          rule: ruleDisplayName,
+          ruleId,
           confidence: aiResponse.confidence,
           warn: plan.logWarning,
           delete: plan.logDelete,

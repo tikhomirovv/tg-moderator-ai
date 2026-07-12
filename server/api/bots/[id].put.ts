@@ -8,6 +8,7 @@ import {
 import { getBotDeliveryHealth, withDeliveryHealth } from "../../utils/bot-delivery";
 import { requireBotAccess } from "../../utils/bot-access";
 import { requireBotIdParam } from "../../utils/get-bot-id-param";
+import { validateBotMessageTemplate } from "../../utils/bot-message-template-validation";
 
 function buildBotResponse(
   bot: NonNullable<Awaited<ReturnType<BotRepository["findById"]>>>,
@@ -23,7 +24,34 @@ export default defineEventHandler(async (event) => {
     const body = (await readBody(event)) as UpdateBotRequest;
     const botRepo = new BotRepository();
 
-    if (body.is_active !== undefined) {
+    let warningTemplate: string | null | undefined;
+    let banTemplate: string | null | undefined;
+    try {
+      warningTemplate = validateBotMessageTemplate(
+        body.warning_message_template,
+        "warning_message_template"
+      );
+      banTemplate = validateBotMessageTemplate(
+        body.ban_message_template,
+        "ban_message_template"
+      );
+    } catch (error) {
+      throw createError({
+        statusCode: 400,
+        statusMessage:
+          error instanceof Error ? error.message : "Invalid message template",
+      });
+    }
+
+    const normalizedBody: UpdateBotRequest = {
+      ...body,
+      ...(warningTemplate !== undefined
+        ? { warning_message_template: warningTemplate }
+        : {}),
+      ...(banTemplate !== undefined ? { ban_message_template: banTemplate } : {}),
+    };
+
+    if (normalizedBody.is_active !== undefined) {
       const current = await botRepo.findById(botId);
       if (!current) {
         throw createError({
@@ -32,19 +60,19 @@ export default defineEventHandler(async (event) => {
         });
       }
 
-      if (body.is_active !== current.is_active) {
-        const lifecycle = body.is_active
+      if (normalizedBody.is_active !== current.is_active) {
+        const lifecycle = normalizedBody.is_active
           ? await enableBot(botId)
           : await disableBot(botId);
 
-        const { is_active: _ignored, ...rest } = body;
+        const { is_active: _ignored, ...rest } = normalizedBody;
         if (Object.keys(rest).length === 0) {
           const health = await getBotDeliveryHealth(event, botId);
           return {
             success: true,
             data: buildBotResponse(lifecycle.bot, health),
             warning: lifecycle.warning,
-            message: body.is_active
+            message: normalizedBody.is_active
               ? "Bot enabled successfully"
               : "Bot disabled successfully",
           };
@@ -61,7 +89,7 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    const bot = await botRepo.update(botId, body);
+    const bot = await botRepo.update(botId, normalizedBody);
 
     if (!bot) {
       throw createError({

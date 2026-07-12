@@ -11,16 +11,16 @@ describe("resolveMigrationsFolder", () => {
     expect(folder).toEndWith("/server/database/migrations");
   });
 
-  test("journal has single init migration", () => {
+  test("journal lists incremental migrations", () => {
     const folder = resolveMigrationsFolder();
     const journal = JSON.parse(
       readFileSync(path.join(folder, "meta/_journal.json"), "utf8")
     ) as { entries: Array<{ tag: string }> };
 
-    expect(journal.entries).toHaveLength(1);
+    expect(journal.entries.length).toBeGreaterThanOrEqual(2);
     expect(journal.entries[0]?.tag).toBe("0000_init");
-    expect(existsSync(path.join(folder, "0001_bouncy_giant_man.sql"))).toBe(
-      false
+    expect(existsSync(path.join(folder, "0001_strong_otto_octavius.sql"))).toBe(
+      true
     );
   });
 });

@@ -35,6 +35,8 @@ export const bots = pgTable("bots", {
   token: text("token"),
   webhookSecret: text("webhook_secret"),
   isActive: boolean("is_active").notNull().default(true),
+  warningMessageTemplate: text("warning_message_template"),
+  banMessageTemplate: text("ban_message_template"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

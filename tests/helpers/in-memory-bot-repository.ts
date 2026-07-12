@@ -74,6 +74,12 @@ export class InMemoryBotRepository {
     if (updateData.is_active !== undefined) {
       bot.is_active = updateData.is_active;
     }
+    if (updateData.warning_message_template !== undefined) {
+      bot.warning_message_template = updateData.warning_message_template;
+    }
+    if (updateData.ban_message_template !== undefined) {
+      bot.ban_message_template = updateData.ban_message_template;
+    }
     if (updateData.chats !== undefined) {
       bot.chats = updateData.chats.map((chat) => ({
         chat_id: chat.chat_id,
@@ -105,6 +111,8 @@ export class InMemoryBotRepository {
       chats: bot.chats.map((chat) => ({ ...chat })),
       is_active: bot.is_active,
       my_role: myRole,
+      warning_message_template: bot.warning_message_template ?? null,
+      ban_message_template: bot.ban_message_template ?? null,
       created_at: bot.created_at,
       updated_at: bot.updated_at,
     };

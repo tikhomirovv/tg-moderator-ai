@@ -186,6 +186,12 @@ export class BotRepository {
     if (botFields.is_active !== undefined) {
       updateValues.isActive = botFields.is_active;
     }
+    if (botFields.warning_message_template !== undefined) {
+      updateValues.warningMessageTemplate = botFields.warning_message_template;
+    }
+    if (botFields.ban_message_template !== undefined) {
+      updateValues.banMessageTemplate = botFields.ban_message_template;
+    }
 
     const [row] = await this.db
       .update(bots)

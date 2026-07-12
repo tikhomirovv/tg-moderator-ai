@@ -51,6 +51,8 @@ export function toBotResponse(
     name: row.name,
     chats,
     is_active: row.isActive,
+    warning_message_template: row.warningMessageTemplate,
+    ban_message_template: row.banMessageTemplate,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
   };
@@ -65,6 +67,8 @@ export function toBot(row: BotRow, chats: DbChat[]): import("./models/bot").Bot 
     owner_user_id: row.ownerUserId,
     is_active: row.isActive,
     webhook_secret: row.webhookSecret,
+    warning_message_template: row.warningMessageTemplate,
+    ban_message_template: row.banMessageTemplate,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
   };

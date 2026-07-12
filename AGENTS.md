@@ -78,10 +78,10 @@ bun run db:migrate
 | Аудитория | Где | Содержание |
 |-----------|-----|------------|
 | **Пользователь** | `data/releases/vX.Y.Z.md` → страница `/release-notes` в приложении | **Русский, человеческий язык** — что изменилось в продукте (боты, правила, модерация, UI). Без API, таблиц БД, миграций, CI, имён файлов, номеров issue |
-| **Разработчики** | `.docs/releases/vX.Y.Z_TIMESTAMP.md`, описание **git-тега**, тело **GitHub Release** | Полный техотчёт: все коммиты, хеши, scope, issues, chore/ci |
+| **Разработчики** | `.docs/releases/` (archive + `github-v*.md`), **git tag**, **GitHub Release** | **English** — conventional commits, linked hashes/issues; GitHub file **без frontmatter** |
 
 Файлы в `data/releases/` — **только при публикации релиза** (тег `v*` + коммит). До первого релиза страница пустая.
 
-Сбор черновиков: `bun run release:notes vX.Y.Z --write`. User-файл **переписать вручную**; technical — в репо, на GitHub Release и в аннотацию тега.
+Сбор черновиков: `bun run release:notes vX.Y.Z --write`. User-файл **переписать вручную**; если для пользователя нечего конкретного — нейтральное описание (см. skill). Technical — в репо, на GitHub Release и в аннотацию тега.
 
 Процесс: [`.agents/skills/release/SKILL.md`](.agents/skills/release/SKILL.md).

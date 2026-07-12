@@ -32,4 +32,6 @@ date: 2026-07-12
 
 Generated draft: `bun run release:notes vX.Y.Z --write` → **rewrite** to human language before publish.
 
+If the release is tech-only and nothing is user-visible, use the **neutral template** in [`.agents/skills/release/SKILL.md`](../../.agents/skills/release/SKILL.md) — do not leave the file empty and do not copy commit subjects.
+
 Technical report (commits, tag message, GitHub Release) → [`.docs/releases/`](../.docs/releases/).

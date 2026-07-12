@@ -8,6 +8,13 @@
       "when": 1783660477597,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783844801789,
+      "tag": "0001_wakeful_roughhouse",
+      "breakpoints": true
     }
   ]
 }

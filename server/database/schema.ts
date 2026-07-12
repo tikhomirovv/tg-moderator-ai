@@ -9,6 +9,7 @@ import {
   serial,
   date,
   real,
+  jsonb,
   pgEnum,
   uniqueIndex,
   index,
@@ -145,6 +146,37 @@ export const moderationActions = pgTable(
       table.timestamp
     ),
     index("moderation_actions_type").on(table.actionType),
+    index("moderation_actions_created_at").on(table.createdAt),
+  ]
+);
+
+export const moderationDecisions = pgTable(
+  "moderation_decisions",
+  {
+    id: serial("id").primaryKey(),
+    botId: varchar("bot_id", { length: 64 }).notNull(),
+    chatId: bigint("chat_id", { mode: "number" }).notNull(),
+    userId: bigint("user_id", { mode: "number" }).notNull(),
+    messageId: bigint("message_id", { mode: "number" }).notNull(),
+    messageText: text("message_text").notNull(),
+    violationDetected: boolean("violation_detected").notNull(),
+    ruleViolated: varchar("rule_violated", { length: 64 }),
+    aiConfidence: real("ai_confidence").notNull(),
+    aiReasoning: text("ai_reasoning").notNull(),
+    rulesApplied: jsonb("rules_applied").$type<string[]>().notNull(),
+    timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("moderation_decisions_bot_ts").on(table.botId, table.timestamp),
+    index("moderation_decisions_bot_chat_ts").on(
+      table.botId,
+      table.chatId,
+      table.timestamp
+    ),
+    index("moderation_decisions_created_at").on(table.createdAt),
   ]
 );
 

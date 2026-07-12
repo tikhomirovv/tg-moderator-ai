@@ -1,5 +1,6 @@
 import type { Chat as DbChat } from "./models/bot";
 import type { Rule } from "./models/rule";
+import type { ModerationDecision } from "./models/moderation-decision";
 import type { ModerationAction } from "./models/moderation-action";
 import type { UserContext } from "./models/user-context";
 import type { UserMessage } from "./models/user-message";
@@ -8,6 +9,8 @@ import type { ChatStatistics } from "./models/chat-statistics";
 type RuleRow = typeof import("./schema").rules.$inferSelect;
 type BotRow = typeof import("./schema").bots.$inferSelect;
 type ChatRow = typeof import("./schema").chats.$inferSelect;
+type ModerationDecisionRow =
+  typeof import("./schema").moderationDecisions.$inferSelect;
 type ModerationActionRow =
   typeof import("./schema").moderationActions.$inferSelect;
 type UserContextRow = typeof import("./schema").userContexts.$inferSelect;
@@ -74,6 +77,26 @@ export function toBot(row: BotRow, chats: DbChat[]): import("./models/bot").Bot 
     webhook_secret: row.webhookSecret,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
+  };
+}
+
+export function toModerationDecision(
+  row: ModerationDecisionRow
+): ModerationDecision {
+  return {
+    _id: String(row.id),
+    bot_id: row.botId,
+    chat_id: row.chatId,
+    user_id: row.userId,
+    message_id: row.messageId,
+    message_text: row.messageText,
+    violation_detected: row.violationDetected,
+    rule_violated: row.ruleViolated ?? undefined,
+    ai_confidence: row.aiConfidence,
+    ai_reasoning: row.aiReasoning,
+    rules_applied: row.rulesApplied,
+    timestamp: row.timestamp,
+    created_at: row.createdAt,
   };
 }
 

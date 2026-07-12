@@ -10,6 +10,10 @@ import { BotRepository } from "../database/repositories/bot-repository";
 import { ContextService } from "./context-service";
 import { filterRulesByWhitelist } from "./rule-whitelist";
 import { planViolationModeration } from "./moderation-actions";
+import {
+  buildModerationDecisionRequest,
+  saveModerationDecision,
+} from "./moderation-decision";
 
 export class TelegramBot {
   private token: string;
@@ -162,6 +166,19 @@ export class TelegramBot {
           description: rule.description,
           ai_prompt: rule.ai_prompt,
         }))
+      );
+
+      await saveModerationDecision(
+        buildModerationDecisionRequest({
+          botId: this.botId,
+          chatId: message.chat.id,
+          userId: message.from.id,
+          messageId: message.message_id,
+          messageText: message.text!,
+          rulesApplied: applicableRules.map((rule) => rule.id),
+          timestamp: new Date(message.date * 1000),
+          aiResponse,
+        })
       );
 
       if (aiResponse.violation_detected) {

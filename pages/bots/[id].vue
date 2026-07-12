@@ -204,12 +204,20 @@
       <div class="bg-white border rounded p-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-medium">Recent Activity</h3>
-          <button
-            @click="loadLogs"
-            class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-          >
-            Refresh
-          </button>
+          <div class="flex gap-2">
+            <NuxtLink
+              :to="`/bots/${botId}/audit`"
+              class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
+            >
+              Audit
+            </NuxtLink>
+            <button
+              @click="loadLogs"
+              class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
         <div v-if="logs.length > 0" class="space-y-2 max-h-64 overflow-y-auto">
           <div

@@ -1,16 +1,16 @@
-import type { TelegramUpdate } from "../../types/telegram";
-import { isLoginBotStartCommand } from "../../core/login-bot-link";
-import { LoginBotTokenRepository } from "../../database/repositories/login-bot-token-repository";
+import type { TelegramUpdate } from "../types/telegram";
+import { isLoginBotStartCommand } from "./login-bot-link";
+import { LoginBotTokenRepository } from "../database/repositories/login-bot-token-repository";
 import {
   issueLoginBotLink,
   redeemLoginBotToken,
-} from "../../utils/login-bot-token-service";
-import { telegramSendMessage } from "../../utils/telegram-bot-api";
+} from "../utils/login-bot-token-service";
+import { telegramSendMessage } from "../utils/telegram-bot-api";
 import {
   assertTelegramLoginWebhookSecret,
   getTelegramLoginBotToken,
-} from "../../utils/telegram-login-bot";
-import { logger } from "../../core/logger";
+} from "../utils/telegram-login-bot";
+import { logger } from "./logger";
 
 function createLoginBotTokenStore(repo: LoginBotTokenRepository) {
   return {

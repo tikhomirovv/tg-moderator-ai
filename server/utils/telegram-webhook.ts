@@ -1,4 +1,4 @@
-export type TelegramFetch = typeof fetch;
+import type { TelegramFetch } from "./telegram-fetch";
 
 export type TelegramWebhookInfo = {
   url?: string;

@@ -7,8 +7,8 @@ import {
   telegramDeleteWebhook,
   telegramGetWebhookInfo,
   telegramSetWebhook,
-  type TelegramFetch,
 } from "./telegram-webhook";
+import type { TelegramFetch } from "./telegram-fetch";
 import { generateWebhookSecret } from "./webhook-auth";
 
 export class BotLifecycleError extends Error {

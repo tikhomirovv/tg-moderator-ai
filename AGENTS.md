@@ -57,6 +57,7 @@ User (telegram_id)
 - App: `bun run dev` → порт **3001** (`nuxt.config.ts`)
 - PostgreSQL на Orange Pi: `pi.home` / `192.168.0.200`, порт **54321**, db/user `tgmoderator`
 - Dev HTTPS tunnel: `make tunnel` (cloudflared, HTTP/2) → `BASE_URL=https://….trycloudflare.com`
+- Клиентский `$fetch` с `method: "POST"` без тела → **HTTP 400** через cloudflared; если payload нет — `body: {}`
 - Переменные: `.env.example` → локальный `.env`
 
 ## Команды

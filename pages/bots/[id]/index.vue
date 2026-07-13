@@ -992,6 +992,7 @@ async function revokeAccessCode() {
   try {
     const resp = await $fetch<any>(`/api/bots/${botId}/team/access-code/revoke`, {
       method: "POST",
+      body: {},
     });
     accessCode.value = resp?.data?.code ?? null;
   } catch (error) {

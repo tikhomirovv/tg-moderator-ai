@@ -80,7 +80,7 @@ const displayName = computed(() => {
 });
 
 async function signOut() {
-  await $fetch("/api/auth/sign-out", { method: "POST" });
+  await $fetch("/api/auth/sign-out", { method: "POST", body: {} });
   await refreshSession();
   await navigateTo("/login");
 }

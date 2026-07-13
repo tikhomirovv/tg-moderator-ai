@@ -106,6 +106,7 @@ export function useChatActivationWait(options: UseChatActivationWaitOptions) {
       data: { pending_id: number; expires_at: string };
     }>(`/api/bots/${options.botId}/chats/pending`, {
       method: "POST",
+      body: {},
     });
 
     pendingId.value = resp.data.pending_id;

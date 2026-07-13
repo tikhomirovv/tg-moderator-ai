@@ -43,6 +43,13 @@
       "when": 1783938915897,
       "tag": "0005_normal_whiplash",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783944972658,
+      "tag": "0006_great_magma",
+      "breakpoints": true
     }
   ]
 }

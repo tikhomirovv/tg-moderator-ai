@@ -3,6 +3,8 @@ import {
   activateChatForBot,
   evaluateAdministratorRights,
   evaluateChatHealth,
+  isActivateCommandText,
+  isChatActivationUpdate,
   resolveChatTitle,
 } from "../../../server/core/chat-activation";
 import type { ChatMemberAdministrator } from "../../../server/types/telegram";
@@ -147,6 +149,86 @@ describe("activateChatForBot", () => {
     });
   });
 
+  test("reactivates an already registered chat via /activate", async () => {
+    const result = await activateChatForBot(
+      {
+        botId: "bot-1",
+        botToken: "token",
+        telegramChatId: -1001,
+        activatedByTelegramId: 42,
+        botAdminMember: adminMember(),
+      },
+      {
+        getMemberRoleByTelegramId: async () => "owner",
+        resolvePlatformUserId: async () => "user-owner",
+        getChatMember: async () => ({
+          status: "member",
+          user: { id: 42, is_bot: false, first_name: "Owner" },
+        }),
+        getChat: async () => ({
+          id: -1001,
+          type: "supergroup",
+          title: "Renamed Club",
+        }),
+        upsertActivatedChat: async (input) => ({
+          id: 7,
+          botId: "bot-1",
+          chatId: input.telegramChatId,
+          name: input.name,
+          silentMode: false,
+          photoFileId: null,
+          telegramUsername: null,
+          healthStatus: input.healthStatus,
+          healthMessage: input.healthMessage,
+          healthCheckedAt: input.healthCheckedAt,
+        }),
+        completePendingForUser: async () => {},
+        failPendingForUser: async () => {},
+      }
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.chat.name).toBe("Renamed Club");
+    }
+  });
+
+  test("returns not_platform_member for unknown telegram user", async () => {
+    const result = await activateChatForBot(
+      {
+        botId: "bot-1",
+        botToken: "token",
+        telegramChatId: -1001,
+        activatedByTelegramId: 999,
+        botAdminMember: adminMember(),
+      },
+      {
+        getMemberRoleByTelegramId: async () => null,
+        resolvePlatformUserId: async () => null,
+        getChatMember: async () => ({
+          status: "member",
+          user: { id: 999, is_bot: false, first_name: "Stranger" },
+        }),
+        getChat: async () => ({
+          id: -1001,
+          type: "supergroup",
+          title: "Club",
+        }),
+        upsertActivatedChat: async () => {
+          throw new Error("should not upsert");
+        },
+        completePendingForUser: async () => {},
+        failPendingForUser: async () => {},
+      }
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      code: "not_platform_member",
+      message: "Only the bot owner on the platform can connect chats",
+    });
+  });
+
   test("rejects anonymous admin on /activate path", async () => {
     const failed: Array<{ code: string; message: string }> = [];
 
@@ -230,5 +312,72 @@ describe("resolveChatTitle", () => {
     expect(
       resolveChatTitle({ id: 1, type: "supergroup", username: "mainchat" })
     ).toBe("@mainchat");
+  });
+});
+
+describe("isActivateCommandText", () => {
+  test("matches /activate and bot mention variant", () => {
+    expect(isActivateCommandText("/activate")).toBe(true);
+    expect(isActivateCommandText("/activate@MyModBot")).toBe(true);
+    expect(isActivateCommandText("/activate extra")).toBe(true);
+    expect(isActivateCommandText("/start")).toBe(false);
+  });
+});
+
+describe("isChatActivationUpdate", () => {
+  test("detects my_chat_member and /activate messages", () => {
+    expect(
+      isChatActivationUpdate({
+        update_id: 1,
+        my_chat_member: {
+          chat: { id: -1, type: "supergroup" },
+          from: { id: 1, is_bot: false, first_name: "A" },
+          date: 1,
+          old_chat_member: {
+            status: "member",
+            user: { id: 2, is_bot: true, first_name: "B" },
+          },
+          new_chat_member: {
+            status: "administrator",
+            user: { id: 2, is_bot: true, first_name: "B" },
+            can_be_edited: false,
+            is_anonymous: false,
+            can_manage_chat: true,
+            can_delete_messages: true,
+            can_manage_video_chats: true,
+            can_restrict_members: true,
+            can_promote_members: false,
+            can_change_info: true,
+            can_invite_users: true,
+          },
+        },
+      })
+    ).toBe(true);
+
+    expect(
+      isChatActivationUpdate({
+        update_id: 2,
+        message: {
+          message_id: 1,
+          date: 1,
+          chat: { id: -1, type: "supergroup" },
+          from: { id: 1, is_bot: false, first_name: "A" },
+          text: "/activate",
+        },
+      })
+    ).toBe(true);
+
+    expect(
+      isChatActivationUpdate({
+        update_id: 3,
+        message: {
+          message_id: 2,
+          date: 1,
+          chat: { id: -1, type: "supergroup" },
+          from: { id: 1, is_bot: false, first_name: "A" },
+          text: "hello",
+        },
+      })
+    ).toBe(false);
   });
 });

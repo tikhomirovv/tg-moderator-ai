@@ -103,6 +103,22 @@ export class InMemoryBotRepository {
     }
   }
 
+  async delete(id: string): Promise<boolean> {
+    if (!this.bots.has(id)) {
+      return false;
+    }
+
+    this.bots.delete(id);
+
+    for (const key of [...this.memberRoles.keys()]) {
+      if (key.endsWith(`:${id}`)) {
+        this.memberRoles.delete(key);
+      }
+    }
+
+    return true;
+  }
+
   private toResponse(bot: Bot, userId?: string): BotResponse {
     const myRole = userId
       ? this.memberRoles.get(this.memberKey(userId, bot.id))

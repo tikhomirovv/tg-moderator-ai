@@ -1,12 +1,11 @@
 <template>
   <div class="max-w-3xl mx-auto">
-    <header class="mb-8">
-      <h2 class="text-2xl font-semibold text-gray-900">Что нового</h2>
-      <p class="mt-2 text-gray-600">
-        История обновлений приложения. Здесь только то, что важно при работе с
-        ботами, правилами и модерацией.
-      </p>
-    </header>
+    <LayoutPageHeader
+      :breadcrumbs="breadcrumbs"
+      :back-to="backTo"
+      title="Что нового"
+      subtitle="История обновлений приложения. Здесь только то, что важно при работе с ботами, правилами и модерацией."
+    />
 
     <div v-if="loading" class="text-gray-500">Загрузка...</div>
 
@@ -96,6 +95,10 @@ type ReleaseSection = {
 };
 
 usePageTitle("Что нового");
+
+const { breadcrumbs, backTo } = usePageBreadcrumbs([
+  { label: "Release notes" },
+]);
 
 type ReleaseNote = {
   tag: string;

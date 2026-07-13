@@ -1,8 +1,11 @@
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-semibold">Bots</h2>
-      <div class="flex gap-2">
+    <LayoutPageHeader
+      :breadcrumbs="breadcrumbs"
+      :back-to="backTo"
+      title="Bots"
+    >
+      <template #actions>
         <button
           type="button"
           class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
@@ -17,32 +20,32 @@
         >
           Refresh
         </button>
-      </div>
-    </div>
+      </template>
+    </LayoutPageHeader>
 
     <div v-if="loading" class="text-gray-500">Loading...</div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div
+      <NuxtLink
         v-for="bot in bots"
         :key="bot.id"
-        class="bg-white border rounded p-4"
+        :to="`/bots/${bot.id}`"
+        class="bg-white border rounded p-4 block hover:border-blue-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
       >
-        <div class="flex items-start justify-between gap-2">
-          <div class="flex items-start gap-3 min-w-0 flex-1">
-            <img
-              v-if="bot.photo_file_id"
-              :src="botPhotoUrl(bot.id)"
-              :alt="bot.name"
-              class="h-10 w-10 rounded-full object-cover bg-gray-100 shrink-0"
-            />
-            <div
-              v-else
-              class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-500 shrink-0"
-            >
-              {{ botInitials(bot.name) }}
-            </div>
-            <div class="min-w-0">
+        <div class="flex items-start gap-3 min-w-0">
+          <img
+            v-if="bot.photo_file_id"
+            :src="botPhotoUrl(bot.id)"
+            :alt="bot.name"
+            class="h-10 w-10 rounded-full object-cover bg-gray-100 shrink-0"
+          />
+          <div
+            v-else
+            class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-500 shrink-0"
+          >
+            {{ botInitials(bot.name) }}
+          </div>
+          <div class="min-w-0">
             <div class="flex items-center gap-2 flex-wrap mb-1">
               <div class="text-lg font-medium">{{ bot.name }}</div>
               <span
@@ -63,22 +66,9 @@
             <div class="text-xs text-gray-500">
               Chats: {{ bot.chats?.length || 0 }}
             </div>
-            </div>
-          </div>
-          <div class="flex flex-col gap-1 shrink-0">
-            <NuxtLink
-              :to="`/bots/${bot.id}`"
-              class="text-blue-600 text-sm hover:underline"
-              >Details</NuxtLink
-            >
-            <NuxtLink
-              :to="`/bots/${bot.id}`"
-              class="text-green-600 text-sm hover:underline"
-              >Add Chat</NuxtLink
-            >
           </div>
         </div>
-      </div>
+      </NuxtLink>
     </div>
 
     <div
@@ -218,6 +208,8 @@ import { ref, onMounted } from "vue";
 import type { BotListItem, BotMemberRole } from "~/types/bot";
 
 usePageTitle("Боты");
+
+const { breadcrumbs, backTo } = usePageBreadcrumbs([{ label: "Bots" }]);
 
 type AddModalTab = "create" | "join";
 

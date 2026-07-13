@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
     <div class="w-full max-w-md bg-white rounded-lg shadow p-6 space-y-6 text-center">
-      <h1 class="text-xl font-semibold">TG Moderator</h1>
+      <h1 class="text-xl font-semibold">{{ appName }}</h1>
       <p class="text-sm text-gray-600">
         Войдите через Telegram, чтобы управлять ботами модерации.
       </p>
@@ -28,8 +28,10 @@ definePageMeta({
 
 usePageTitle("Вход");
 
-const route = useRoute();
 const config = useRuntimeConfig();
+const appName = computed(() => config.public.appName as string);
+
+const route = useRoute();
 
 const botLoginDeepLink = computed(() => {
   const username = config.public.telegramLoginBotUsername?.trim();

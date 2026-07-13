@@ -1,18 +1,20 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import pkg from "./package.json";
+import { APP_NAME } from "./lib/app-config";
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-08-11",
   app: {
     head: {
-      title: "TG Moderator",
-      titleTemplate: "%s · TG Moderator",
+      title: APP_NAME,
+      titleTemplate: `%s · ${APP_NAME}`,
     },
   },
   devtools: { enabled: true },
   modules: ["@nuxtjs/tailwindcss", "@nuxt/fonts"],
   runtimeConfig: {
     public: {
+      appName: APP_NAME,
       appVersion: pkg.version,
       telegramLoginBotUsername: process.env.TELEGRAM_LOGIN_BOT_USERNAME || "",
     },

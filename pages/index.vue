@@ -1,16 +1,21 @@
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-semibold">Dashboard</h2>
-      <button
-        type="button"
-        class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-        :disabled="loading"
-        @click="load"
-      >
-        {{ loading ? "Loading..." : "Refresh" }}
-      </button>
-    </div>
+    <LayoutPageHeader
+      :breadcrumbs="breadcrumbs"
+      :back-to="backTo"
+      title="Dashboard"
+    >
+      <template #actions>
+        <button
+          type="button"
+          class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+          :disabled="loading"
+          @click="load"
+        >
+          {{ loading ? "Loading..." : "Refresh" }}
+        </button>
+      </template>
+    </LayoutPageHeader>
 
     <div v-if="loading" class="text-gray-500">Loading dashboard...</div>
 
@@ -62,6 +67,8 @@ import { ref, onMounted } from "vue";
 import type { DashboardData } from "~/types/dashboard";
 
 usePageTitle("Панель");
+
+const { breadcrumbs, backTo } = usePageBreadcrumbs([{ label: "Dashboard" }]);
 
 const dashboard = ref<DashboardData | null>(null);
 const loading = ref(false);

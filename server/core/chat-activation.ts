@@ -14,8 +14,8 @@ import {
   isChatMemberAdministrator,
   telegramGetChat,
   telegramGetChatMember,
-  type TelegramFetch,
 } from "../utils/telegram-bot-api";
+import type { TelegramFetch } from "../utils/telegram-fetch";
 
 export type ChatActivationErrorCode =
   | "not_owner"

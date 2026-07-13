@@ -4,8 +4,7 @@ import type {
   ChatMember,
   ChatMemberAdministrator,
 } from "../types/telegram";
-
-export type TelegramFetch = typeof fetch;
+import type { TelegramFetch } from "./telegram-fetch";
 
 export class TelegramBotApiError extends Error {
   readonly code: "invalid_token" | "api_error";

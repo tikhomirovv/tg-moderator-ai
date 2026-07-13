@@ -157,6 +157,9 @@
           class="w-full border rounded px-3 py-2 font-mono text-sm"
         />
 
+        <p v-if="templateGluedMentionWarning" class="text-sm text-amber-700 mt-2">
+          {{ templateGluedMentionWarning }}
+        </p>
         <p v-if="templateSaveError" class="text-sm text-red-600 mt-2">
           {{ templateSaveError }}
         </p>
@@ -576,6 +579,7 @@ import {
   DEFAULT_WARNING_TEMPLATE_PREVIEW,
   WARNING_TEMPLATE_PLACEHOLDERS,
 } from "~/lib/bot-message-template-ui";
+import { detectGluedUserMentionPlaceholder } from "~/server/utils/bot-message-template-validation";
 
 const route = useRoute();
 const router = useRouter();
@@ -680,6 +684,17 @@ const activeTemplateChips = computed(() =>
     ? WARNING_TEMPLATE_PLACEHOLDERS
     : BAN_TEMPLATE_PLACEHOLDERS
 );
+
+const templateGluedMentionWarning = computed(() => {
+  const warningDraft = detectGluedUserMentionPlaceholder(
+    warningTemplateDraft.value
+  );
+  const banDraft = detectGluedUserMentionPlaceholder(banTemplateDraft.value);
+  if (messageTemplateTab.value === "warning") {
+    return warningDraft;
+  }
+  return banDraft ?? warningDraft;
+});
 
 const activeTemplateDraft = computed({
   get() {

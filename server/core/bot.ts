@@ -14,6 +14,7 @@ import {
   activateChatForBot,
   createDefaultActivateChatDeps,
   evaluateChatHealth,
+  isActivateCommandText,
   type ChatActivationErrorCode,
 } from "./chat-activation";
 import {
@@ -83,7 +84,7 @@ export class TelegramBot {
         return;
       }
 
-      if (isActivateCommand(message.text)) {
+      if (isActivateCommandText(message.text)) {
         await this.handleActivateCommand(message);
         return;
       }
@@ -184,6 +185,25 @@ export class TelegramBot {
   }
 
   private async handleActivateCommand(message: TelegramMessage): Promise<void> {
+    logger.info(
+      {
+        botId: this.botId,
+        chatId: message.chat.id,
+        fromId: message.from?.id,
+        messageId: message.message_id,
+      },
+      "Processing /activate command"
+    );
+
+    if (!message.from) {
+      await telegramSendMessage(
+        this.token,
+        message.chat.id,
+        "Не удалось определить отправителя команды /activate."
+      );
+      return;
+    }
+
     if (message.chat.type !== "group" && message.chat.type !== "supergroup") {
       await telegramSendMessage(
         this.token,
@@ -719,13 +739,4 @@ export class TelegramBot {
   getBotId(): string {
     return this.botId;
   }
-}
-
-function isActivateCommand(text: string | undefined): boolean {
-  if (!text) {
-    return false;
-  }
-
-  const command = text.trim().split(/\s+/)[0] ?? "";
-  return command === "/activate" || command.startsWith("/activate@");
 }

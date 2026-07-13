@@ -4,6 +4,7 @@ import type { Bot } from "./database/models/bot";
 import { logger } from "./core/logger";
 import { reconcileBotWebhook } from "./utils/bot-lifecycle";
 import { getWebhookBaseUrl } from "./utils/telegram-webhook";
+import { isChatActivationUpdate } from "./core/chat-activation";
 
 export function isBotEligibleForUpdates(
   bot: Pick<Bot, "is_active" | "token"> | null | undefined
@@ -26,13 +27,20 @@ export async function handleTelegramUpdate(
       return;
     }
 
-    if (!isBotEligibleForUpdates(botConfig)) {
-      if (botConfig && !botConfig.is_active) {
-        logger.debug(`Bot ${botId} is inactive, ignoring update`);
-      } else if (botConfig && !botConfig.token) {
-        logger.warn(`Bot ${botId} has no token`);
-      }
+    if (!botConfig.token) {
+      logger.warn(`Bot ${botId} has no token`);
       return;
+    }
+
+    if (!botConfig.is_active && !isChatActivationUpdate(update)) {
+      logger.debug(`Bot ${botId} is inactive, ignoring update`);
+      return;
+    }
+
+    if (!botConfig.is_active) {
+      logger.debug(
+        `Processing chat activation update for inactive bot ${botId}`
+      );
     }
 
     const bot = new TelegramBot(botConfig.token, botConfig.id, botConfig);

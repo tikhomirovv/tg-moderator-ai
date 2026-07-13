@@ -1,4 +1,10 @@
 import { onBeforeUnmount, ref } from "vue";
+import {
+  CHAT_ACTIVATION_EXISTING_GROUP_HINT,
+  CHAT_ACTIVATION_EXPIRED_MESSAGE,
+  CHAT_ACTIVATION_NEW_GROUP_HINT,
+  CHAT_ACTIVATION_POPUP_BLOCKED_MESSAGE,
+} from "~/lib/chat-activation-ui";
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_WAIT_MS = 3 * 60 * 1000;
@@ -9,6 +15,8 @@ export type ChatActivationWaitStatus =
   | "completed"
   | "failed"
   | "expired";
+
+export type ChatActivationStartMode = "new_group" | "existing_group";
 
 type PendingPollResponse = {
   status: "waiting" | "completed" | "failed" | "expired";
@@ -45,7 +53,7 @@ export function useChatActivationWait(options: UseChatActivationWaitOptions) {
 
     if (Date.now() >= stopAt) {
       status.value = "expired";
-      message.value = "Время ожидания истекло. Попробуйте снова.";
+      message.value = CHAT_ACTIVATION_EXPIRED_MESSAGE;
       clearPolling();
       return;
     }
@@ -73,7 +81,7 @@ export function useChatActivationWait(options: UseChatActivationWaitOptions) {
 
       if (data.status === "expired") {
         status.value = "expired";
-        message.value = "Время ожидания истекло. Попробуйте снова.";
+        message.value = CHAT_ACTIVATION_EXPIRED_MESSAGE;
         clearPolling();
       }
     } catch {
@@ -97,9 +105,12 @@ export function useChatActivationWait(options: UseChatActivationWaitOptions) {
     }, POLL_INTERVAL_MS);
   }
 
-  async function start() {
+  async function start(mode: ChatActivationStartMode = "new_group") {
     status.value = "waiting";
-    message.value = "Ждём подключение чата в Telegram…";
+    message.value =
+      mode === "existing_group"
+        ? CHAT_ACTIVATION_EXISTING_GROUP_HINT
+        : CHAT_ACTIVATION_NEW_GROUP_HINT;
     pendingId.value = null;
 
     const resp = await $fetch<{
@@ -111,8 +122,16 @@ export function useChatActivationWait(options: UseChatActivationWaitOptions) {
 
     pendingId.value = resp.data.pending_id;
 
-    const deepLink = `https://t.me/${options.botUsername}?startgroup&admin=delete_messages+restrict_members`;
-    window.open(deepLink, "_blank", "noopener,noreferrer");
+    if (mode === "new_group") {
+      const deepLink = `https://t.me/${options.botUsername}?startgroup&admin=delete_messages+restrict_members`;
+      const popup = window.open(deepLink, "_blank", "noopener,noreferrer");
+      if (!popup) {
+        status.value = "failed";
+        message.value = CHAT_ACTIVATION_POPUP_BLOCKED_MESSAGE;
+        clearPolling();
+        return;
+      }
+    }
 
     startPolling();
   }

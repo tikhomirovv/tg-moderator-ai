@@ -8,7 +8,7 @@
           type="button"
           class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
           :disabled="chatActivation.status.value === 'waiting'"
-          @click="startChatActivation"
+          @click="openAddChatActivationModal"
         >
           Add Chat
         </button>
@@ -512,6 +512,64 @@
       <div v-else class="text-gray-500">Bot not found</div>
     </template>
 
+    <!-- Add Chat activation -->
+    <div
+      v-if="showAddChatActivationModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      @click.self="closeAddChatActivationModal"
+    >
+      <div
+        class="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-chat-activation-title"
+      >
+        <h3 id="add-chat-activation-title" class="text-lg font-semibold mb-2">
+          Подключить чат
+        </h3>
+        <p class="text-sm text-gray-600 mb-4">
+          Выберите сценарий. Owner должен быть залогинен тем же Telegram-аккаунтом.
+        </p>
+
+        <ul class="text-sm text-gray-600 list-disc pl-5 mb-4 space-y-1">
+          <li v-for="item in CHAT_ACTIVATION_PREREQUISITES" :key="item">
+            {{ item }}
+          </li>
+        </ul>
+
+        <div class="space-y-3">
+          <button
+            type="button"
+            class="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm text-left"
+            @click="startChatActivation('new_group')"
+          >
+            <span class="font-medium">Добавить в новую группу</span>
+            <span class="block text-blue-100 text-xs mt-1">
+              Откроется Telegram (startgroup)
+            </span>
+          </button>
+          <button
+            type="button"
+            class="w-full px-3 py-2 border rounded hover:bg-gray-50 text-sm text-left"
+            @click="startChatActivation('existing_group')"
+          >
+            <span class="font-medium">Бот уже в группе</span>
+            <span class="block text-gray-500 text-xs mt-1">
+              Выполните /activate в группе
+            </span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          class="mt-4 w-full px-3 py-2 border rounded hover:bg-gray-50 text-sm"
+          @click="closeAddChatActivationModal"
+        >
+          Отмена
+        </button>
+      </div>
+    </div>
+
     <!-- Modal for chat silent mode -->
     <div
       v-if="showAddChatModal && editingChat"
@@ -594,6 +652,10 @@ import {
   WARNING_TEMPLATE_PLACEHOLDERS,
 } from "~/lib/bot-message-template-ui";
 import { detectGluedUserMentionPlaceholder } from "~/server/utils/bot-message-template-validation";
+import {
+  CHAT_ACTIVATION_PREREQUISITES,
+} from "~/lib/chat-activation-ui";
+import type { ChatActivationStartMode } from "~/composables/useChatActivationWait";
 
 const route = useRoute();
 const router = useRouter();
@@ -613,6 +675,8 @@ const chatActivation = useChatActivationWait({
 });
 const loading = ref(false);
 const showAddChatModal = ref(false);
+const showAddChatActivationModal = ref(false);
+const lastChatActivationMode = ref<ChatActivationStartMode>("new_group");
 const editingChat = ref<any>(null);
 const saving = ref(false);
 const accessCode = ref<string | null>(null);
@@ -836,9 +900,11 @@ async function resetAndSaveMessageTemplates() {
   }
 }
 
-async function startChatActivation() {
+async function startChatActivation(mode: ChatActivationStartMode) {
+  lastChatActivationMode.value = mode;
+  showAddChatActivationModal.value = false;
   try {
-    await chatActivation.start();
+    await chatActivation.start(mode);
   } catch (error: any) {
     chatActivation.status.value = "failed";
     chatActivation.message.value =
@@ -846,9 +912,17 @@ async function startChatActivation() {
   }
 }
 
+function openAddChatActivationModal() {
+  showAddChatActivationModal.value = true;
+}
+
+function closeAddChatActivationModal() {
+  showAddChatActivationModal.value = false;
+}
+
 function retryChatActivation() {
   chatActivation.reset();
-  void startChatActivation();
+  void startChatActivation(lastChatActivationMode.value);
 }
 
 function chatPhotoUrl(chatRowId: number) {

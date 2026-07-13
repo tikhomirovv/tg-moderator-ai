@@ -9,6 +9,7 @@ import type {
   ChatMember,
   ChatMemberAdministrator,
   TelegramChatFull,
+  TelegramUpdate,
 } from "../types/telegram";
 import {
   isChatMemberAdministrator,
@@ -414,4 +415,23 @@ export function createDefaultActivateChatDeps(
   };
 
   return { ...base, ...overrides };
+}
+
+export function isActivateCommandText(text: string | undefined): boolean {
+  if (!text) {
+    return false;
+  }
+
+  const command = text.trim().split(/\s+/)[0] ?? "";
+  return command === "/activate" || command.startsWith("/activate@");
+}
+
+/** Webhook updates that register or connect a chat (processed even when bot is inactive). */
+export function isChatActivationUpdate(update: TelegramUpdate): boolean {
+  if (update.my_chat_member) {
+    return true;
+  }
+
+  const text = update.message?.text ?? update.edited_message?.text;
+  return isActivateCommandText(text);
 }

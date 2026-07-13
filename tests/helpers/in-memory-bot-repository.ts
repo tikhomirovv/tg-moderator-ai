@@ -53,6 +53,8 @@ export class InMemoryBotRepository {
         silent_mode: chat.silent_mode ?? false,
         rules_count: 0,
       })),
+      photo_file_id: botData.photo_file_id ?? null,
+      telegram_bot_id: botData.telegram_bot_id ?? null,
       created_at: now,
       updated_at: now,
     };
@@ -130,6 +132,8 @@ export class InMemoryBotRepository {
       chats: bot.chats.map((chat) => ({ ...chat })),
       is_active: bot.is_active,
       my_role: myRole,
+      photo_file_id: bot.photo_file_id ?? null,
+      telegram_bot_id: bot.telegram_bot_id ?? null,
       warning_message_template: bot.warning_message_template ?? null,
       ban_message_template: bot.ban_message_template ?? null,
       created_at: bot.created_at,

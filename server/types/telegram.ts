@@ -95,6 +95,19 @@ export interface TelegramBot {
   supports_inline_queries: boolean;
 }
 
+export interface TelegramPhotoSize {
+  file_id: string;
+  file_unique_id: string;
+  width: number;
+  height: number;
+  file_size?: number;
+}
+
+export interface TelegramUserProfilePhotos {
+  total_count: number;
+  photos: TelegramPhotoSize[][];
+}
+
 export interface TelegramUpdate {
   update_id: number;
   message?: TelegramMessage;

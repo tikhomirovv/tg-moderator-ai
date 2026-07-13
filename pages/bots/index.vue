@@ -29,7 +29,20 @@
         class="bg-white border rounded p-4"
       >
         <div class="flex items-start justify-between gap-2">
-          <div class="min-w-0">
+          <div class="flex items-start gap-3 min-w-0 flex-1">
+            <img
+              v-if="bot.photo_file_id"
+              :src="botPhotoUrl(bot.id)"
+              :alt="bot.name"
+              class="h-10 w-10 rounded-full object-cover bg-gray-100 shrink-0"
+            />
+            <div
+              v-else
+              class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-500 shrink-0"
+            >
+              {{ botInitials(bot.name) }}
+            </div>
+            <div class="min-w-0">
             <div class="flex items-center gap-2 flex-wrap mb-1">
               <div class="text-lg font-medium">{{ bot.name }}</div>
               <span
@@ -49,6 +62,7 @@
             </div>
             <div class="text-xs text-gray-500">
               Chats: {{ bot.chats?.length || 0 }}
+            </div>
             </div>
           </div>
           <div class="flex flex-col gap-1 shrink-0">
@@ -232,6 +246,18 @@ function roleBadgeClass(role: BotMemberRole | undefined) {
     return "bg-green-100 text-green-800";
   }
   return "bg-blue-100 text-blue-800";
+}
+
+function botPhotoUrl(id: string) {
+  return `/api/bots/${id}/photo`;
+}
+
+function botInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+  }
+  return (name.trim().slice(0, 2) || "B").toUpperCase();
 }
 
 function openAddModal(tab: AddModalTab) {

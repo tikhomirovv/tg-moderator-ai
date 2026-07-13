@@ -3,6 +3,7 @@ import type {
   TelegramChatFull,
   ChatMember,
   ChatMemberAdministrator,
+  TelegramUserProfilePhotos,
 } from "../types/telegram";
 import type { TelegramFetch } from "./telegram-fetch";
 
@@ -59,6 +60,28 @@ export async function telegramGetMe(
   fetchFn: TelegramFetch = fetch
 ): Promise<TelegramBot> {
   return callTelegramApi<TelegramBot>(token, "getMe", undefined, fetchFn);
+}
+
+export async function telegramGetUserProfilePhotos(
+  token: string,
+  userId: number,
+  options: { limit?: number; offset?: number } = {},
+  fetchFn: TelegramFetch = fetch
+): Promise<TelegramUserProfilePhotos> {
+  const body: Record<string, unknown> = { user_id: userId };
+  if (options.limit !== undefined) {
+    body.limit = options.limit;
+  }
+  if (options.offset !== undefined) {
+    body.offset = options.offset;
+  }
+
+  return callTelegramApi<TelegramUserProfilePhotos>(
+    token,
+    "getUserProfilePhotos",
+    body,
+    fetchFn
+  );
 }
 
 export async function telegramGetChat(

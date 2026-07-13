@@ -21,6 +21,8 @@ export interface Bot {
   owner_user_id: string;
   is_active: boolean;
   webhook_secret?: string | null;
+  photo_file_id?: string | null;
+  telegram_bot_id?: number | null;
   warning_message_template?: string | null;
   ban_message_template?: string | null;
   created_at: Date;
@@ -36,6 +38,8 @@ export interface CreateBotInput {
   id: string;
   name: string;
   token: string;
+  photo_file_id?: string | null;
+  telegram_bot_id?: number | null;
   chats?: Array<{
     chat_id: number;
     name: string;
@@ -64,6 +68,8 @@ export interface BotResponse {
   chats: Chat[];
   is_active: boolean;
   my_role?: BotMemberRole;
+  photo_file_id?: string | null;
+  telegram_bot_id?: number | null;
   warning_message_template?: string | null;
   ban_message_template?: string | null;
   delivery_status?: "healthy" | "disabled" | "degraded" | "unavailable";

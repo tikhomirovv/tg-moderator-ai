@@ -9,6 +9,7 @@ import { getBotDeliveryHealth, withDeliveryHealth } from "../../utils/bot-delive
 import { requireBotAccess } from "../../utils/bot-access";
 import { requireBotIdParam } from "../../utils/get-bot-id-param";
 import { validateBotMessageTemplate } from "../../utils/bot-message-template-validation";
+import { refreshBotAvatar } from "../../core/bot-avatar";
 
 function buildBotResponse(
   bot: NonNullable<Awaited<ReturnType<BotRepository["findById"]>>>,
@@ -89,6 +90,7 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    const tokenChanged = normalizedBody.token !== undefined;
     const bot = await botRepo.update(botId, normalizedBody);
 
     if (!bot) {
@@ -98,11 +100,16 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    if (tokenChanged) {
+      await refreshBotAvatar(botId);
+    }
+
+    const refreshedBot = tokenChanged ? await botRepo.findById(botId) : bot;
     const health = await getBotDeliveryHealth(event, botId);
 
     return {
       success: true,
-      data: buildBotResponse(bot, health),
+      data: buildBotResponse(refreshedBot ?? bot, health),
       message: "Bot updated successfully",
     };
   } catch (error) {

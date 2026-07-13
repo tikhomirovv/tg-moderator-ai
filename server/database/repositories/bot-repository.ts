@@ -155,6 +155,8 @@ export class BotRepository {
         ownerUserId,
         name: botData.name,
         token: botData.token,
+        photoFileId: botData.photo_file_id ?? null,
+        telegramBotId: botData.telegram_bot_id ?? null,
         isActive: true,
         createdAt: now,
         updatedAt: now,
@@ -207,6 +209,27 @@ export class BotRepository {
 
     const loadedChats = await this.loadChatsForBot(id);
     return toBotResponse(row, loadedChats);
+  }
+
+  async updateAvatarMetadata(
+    id: string,
+    data: {
+      photoFileId?: string | null;
+      telegramBotId?: number | null;
+    }
+  ): Promise<void> {
+    const updateValues: Partial<typeof bots.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+
+    if (data.photoFileId !== undefined) {
+      updateValues.photoFileId = data.photoFileId;
+    }
+    if (data.telegramBotId !== undefined) {
+      updateValues.telegramBotId = data.telegramBotId;
+    }
+
+    await this.db.update(bots).set(updateValues).where(eq(bots.id, id));
   }
 
   async findWebhookSecret(id: string): Promise<string | null> {

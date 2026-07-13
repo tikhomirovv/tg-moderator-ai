@@ -61,19 +61,25 @@
       <!-- Основная информация -->
       <div class="bg-white border rounded p-6">
         <h3 class="text-lg font-medium mb-4">Bot Information</h3>
+        <div class="flex items-start gap-4 mb-4">
+          <img
+            v-if="bot.photo_file_id"
+            :src="botPhotoUrl(botId)"
+            :alt="bot.name"
+            class="h-16 w-16 rounded-full object-cover bg-gray-100 shrink-0"
+          />
+          <div
+            v-else
+            class="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-500 shrink-0"
+          >
+            {{ botInitials(bot.name) }}
+          </div>
+          <div class="min-w-0">
+            <div class="text-lg font-medium">{{ bot.name }}</div>
+            <div class="text-sm text-gray-600">@{{ bot.id }}</div>
+          </div>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Bot ID</label
-            >
-            <div class="text-lg">@{{ bot.id }}</div>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Name</label
-            >
-            <div class="text-lg">{{ bot.name }}</div>
-          </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1"
               >Status</label
@@ -817,6 +823,18 @@ function retryChatActivation() {
 
 function chatPhotoUrl(chatRowId: number) {
   return `/api/bots/${botId}/chats/row/${chatRowId}/photo`;
+}
+
+function botPhotoUrl(id: string) {
+  return `/api/bots/${id}/photo`;
+}
+
+function botInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+  }
+  return (name.trim().slice(0, 2) || "B").toUpperCase();
 }
 
 function chatHealthLabel(chat: any) {

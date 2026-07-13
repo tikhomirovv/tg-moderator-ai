@@ -43,6 +43,8 @@ export const bots = pgTable("bots", {
   isActive: boolean("is_active").notNull().default(true),
   warningMessageTemplate: text("warning_message_template"),
   banMessageTemplate: text("ban_message_template"),
+  photoFileId: text("photo_file_id"),
+  telegramBotId: bigint("telegram_bot_id", { mode: "number" }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

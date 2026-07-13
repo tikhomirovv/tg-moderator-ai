@@ -244,15 +244,7 @@ export async function activateChatForBot(
     return {
       ok: false,
       code: "not_platform_member",
-      message: "Only the bot owner on the platform can connect chats",
-    };
-  }
-
-  if (role !== "owner") {
-    return {
-      ok: false,
-      code: "not_owner",
-      message: "Only the bot owner can connect chats",
+      message: "Only bot members on the platform can connect chats",
     };
   }
 

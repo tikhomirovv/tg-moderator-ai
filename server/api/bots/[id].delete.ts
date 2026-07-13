@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const botId = requireBotIdParam(event);
 
   try {
-    await requireBotAccess(event, botId, ["owner"]);
+    await requireBotAccess(event, botId);
     await deleteBotPermanently(botId);
 
     return {

@@ -111,7 +111,9 @@ describe("activateChatForBot", () => {
     expect(completed).toEqual([7]);
   });
 
-  test("rejects manager", async () => {
+  test("allows manager and completes pending", async () => {
+    const completed: number[] = [];
+
     const result = await activateChatForBot(
       {
         botId: "bot-1",
@@ -132,21 +134,27 @@ describe("activateChatForBot", () => {
           type: "supergroup",
           title: "Team",
         }),
-        upsertActivatedChat: async () => {
-          throw new Error("should not upsert");
-        },
-        completePendingForUser: async () => {
-          throw new Error("should not complete");
+        upsertActivatedChat: async (input) => ({
+          id: 9,
+          botId: "bot-1",
+          chatId: input.telegramChatId,
+          name: input.name,
+          silentMode: false,
+          photoFileId: null,
+          telegramUsername: null,
+          healthStatus: input.healthStatus,
+          healthMessage: input.healthMessage,
+          healthCheckedAt: input.healthCheckedAt,
+        }),
+        completePendingForUser: async (_botId, _userId, chatRowId) => {
+          completed.push(chatRowId);
         },
         failPendingForUser: async () => {},
       }
     );
 
-    expect(result).toEqual({
-      ok: false,
-      code: "not_owner",
-      message: "Only the bot owner can connect chats",
-    });
+    expect(result.ok).toBe(true);
+    expect(completed).toEqual([9]);
   });
 
   test("reactivates an already registered chat via /activate", async () => {
@@ -225,7 +233,7 @@ describe("activateChatForBot", () => {
     expect(result).toEqual({
       ok: false,
       code: "not_platform_member",
-      message: "Only the bot owner on the platform can connect chats",
+      message: "Only bot members on the platform can connect chats",
     });
   });
 

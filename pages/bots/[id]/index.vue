@@ -4,7 +4,7 @@
       <h2 class="text-xl font-semibold">Bot Details</h2>
       <div class="flex gap-2">
         <button
-          v-if="isOwner"
+          v-if="canManageBot"
           type="button"
           class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
           :disabled="chatActivation.status.value === 'waiting'"
@@ -77,6 +77,9 @@
           <div class="min-w-0">
             <div class="text-lg font-medium">{{ bot.name }}</div>
             <div class="text-sm text-gray-600">@{{ bot.id }}</div>
+            <div v-if="bot.my_role" class="text-xs text-gray-500 mt-1">
+              Your role: <span class="font-medium">{{ bot.my_role }}</span>
+            </div>
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -200,7 +203,7 @@
         <h3 class="text-lg font-medium mb-4">Team Access</h3>
         <div v-if="teamLoading" class="text-gray-500 text-sm">Loading team...</div>
         <div v-else class="space-y-4">
-          <div v-if="isOwner && accessCode" class="flex flex-wrap items-center gap-3">
+          <div v-if="canManageBot && accessCode" class="flex flex-wrap items-center gap-3">
             <div class="text-sm">
               Access code:
               <code class="bg-gray-100 px-2 py-1 rounded">{{ accessCode }}</code>
@@ -220,11 +223,11 @@
               Revoke
             </button>
           </div>
-          <p v-else-if="isOwner" class="text-sm text-gray-500">
-            Access code is available to bot owners.
+          <p v-else-if="canManageBot" class="text-sm text-gray-500">
+            Access code is available to bot operators.
           </p>
           <p v-else class="text-sm text-gray-500">
-            Access codes are managed by the bot owner.
+            Access codes are managed by the bot team.
           </p>
 
           <div v-if="teamMembers.length" class="space-y-2">
@@ -241,12 +244,20 @@
                 <span class="text-gray-500 ml-2">{{ member.role }}</span>
               </div>
               <button
-                v-if="isOwner && member.role === 'manager'"
+                v-if="canManageBot && member.role === 'manager' && member.user_id !== bot?.my_user_id"
                 type="button"
                 class="text-red-600 hover:underline"
                 @click="removeMember(member.user_id)"
               >
                 Remove
+              </button>
+              <button
+                v-else-if="canManageBot && member.role === 'manager' && member.user_id === bot?.my_user_id"
+                type="button"
+                class="text-red-600 hover:underline"
+                @click="removeMember(member.user_id)"
+              >
+                Leave team
               </button>
             </div>
           </div>
@@ -458,7 +469,7 @@
         </div>
       </div>
 
-      <div v-if="isOwner" class="bg-white border border-red-200 rounded p-6">
+      <div v-if="canManageBot" class="bg-white border border-red-200 rounded p-6">
         <h3 class="text-lg font-medium text-red-700 mb-2">Danger zone</h3>
         <p class="text-sm text-gray-600 mb-4">
           Удаление бота безвозвратно удалит чаты, правила, участников команды и
@@ -528,7 +539,7 @@
           Подключить чат
         </h3>
         <p class="text-sm text-gray-600 mb-4">
-          Выберите сценарий. Owner должен быть залогинен тем же Telegram-аккаунтом.
+          Выберите сценарий. Войдите тем же Telegram-аккаунтом, что пишет /activate.
         </p>
 
         <ul class="text-sm text-gray-600 list-disc pl-5 mb-4 space-y-1">
@@ -743,7 +754,9 @@ const aggregatedStatusClass = computed(() => {
   return "text-red-600";
 });
 
-const isOwner = computed(() => bot.value?.my_role === "owner");
+const canManageBot = computed(
+  () => bot.value?.my_role === "owner" || bot.value?.my_role === "manager"
+);
 
 const canConfirmDelete = computed(() => {
   const value = deleteConfirmText.value.trim();

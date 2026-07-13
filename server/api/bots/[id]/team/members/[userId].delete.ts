@@ -13,8 +13,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const { user, role } = await requireBotAccess(event, botId, ["owner"]);
-  if (userId === user.id) {
+  const { user, role } = await requireBotAccess(event, botId);
+  if (userId === user.id && role === "owner") {
     throw createError({
       statusCode: 400,
       statusMessage: "Owner cannot remove themselves",

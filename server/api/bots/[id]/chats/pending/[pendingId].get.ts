@@ -5,7 +5,7 @@ import { requireBotIdParam } from "../../../../../utils/get-bot-id-param";
 
 export default defineEventHandler(async (event) => {
   const botId = requireBotIdParam(event);
-  const { user } = await requireBotAccess(event, botId, ["owner"]);
+  const { user } = await requireBotAccess(event, botId);
 
   const pendingIdParam = getRouterParam(event, "pendingId");
   const pendingId = Number(pendingIdParam);

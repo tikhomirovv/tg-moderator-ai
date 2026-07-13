@@ -5,7 +5,7 @@ import { requireBotIdParam } from "../../../../utils/get-bot-id-param";
 export default defineEventHandler(async (event) => {
   const botId = requireBotIdParam(event);
 
-  await requireBotAccess(event, botId, ["owner"]);
+  await requireBotAccess(event, botId);
   const codeRepo = new BotAccessCodeRepository();
   const code = await codeRepo.getOrCreateActiveCode(botId);
 

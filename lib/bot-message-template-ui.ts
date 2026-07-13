@@ -63,9 +63,7 @@ export const BOT_MESSAGE_HTML_HELP: BotMessageHtmlHelpSection[] = [
   {
     title: "Упоминание пользователя",
     body:
-      "Если в шаблоне нет {user_mention}, бот допишет mention в конце отдельным абзацем. " +
-      "Если ставите {user_mention} сами — оставьте пустую строку перед ним, " +
-      "не пишите сразу после {rule_name}.",
+      "Если в шаблоне нет {user_mention}, бот допишет mention в конце отдельным абзацем.",
   },
   {
     title: "Переносы строк",

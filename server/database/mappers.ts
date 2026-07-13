@@ -59,6 +59,8 @@ export function toBotResponse(
     is_active: row.isActive,
     warning_message_template: row.warningMessageTemplate,
     ban_message_template: row.banMessageTemplate,
+    photo_file_id: row.photoFileId,
+    telegram_bot_id: row.telegramBotId,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
   };
@@ -73,6 +75,8 @@ export function toBot(row: BotRow, chats: DbChat[]): import("./models/bot").Bot 
     owner_user_id: row.ownerUserId,
     is_active: row.isActive,
     webhook_secret: row.webhookSecret,
+    photo_file_id: row.photoFileId,
+    telegram_bot_id: row.telegramBotId,
     warning_message_template: row.warningMessageTemplate,
     ban_message_template: row.banMessageTemplate,
     created_at: row.createdAt,

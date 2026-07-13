@@ -26,5 +26,6 @@ describe("resolveMigrationsFolder", () => {
       true
     );
     expect(existsSync(path.join(folder, "0004_freezing_kang.sql"))).toBe(true);
+    expect(existsSync(path.join(folder, "0005_normal_whiplash.sql"))).toBe(true);
   });
 });

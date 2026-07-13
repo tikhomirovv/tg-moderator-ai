@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { toChat, toDateKey, toRule } from "../../../server/database/mappers";
+import { toBotResponse, toChat, toDateKey, toRule } from "../../../server/database/mappers";
 
 describe("database mappers", () => {
   test("toRule maps drizzle row to API shape", () => {
@@ -61,5 +61,29 @@ describe("database mappers", () => {
 
   test("toDateKey normalizes date to YYYY-MM-DD", () => {
     expect(toDateKey(new Date("2026-07-09T15:30:00.000Z"))).toBe("2026-07-09");
+  });
+
+  test("toBotResponse maps avatar metadata", () => {
+    const now = new Date("2026-07-01T00:00:00.000Z");
+    const bot = toBotResponse(
+      {
+        id: "mod_bot",
+        ownerUserId: "user-1",
+        name: "Mod Bot",
+        token: "secret",
+        webhookSecret: null,
+        isActive: true,
+        warningMessageTemplate: null,
+        banMessageTemplate: null,
+        photoFileId: "bot-photo",
+        telegramBotId: 123456,
+        createdAt: now,
+        updatedAt: now,
+      },
+      []
+    );
+
+    expect(bot.photo_file_id).toBe("bot-photo");
+    expect(bot.telegram_bot_id).toBe(123456);
   });
 });

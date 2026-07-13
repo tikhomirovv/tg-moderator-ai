@@ -2,6 +2,7 @@ import { BotRepository } from "../../database/repositories/bot-repository";
 import { getBotDeliveryHealth, withDeliveryHealth } from "../../utils/bot-delivery";
 import { requireBotAccess } from "../../utils/bot-access";
 import { requireBotIdParam } from "../../utils/get-bot-id-param";
+import { refreshBotAvatar } from "../../core/bot-avatar";
 
 export default defineEventHandler(async (event) => {
   try {
@@ -9,13 +10,18 @@ export default defineEventHandler(async (event) => {
     const { role } = await requireBotAccess(event, botId);
     const botRepo = new BotRepository();
 
-    const bot = await botRepo.findById(botId);
+    let bot = await botRepo.findById(botId);
 
     if (!bot) {
       throw createError({
         statusCode: 404,
         statusMessage: "Bot not found",
       });
+    }
+
+    if (!bot.photo_file_id) {
+      await refreshBotAvatar(botId);
+      bot = (await botRepo.findById(botId)) ?? bot;
     }
 
     const health = await getBotDeliveryHealth(event, botId);

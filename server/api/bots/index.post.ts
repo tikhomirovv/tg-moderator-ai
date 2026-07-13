@@ -10,6 +10,10 @@ import {
   TelegramBotApiError,
   telegramGetMe,
 } from "../../utils/telegram-bot-api";
+import {
+  fetchBotProfilePhotoFileId,
+  refreshBotAvatar,
+} from "../../core/bot-avatar";
 
 export default defineEventHandler(async (event) => {
   const body = (await readBody(event)) as { token?: string };
@@ -26,8 +30,9 @@ export default defineEventHandler(async (event) => {
   const botRepo = new BotRepository();
 
   let identity;
+  let me;
   try {
-    const me = await telegramGetMe(rawToken.trim());
+    me = await telegramGetMe(rawToken.trim());
     identity = resolveBotIdentityFromGetMe(me, rawToken);
   } catch (error) {
     if (error instanceof BotCreateValidationError) {
@@ -56,10 +61,22 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
+    let photoFileId: string | null = null;
+    try {
+      photoFileId = await fetchBotProfilePhotoFileId(
+        identity.token,
+        me.id
+      );
+    } catch {
+      // Best effort — bot may have no profile photo.
+    }
+
     const bot = await botRepo.create(user.id, {
       id: identity.id,
       name: identity.name,
       token: identity.token,
+      telegram_bot_id: me.id,
+      photo_file_id: photoFileId,
     });
 
     let warning: string | undefined;

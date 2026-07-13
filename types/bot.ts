@@ -6,6 +6,7 @@ export interface BotListItem {
   chats: Array<{ chat_id: number; name: string; rules: string[] }>;
   is_active: boolean;
   my_role?: BotMemberRole;
+  photo_file_id?: string | null;
   created_at: string | Date;
   updated_at: string | Date;
 }

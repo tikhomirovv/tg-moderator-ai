@@ -65,27 +65,61 @@ export async function executePardonOperation(
   };
 }
 
+export function parseUsersPaginationQuery(
+  query: Record<string, unknown>
+): { page: number; limit: number } {
+  const page = Math.max(1, Number(query.page) || 1);
+  const limit = Math.min(50, Math.max(1, Number(query.limit) || 25));
+  return { page, limit };
+}
+
+function mapChatUserRow(row: {
+  user_id: number;
+  username?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  warnings_count: number;
+  is_banned: boolean;
+  banned_at?: Date | string | null;
+  last_activity: Date | string;
+}) {
+  return {
+    user_id: row.user_id,
+    username: row.username ?? null,
+    first_name: row.first_name ?? null,
+    last_name: row.last_name ?? null,
+    warnings_count: row.warnings_count,
+    is_banned: row.is_banned,
+    banned_at: row.banned_at ?? null,
+    last_activity: row.last_activity,
+  };
+}
+
 export async function listChatUsers(event: Parameters<typeof requireBotAccess>[0]) {
   const botId = requireBotIdParam(event);
   await requireBotAccess(event, botId);
   const chat = await requireBotChat(event, botId);
+  const { page, limit } = parseUsersPaginationQuery(
+    getQuery(event) as Record<string, unknown>
+  );
 
   const userRepo = new UserContextRepository();
-  const users = await userRepo.listByChat(botId, chat.chatId);
+  const [users, total] = await Promise.all([
+    userRepo.listSanctionedByChat(botId, chat.chatId, { page, limit }),
+    userRepo.countSanctionedByChat(botId, chat.chatId),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return {
     success: true,
     data: {
-      users: users.map((row) => ({
-        user_id: row.user_id,
-        username: row.username ?? null,
-        first_name: row.first_name ?? null,
-        last_name: row.last_name ?? null,
-        warnings_count: row.warnings_count,
-        is_banned: row.is_banned,
-        banned_at: row.banned_at ?? null,
-        last_activity: row.last_activity,
-      })),
+      users: users.map(mapChatUserRow),
+      pagination: {
+        page,
+        limit,
+        total,
+        total_pages: totalPages,
+      },
     },
   };
 }

@@ -9,10 +9,11 @@ function readPage(relativePath: string): string {
 }
 
 describe("document titles", () => {
-  test("nuxt.config sets global title and titleTemplate", () => {
+  test("nuxt.config sets global title and titleTemplate from app config", () => {
     const config = readFileSync(path.join(ROOT, "nuxt.config.ts"), "utf8");
-    expect(config).toContain('title: "TG Moderator"');
-    expect(config).toContain('titleTemplate: "%s · TG Moderator"');
+    expect(config).toContain('import { APP_NAME } from "./lib/app-config"');
+    expect(config).toContain("title: APP_NAME");
+    expect(config).toContain("titleTemplate: `%s · ${APP_NAME}`");
   });
 
   test("user-facing pages set a page title", () => {

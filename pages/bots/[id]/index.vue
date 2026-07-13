@@ -1,8 +1,12 @@
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-semibold">Bot Details</h2>
-      <div class="flex gap-2">
+    <LayoutPageHeader
+      :breadcrumbs="breadcrumbs"
+      :back-to="backTo"
+      :title="bot?.name ?? 'Bot'"
+      :subtitle="bot ? `@${bot.id}` : undefined"
+    >
+      <template #actions>
         <button
           v-if="canManageBot"
           type="button"
@@ -23,20 +27,8 @@
         >
           {{ bot?.is_active ? "Disable" : "Enable" }}
         </button>
-        <NuxtLink
-          :to="`/bots/${botId}/audit`"
-          class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
-        >
-          Audit
-        </NuxtLink>
-        <NuxtLink
-          to="/bots"
-          class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
-        >
-          Back
-        </NuxtLink>
-      </div>
-    </div>
+      </template>
+    </LayoutPageHeader>
 
     <div v-if="loading" class="text-gray-500">Loading...</div>
 
@@ -58,207 +50,46 @@
       </div>
 
       <div v-if="bot" class="space-y-6">
-      <!-- Основная информация -->
-      <div class="bg-white border rounded p-6">
-        <h3 class="text-lg font-medium mb-4">Bot Information</h3>
-        <div class="flex items-start gap-4 mb-4">
-          <img
-            v-if="bot.photo_file_id"
-            :src="botPhotoUrl(botId)"
-            :alt="bot.name"
-            class="h-16 w-16 rounded-full object-cover bg-gray-100 shrink-0"
-          />
-          <div
-            v-else
-            class="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-500 shrink-0"
-          >
-            {{ botInitials(bot.name) }}
-          </div>
-          <div class="min-w-0">
-            <div class="text-lg font-medium">{{ bot.name }}</div>
-            <div class="text-sm text-gray-600">@{{ bot.id }}</div>
-            <div v-if="bot.my_role" class="text-xs text-gray-500 mt-1">
-              Your role: <span class="font-medium">{{ bot.my_role }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Status</label
-            >
-            <div class="text-sm">
-              <span :class="aggregatedStatusClass">{{ aggregatedStatusText }}</span>
-            </div>
-            <p v-if="deliveryProblemMessage" class="text-sm text-red-600 mt-1">
-              {{ deliveryProblemMessage }}
-            </p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Created</label
-            >
-            <div class="text-sm text-gray-600">
-              {{ formatDate(bot.created_at) }}
-            </div>
-          </div>
-        </div>
+      <div class="flex gap-1 border-b">
+        <button
+          v-for="tab in botTabs"
+          :key="tab.id"
+          type="button"
+          class="px-4 py-2 text-sm border-b-2 -mb-px"
+          :class="
+            activeTab === tab.id
+              ? 'border-blue-600 text-blue-700 font-medium'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          "
+          @click="activeTab = tab.id"
+        >
+          {{ tab.label }}
+        </button>
       </div>
 
-      <div class="bg-white border rounded p-6">
-        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
-          <h3 class="text-lg font-medium">Moderation messages</h3>
-          <button
-            type="button"
-            class="text-sm text-blue-600 hover:underline"
-            @click="showHtmlHelpModal = true"
-          >
-            Как оформить сообщение
-          </button>
-        </div>
-        <p class="text-sm text-gray-600 mb-4">
-          Per-bot Warning and Ban texts (Telegram HTML). If
-          <code class="text-xs">{user_mention}</code>
-          is missing from the template, a mention is appended automatically.
+      <template v-if="activeTab === 'overview'">
+      <div class="flex flex-wrap items-center gap-2">
+        <span
+          class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium"
+          :class="overviewStatusBadgeClass"
+        >
+          {{ aggregatedStatusText }}
+        </span>
+        <span
+          v-if="bot.my_role"
+          class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
+        >
+          {{ bot.my_role }}
+        </span>
+        <span class="inline-flex px-2.5 py-1 rounded-full text-xs text-gray-600 bg-gray-50">
+          Created {{ formatDate(bot.created_at) }}
+        </span>
+        <p
+          v-if="deliveryProblemMessage"
+          class="w-full text-sm text-red-600"
+        >
+          {{ deliveryProblemMessage }}
         </p>
-
-        <div class="flex gap-2 mb-4 border-b">
-          <button
-            type="button"
-            class="px-3 py-2 text-sm border-b-2 -mb-px"
-            :class="
-              messageTemplateTab === 'warning'
-                ? 'border-blue-600 text-blue-700 font-medium'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            "
-            @click="messageTemplateTab = 'warning'"
-          >
-            Warning
-          </button>
-          <button
-            type="button"
-            class="px-3 py-2 text-sm border-b-2 -mb-px"
-            :class="
-              messageTemplateTab === 'ban'
-                ? 'border-blue-600 text-blue-700 font-medium'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            "
-            @click="messageTemplateTab = 'ban'"
-          >
-            Ban
-          </button>
-        </div>
-
-        <div class="flex flex-wrap gap-2 mb-3">
-          <button
-            v-for="chip in activeTemplateChips"
-            :key="chip.key"
-            type="button"
-            class="text-xs px-2 py-1 rounded-full bg-gray-100 hover:bg-gray-200"
-            :title="chip.hint"
-            @click="insertTemplatePlaceholder(chip.key)"
-          >
-            {{ chip.label }}
-          </button>
-        </div>
-
-        <textarea
-          ref="templateTextareaRef"
-          v-model="activeTemplateDraft"
-          rows="8"
-          class="w-full border rounded px-3 py-2 font-mono text-sm"
-        />
-
-        <p v-if="templateSaveError" class="text-sm text-red-600 mt-2">
-          {{ templateSaveError }}
-        </p>
-        <p v-if="templateSaveSuccess" class="text-sm text-green-600 mt-2">
-          Templates saved.
-        </p>
-
-        <div class="flex gap-2 mt-4">
-          <button
-            type="button"
-            class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-            :disabled="savingTemplates"
-            @click="saveMessageTemplates"
-          >
-            {{ savingTemplates ? "Saving..." : "Save" }}
-          </button>
-          <button
-            type="button"
-            class="px-3 py-2 border rounded hover:bg-gray-50 text-sm"
-            :disabled="savingTemplates"
-            @click="resetAndSaveMessageTemplates"
-          >
-            Reset to default
-          </button>
-        </div>
-      </div>
-
-      <div class="bg-white border rounded p-6">
-        <h3 class="text-lg font-medium mb-4">Team Access</h3>
-        <div v-if="teamLoading" class="text-gray-500 text-sm">Loading team...</div>
-        <div v-else class="space-y-4">
-          <div v-if="canManageBot && accessCode" class="flex flex-wrap items-center gap-3">
-            <div class="text-sm">
-              Access code:
-              <code class="bg-gray-100 px-2 py-1 rounded">{{ accessCode }}</code>
-            </div>
-            <button
-              type="button"
-              class="text-sm text-blue-600 hover:underline"
-              @click="copyAccessCode"
-            >
-              Copy
-            </button>
-            <button
-              type="button"
-              class="text-sm text-red-600 hover:underline"
-              @click="revokeAccessCode"
-            >
-              Revoke
-            </button>
-          </div>
-          <p v-else-if="canManageBot" class="text-sm text-gray-500">
-            Access code is available to bot operators.
-          </p>
-          <p v-else class="text-sm text-gray-500">
-            Access codes are managed by the bot team.
-          </p>
-
-          <div v-if="teamMembers.length" class="space-y-2">
-            <h4 class="text-sm font-medium text-gray-700">Members</h4>
-            <div
-              v-for="member in teamMembers"
-              :key="member.user_id"
-              class="flex items-center justify-between text-sm border rounded px-3 py-2"
-            >
-              <div>
-                <span class="font-medium">
-                  {{ member.username ? `@${member.username}` : member.name }}
-                </span>
-                <span class="text-gray-500 ml-2">{{ member.role }}</span>
-              </div>
-              <button
-                v-if="canManageBot && member.role === 'manager' && member.user_id !== bot?.my_user_id"
-                type="button"
-                class="text-red-600 hover:underline"
-                @click="removeMember(member.user_id)"
-              >
-                Remove
-              </button>
-              <button
-                v-else-if="canManageBot && member.role === 'manager' && member.user_id === bot?.my_user_id"
-                type="button"
-                class="text-red-600 hover:underline"
-                @click="removeMember(member.user_id)"
-              >
-                Leave team
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- Чаты -->
@@ -515,6 +346,166 @@
           </div>
         </div>
       </div>
+      </template>
+
+      <div
+        v-if="activeTab === 'moderation'"
+        class="bg-white border rounded p-6"
+      >
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
+          <h3 class="text-lg font-medium">Moderation messages</h3>
+          <button
+            type="button"
+            class="text-sm text-blue-600 hover:underline"
+            @click="showHtmlHelpModal = true"
+          >
+            Как оформить сообщение
+          </button>
+        </div>
+        <p class="text-sm text-gray-600 mb-4">
+          Per-bot Warning and Ban texts (Telegram HTML). If
+          <code class="text-xs">{user_mention}</code>
+          is missing from the template, a mention is appended automatically.
+        </p>
+
+        <div class="flex gap-2 mb-4 border-b">
+          <button
+            type="button"
+            class="px-3 py-2 text-sm border-b-2 -mb-px"
+            :class="
+              messageTemplateTab === 'warning'
+                ? 'border-blue-600 text-blue-700 font-medium'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            "
+            @click="messageTemplateTab = 'warning'"
+          >
+            Warning
+          </button>
+          <button
+            type="button"
+            class="px-3 py-2 text-sm border-b-2 -mb-px"
+            :class="
+              messageTemplateTab === 'ban'
+                ? 'border-blue-600 text-blue-700 font-medium'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            "
+            @click="messageTemplateTab = 'ban'"
+          >
+            Ban
+          </button>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-3">
+          <button
+            v-for="chip in activeTemplateChips"
+            :key="chip.key"
+            type="button"
+            class="text-xs px-2 py-1 rounded-full bg-gray-100 hover:bg-gray-200"
+            :title="chip.hint"
+            @click="insertTemplatePlaceholder(chip.key)"
+          >
+            {{ chip.label }}
+          </button>
+        </div>
+
+        <textarea
+          ref="templateTextareaRef"
+          v-model="activeTemplateDraft"
+          rows="8"
+          class="w-full border rounded px-3 py-2 font-mono text-sm"
+        />
+
+        <p v-if="templateSaveError" class="text-sm text-red-600 mt-2">
+          {{ templateSaveError }}
+        </p>
+        <p v-if="templateSaveSuccess" class="text-sm text-green-600 mt-2">
+          Templates saved.
+        </p>
+
+        <div class="flex gap-2 mt-4">
+          <button
+            type="button"
+            class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+            :disabled="savingTemplates"
+            @click="saveMessageTemplates"
+          >
+            {{ savingTemplates ? "Saving..." : "Save" }}
+          </button>
+          <button
+            type="button"
+            class="px-3 py-2 border rounded hover:bg-gray-50 text-sm"
+            :disabled="savingTemplates"
+            @click="resetAndSaveMessageTemplates"
+          >
+            Reset to default
+          </button>
+        </div>
+      </div>
+
+      <div v-if="activeTab === 'team'" class="bg-white border rounded p-6">
+        <h3 class="text-lg font-medium mb-4">Team Access</h3>
+        <div v-if="teamLoading" class="text-gray-500 text-sm">Loading team...</div>
+        <div v-else class="space-y-4">
+          <div v-if="canManageBot && accessCode" class="flex flex-wrap items-center gap-3">
+            <div class="text-sm">
+              Access code:
+              <code class="bg-gray-100 px-2 py-1 rounded">{{ accessCode }}</code>
+            </div>
+            <button
+              type="button"
+              class="text-sm text-blue-600 hover:underline"
+              @click="copyAccessCode"
+            >
+              Copy
+            </button>
+            <button
+              type="button"
+              class="text-sm text-red-600 hover:underline"
+              @click="revokeAccessCode"
+            >
+              Revoke
+            </button>
+          </div>
+          <p v-else-if="canManageBot" class="text-sm text-gray-500">
+            Access code is available to bot operators.
+          </p>
+          <p v-else class="text-sm text-gray-500">
+            Access codes are managed by the bot team.
+          </p>
+
+          <div v-if="teamMembers.length" class="space-y-2">
+            <h4 class="text-sm font-medium text-gray-700">Members</h4>
+            <div
+              v-for="member in teamMembers"
+              :key="member.user_id"
+              class="flex items-center justify-between text-sm border rounded px-3 py-2"
+            >
+              <div>
+                <span class="font-medium">
+                  {{ member.username ? `@${member.username}` : member.name }}
+                </span>
+                <span class="text-gray-500 ml-2">{{ member.role }}</span>
+              </div>
+              <button
+                v-if="canManageBot && member.role === 'manager' && member.user_id !== bot?.my_user_id"
+                type="button"
+                class="text-red-600 hover:underline"
+                @click="removeMember(member.user_id)"
+              >
+                Remove
+              </button>
+              <button
+                v-else-if="canManageBot && member.role === 'manager' && member.user_id === bot?.my_user_id"
+                type="button"
+                class="text-red-600 hover:underline"
+                @click="removeMember(member.user_id)"
+              >
+                Leave team
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
       <div v-else class="text-gray-500">Bot not found</div>
@@ -670,6 +661,19 @@ const botId = route.params.id as string;
 
 const bot = ref<any>(null);
 
+type BotDetailTab = "overview" | "moderation" | "team";
+const activeTab = ref<BotDetailTab>("overview");
+const botTabs: { id: BotDetailTab; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "moderation", label: "Moderation" },
+  { id: "team", label: "Team" },
+];
+
+const { breadcrumbs, backTo } = usePageBreadcrumbs(() => [
+  { label: "Bots", to: "/bots" },
+  { label: bot.value ? `@${bot.value.id}` : `@${botId}` },
+]);
+
 usePageTitle(() => bot.value?.name ?? "Бот");
 
 const chatActivation = useChatActivationWait({
@@ -739,15 +743,15 @@ const aggregatedStatusText = computed(() => {
   return "Unknown";
 });
 
-const aggregatedStatusClass = computed(() => {
+const overviewStatusBadgeClass = computed(() => {
   const status = bot.value?.delivery_status;
   if (status === "healthy") {
-    return "text-green-600";
+    return "bg-green-100 text-green-800";
   }
   if (status === "disabled") {
-    return "text-gray-600";
+    return "bg-gray-100 text-gray-700";
   }
-  return "text-red-600";
+  return "bg-red-100 text-red-800";
 });
 
 const canManageBot = computed(
@@ -772,17 +776,6 @@ const activeTemplateChips = computed(() =>
     ? WARNING_TEMPLATE_PLACEHOLDERS
     : BAN_TEMPLATE_PLACEHOLDERS
 );
-
-const templateGluedMentionWarning = computed(() => {
-  const warningDraft = detectGluedUserMentionPlaceholder(
-    warningTemplateDraft.value
-  );
-  const banDraft = detectGluedUserMentionPlaceholder(banTemplateDraft.value);
-  if (messageTemplateTab.value === "warning") {
-    return warningDraft;
-  }
-  return banDraft ?? warningDraft;
-});
 
 const activeTemplateDraft = computed({
   get() {

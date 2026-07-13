@@ -1,13 +1,12 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-semibold">Chat moderation</h2>
-        <p class="text-sm text-gray-500">
-          Bot @{{ botId }} · {{ chatName || `Chat ${telegramChatId}` }}
-        </p>
-      </div>
-      <div class="flex gap-2">
+    <LayoutPageHeader
+      :breadcrumbs="breadcrumbs"
+      :back-to="backTo"
+      title="Moderation"
+      :subtitle="chatName || `Chat ${telegramChatId}`"
+    >
+      <template #actions>
         <button
           type="button"
           class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
@@ -15,12 +14,6 @@
         >
           Add from template
         </button>
-        <NuxtLink
-          :to="`/bots/${botId}`"
-          class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
-        >
-          Back to bot
-        </NuxtLink>
         <button
           type="button"
           class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
@@ -28,8 +21,8 @@
         >
           Add rule
         </button>
-      </div>
-    </div>
+      </template>
+    </LayoutPageHeader>
 
     <div
       v-if="templateError"
@@ -52,6 +45,62 @@
       {{ userActionError }}
     </div>
 
+    <div v-if="loading" class="text-gray-500">Loading rules...</div>
+
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div
+        v-for="rule in rules"
+        :key="rule.id"
+        class="bg-white border rounded p-4"
+      >
+        <div class="flex items-start justify-between mb-2 gap-2">
+          <div>
+            <h3 class="font-medium">{{ rule.name }}</h3>
+          </div>
+          <div class="flex gap-2 shrink-0">
+            <button
+              type="button"
+              class="text-blue-600 text-sm hover:underline"
+              @click="openEditModal(rule)"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              class="text-red-600 text-sm hover:underline"
+              @click="deleteRule(rule)"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+
+        <p class="text-sm text-gray-600 mb-2">{{ rule.description }}</p>
+
+        <div class="text-xs text-gray-500 space-y-1">
+          <div>
+            Delete on violation:
+            <span class="font-medium">{{
+              rule.delete_on_violation ? "Yes" : "No"
+            }}</span>
+          </div>
+          <div>
+            Ban on violation:
+            <span class="font-medium">{{
+              rule.ban_on_violation ? "Yes" : "No"
+            }}</span>
+            <span v-if="rule.ban_on_violation">
+              (after {{ rule.warnings_before_ban ?? 3 }} warnings)
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="!loading && rules.length === 0" class="text-gray-500">
+      No rules yet. Add a custom rule or pick a preset template.
+    </div>
+
     <div class="bg-white border rounded p-4">
       <div class="flex items-center justify-between gap-3 mb-3">
         <h3 class="font-medium">Chat users</h3>
@@ -59,22 +108,22 @@
           type="button"
           class="text-sm text-blue-600 hover:underline"
           :disabled="usersLoading"
-          @click="loadUsers"
+          @click="loadUsers()"
         >
           {{ usersLoading ? "Loading..." : "Refresh" }}
         </button>
       </div>
 
       <p class="text-sm text-gray-500 mb-3">
-        Warn counts and ban status for users seen in this chat. Owner and manager
-        can reset warnings, unban, or pardon (both).
+        Users with warnings or bans. Owner and manager can reset warnings, unban,
+        or pardon (both).
       </p>
 
       <div v-if="usersLoading && !chatUsers.length" class="text-gray-500 text-sm">
         Loading users...
       </div>
       <div v-else-if="!chatUsers.length" class="text-gray-500 text-sm">
-        No tracked users yet — they appear after the first moderated message.
+        No users with warnings or bans.
       </div>
       <div v-else class="overflow-x-auto">
         <table class="min-w-full text-sm">
@@ -142,63 +191,37 @@
             </tr>
           </tbody>
         </table>
-      </div>
-    </div>
 
-    <div v-if="loading" class="text-gray-500">Loading...</div>
-
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div
-        v-for="rule in rules"
-        :key="rule.id"
-        class="bg-white border rounded p-4"
-      >
-        <div class="flex items-start justify-between mb-2 gap-2">
-          <div>
-            <h3 class="font-medium">{{ rule.name }}</h3>
-          </div>
-          <div class="flex gap-2 shrink-0">
+        <div
+          v-if="usersPagination.total_pages > 1"
+          class="flex items-center justify-between gap-3 mt-4 pt-3 border-t text-sm"
+        >
+          <span class="text-gray-500">
+            Page {{ usersPagination.page }} of {{ usersPagination.total_pages }}
+            ({{ usersPagination.total }} users)
+          </span>
+          <div class="flex gap-2">
             <button
               type="button"
-              class="text-blue-600 text-sm hover:underline"
-              @click="openEditModal(rule)"
+              class="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
+              :disabled="usersLoading || usersPagination.page <= 1"
+              @click="goToUsersPage(usersPagination.page - 1)"
             >
-              Edit
+              Previous
             </button>
             <button
               type="button"
-              class="text-red-600 text-sm hover:underline"
-              @click="deleteRule(rule)"
+              class="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
+              :disabled="
+                usersLoading || usersPagination.page >= usersPagination.total_pages
+              "
+              @click="goToUsersPage(usersPagination.page + 1)"
             >
-              Delete
+              Next
             </button>
           </div>
         </div>
-
-        <p class="text-sm text-gray-600 mb-2">{{ rule.description }}</p>
-
-        <div class="text-xs text-gray-500 space-y-1">
-          <div>
-            Delete on violation:
-            <span class="font-medium">{{
-              rule.delete_on_violation ? "Yes" : "No"
-            }}</span>
-          </div>
-          <div>
-            Ban on violation:
-            <span class="font-medium">{{
-              rule.ban_on_violation ? "Yes" : "No"
-            }}</span>
-            <span v-if="rule.ban_on_violation">
-              (after {{ rule.warnings_before_ban ?? 3 }} warnings)
-            </span>
-          </div>
-        </div>
       </div>
-    </div>
-
-    <div v-if="!loading && rules.length === 0" class="text-gray-500">
-      No rules yet. Add a custom rule or pick a preset template.
     </div>
 
     <div
@@ -426,6 +449,19 @@ const loading = ref(false);
 const usersLoading = ref(false);
 const userActionError = ref<string | null>(null);
 const userActionBusy = ref<number | null>(null);
+const usersPagination = ref({
+  page: 1,
+  limit: 25,
+  total: 0,
+  total_pages: 1,
+});
+
+const { breadcrumbs, backTo } = usePageBreadcrumbs(() => [
+  { label: "Bots", to: "/bots" },
+  { label: `@${botId}`, to: `/bots/${botId}` },
+  { label: chatName.value || `Chat ${telegramChatId}` },
+  { label: "Moderation" },
+]);
 
 usePageTitle(() =>
   chatName.value ? `Правила · ${chatName.value}` : "Правила"
@@ -464,18 +500,35 @@ async function loadChatName() {
   }
 }
 
-async function loadUsers() {
+async function loadUsers(page = usersPagination.value.page) {
   usersLoading.value = true;
   userActionError.value = null;
   try {
-    const resp = await $fetch<{ data?: { users?: ChatUserRow[] } }>(usersApiBase);
+    const resp = await $fetch<{
+      data?: {
+        users?: ChatUserRow[];
+        pagination?: typeof usersPagination.value;
+      };
+    }>(usersApiBase, {
+      query: { page, limit: usersPagination.value.limit },
+    });
     chatUsers.value = resp?.data?.users ?? [];
+    if (resp?.data?.pagination) {
+      usersPagination.value = resp.data.pagination;
+    }
   } catch (error) {
     userActionError.value = readFetchError(error, "Failed to load chat users");
     console.error("Error loading chat users:", error);
   } finally {
     usersLoading.value = false;
   }
+}
+
+async function goToUsersPage(page: number) {
+  if (page < 1 || page > usersPagination.value.total_pages) {
+    return;
+  }
+  await loadUsers(page);
 }
 
 type UserModerationAction = "pardon" | "reset-warnings" | "unban";

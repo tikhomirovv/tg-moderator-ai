@@ -1,4 +1,15 @@
-import { and, eq, gte, desc, sql, inArray, countDistinct } from "drizzle-orm";
+import {
+  and,
+  eq,
+  gt,
+  gte,
+  or,
+  desc,
+  sql,
+  inArray,
+  countDistinct,
+  count,
+} from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   UserContext,
@@ -152,6 +163,44 @@ export class UserContextRepository {
       banned_by: null,
       last_activity: new Date(),
     });
+  }
+
+  private sanctionedWhere(botId: string, chatId: number) {
+    return and(
+      eq(userContexts.botId, botId),
+      eq(userContexts.chatId, chatId),
+      or(gt(userContexts.warningsCount, 0), eq(userContexts.isBanned, true))
+    );
+  }
+
+  async countSanctionedByChat(botId: string, chatId: number): Promise<number> {
+    const [result] = await this.db
+      .select({ count: count() })
+      .from(userContexts)
+      .where(this.sanctionedWhere(botId, chatId));
+
+    return Number(result?.count ?? 0);
+  }
+
+  async listSanctionedByChat(
+    botId: string,
+    chatId: number,
+    options: { page: number; limit: number }
+  ): Promise<UserContext[]> {
+    const offset = (options.page - 1) * options.limit;
+    const rows = await this.db
+      .select()
+      .from(userContexts)
+      .where(this.sanctionedWhere(botId, chatId))
+      .orderBy(
+        sql`CASE WHEN ${userContexts.isBanned} THEN 0 ELSE 1 END`,
+        desc(userContexts.warningsCount),
+        desc(userContexts.lastActivity)
+      )
+      .limit(options.limit)
+      .offset(offset);
+
+    return rows.map(toUserContext);
   }
 
   async listByChat(

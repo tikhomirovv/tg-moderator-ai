@@ -1,27 +1,20 @@
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-xl font-semibold">Moderation audit</h2>
-        <p v-if="bot" class="text-sm text-gray-600 mt-1">
-          Bot @{{ bot.id }} — LLM decisions (newest first)
-        </p>
-      </div>
-      <div class="flex gap-2">
+    <LayoutPageHeader
+      :breadcrumbs="breadcrumbs"
+      :back-to="backTo"
+      title="Moderation audit"
+      :subtitle="bot ? `Bot @${bot.id} — LLM decisions (newest first)` : undefined"
+    >
+      <template #actions>
         <button
           @click="loadDecisions"
           class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
         >
           Refresh
         </button>
-        <NuxtLink
-          :to="`/bots/${botId}`"
-          class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
-        >
-          Back
-        </NuxtLink>
-      </div>
-    </div>
+      </template>
+    </LayoutPageHeader>
 
     <div v-if="loading" class="text-gray-500">Loading...</div>
 
@@ -164,6 +157,12 @@ const route = useRoute();
 const botId = route.params.id as string;
 
 usePageTitle("Аудит");
+
+const { breadcrumbs, backTo } = usePageBreadcrumbs(() => [
+  { label: "Bots", to: "/bots" },
+  { label: bot.value ? `@${bot.value.id}` : `@${botId}`, to: `/bots/${botId}` },
+  { label: "Audit" },
+]);
 
 const bot = ref<any>(null);
 const loading = ref(false);

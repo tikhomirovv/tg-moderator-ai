@@ -1,47 +1,38 @@
 <template>
-  <div class="min-h-screen flex bg-gray-100">
-    <aside
-      class="w-64 bg-white border-r border-gray-200 hidden md:flex md:flex-col"
-    >
-      <div class="h-16 flex items-center px-4 border-b">
-        <span class="text-lg font-semibold">TG Moderator</span>
-      </div>
-
-      <nav class="flex-1 p-4 space-y-1">
-        <NuxtLink
-          to="/"
-          class="block px-3 py-2 rounded hover:bg-gray-100"
-          active-class="bg-gray-100 font-medium"
-        >
-          Dashboard
-        </NuxtLink>
-        <NuxtLink
-          to="/bots"
-          class="block px-3 py-2 rounded hover:bg-gray-100"
-          active-class="bg-gray-100 font-medium"
-        >
-          Bots
-        </NuxtLink>
-      </nav>
-
-      <div class="p-4 text-xs border-t">
-        <NuxtLink
-          to="/release-notes"
-          class="text-gray-500 hover:text-gray-800 hover:underline"
-          active-class="text-gray-900 font-medium"
-        >
-          v{{ appVersion }}
-        </NuxtLink>
-      </div>
-    </aside>
-
-    <div class="flex-1 flex flex-col min-w-0">
-      <header
-        class="h-16 bg-white border-b flex items-center justify-between px-4"
+  <div class="min-h-screen flex flex-col bg-gray-100">
+    <header class="bg-white border-b border-gray-200">
+      <div
+        class="h-16 flex items-center justify-between gap-4 px-4 max-w-screen-2xl mx-auto w-full"
       >
-        <h1 class="text-lg font-semibold">Telegram AI Moderator</h1>
-        <div class="flex items-center gap-4 text-sm">
-          <span v-if="session?.user" class="text-gray-600">
+        <div class="flex items-center gap-4 min-w-0">
+          <NuxtLink
+            to="/"
+            class="text-lg font-semibold shrink-0 hover:text-gray-700"
+          >
+            {{ appName }}
+          </NuxtLink>
+          <nav
+            class="flex items-center gap-1 overflow-x-auto text-sm"
+            aria-label="Main"
+          >
+            <NuxtLink
+              to="/"
+              class="px-3 py-2 rounded whitespace-nowrap hover:bg-gray-100"
+              active-class="bg-gray-100 font-medium"
+            >
+              Dashboard
+            </NuxtLink>
+            <NuxtLink
+              to="/bots"
+              class="px-3 py-2 rounded whitespace-nowrap hover:bg-gray-100"
+              active-class="bg-gray-100 font-medium"
+            >
+              Bots
+            </NuxtLink>
+          </nav>
+        </div>
+        <div class="flex items-center gap-4 text-sm shrink-0">
+          <span v-if="session?.user" class="text-gray-600 hidden sm:inline">
             {{ displayName }}
           </span>
           <button
@@ -52,12 +43,14 @@
             Sign out
           </button>
         </div>
-      </header>
+      </div>
+    </header>
 
-      <main class="p-6">
-        <slot />
-      </main>
-    </div>
+    <main class="flex-1 p-4 md:p-6 max-w-screen-2xl mx-auto w-full">
+      <slot />
+    </main>
+
+    <LayoutAppFooter class="mt-auto" />
   </div>
 </template>
 
@@ -70,7 +63,7 @@ const { data: session, refresh: refreshSession } = await useAsyncData(
 );
 
 const runtimeConfig = useRuntimeConfig();
-const appVersion = computed(() => runtimeConfig.public.appVersion as string);
+const appName = computed(() => runtimeConfig.public.appName as string);
 
 const displayName = computed(() => {
   const user = session.value?.user;

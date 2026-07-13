@@ -27,8 +27,8 @@ export interface CreateUserContextRequest {
 export interface UpdateUserContextRequest {
   warnings_count?: number;
   is_banned?: boolean;
-  banned_at?: Date;
-  banned_by?: string;
+  banned_at?: Date | null;
+  banned_by?: string | null;
   last_activity?: Date;
   username?: string;
   first_name?: string;

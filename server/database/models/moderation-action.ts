@@ -1,10 +1,18 @@
+export type ModerationActionType =
+  | "warning"
+  | "delete"
+  | "ban"
+  | "reset_warnings"
+  | "unban"
+  | "pardon";
+
 export interface ModerationAction {
   _id?: string;
   bot_id: string;
   chat_id: number;
   user_id: number;
   message_id: number;
-  action_type: "warning" | "delete" | "ban";
+  action_type: ModerationActionType;
   rule_violated?: string;
   ai_confidence: number;
   ai_reasoning: string;
@@ -18,7 +26,7 @@ export interface CreateModerationActionRequest {
   chat_id: number;
   user_id: number;
   message_id: number;
-  action_type: "warning" | "delete" | "ban";
+  action_type: ModerationActionType;
   rule_violated?: string;
   ai_confidence: number;
   ai_reasoning: string;

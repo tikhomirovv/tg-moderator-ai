@@ -130,6 +130,47 @@ export class UserContextRepository {
     return row ? toUserContext(row) : null;
   }
 
+  async resetWarnings(
+    botId: string,
+    chatId: number,
+    userId: number
+  ): Promise<UserContext | null> {
+    return this.update(botId, chatId, userId, {
+      warnings_count: 0,
+      last_activity: new Date(),
+    });
+  }
+
+  async clearBan(
+    botId: string,
+    chatId: number,
+    userId: number
+  ): Promise<UserContext | null> {
+    return this.update(botId, chatId, userId, {
+      is_banned: false,
+      banned_at: null,
+      banned_by: null,
+      last_activity: new Date(),
+    });
+  }
+
+  async listByChat(
+    botId: string,
+    chatId: number,
+    limit: number = 200
+  ): Promise<UserContext[]> {
+    const rows = await this.db
+      .select()
+      .from(userContexts)
+      .where(
+        and(eq(userContexts.botId, botId), eq(userContexts.chatId, chatId))
+      )
+      .orderBy(desc(userContexts.lastActivity))
+      .limit(limit);
+
+    return rows.map(toUserContext);
+  }
+
   async banUser(
     botId: string,
     chatId: number,

@@ -3,6 +3,7 @@ import { getDatabaseConnection } from "../connection";
 import {
   ModerationAction,
   CreateModerationActionRequest,
+  type ModerationActionType,
 } from "../models/moderation-action";
 import { moderationActions } from "../schema";
 import { toModerationAction } from "../mappers";
@@ -79,7 +80,7 @@ export class ModerationActionRepository {
   async getActionsByType(
     botId: string,
     chatId: number,
-    actionType: "warning" | "delete" | "ban",
+    actionType: ModerationActionType,
     limit: number = 50
   ): Promise<ModerationAction[]> {
     const rows = await this.db
@@ -126,7 +127,7 @@ export class ModerationActionRepository {
   async getActionCount(
     botId: string,
     chatId: number,
-    actionType?: "warning" | "delete" | "ban",
+    actionType?: ModerationActionType,
     startDate?: Date,
     endDate?: Date
   ): Promise<number> {
@@ -233,7 +234,13 @@ export class ModerationActionRepository {
 
     const breakdown = { warning: 0, delete: 0, ban: 0 };
     for (const row of rows) {
-      breakdown[row.action_type] = row.count;
+      if (
+        row.action_type === "warning" ||
+        row.action_type === "delete" ||
+        row.action_type === "ban"
+      ) {
+        breakdown[row.action_type] = row.count;
+      }
     }
     return breakdown;
   }

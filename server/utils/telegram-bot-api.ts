@@ -156,6 +156,24 @@ export async function telegramFetchFileStream(
   return { response, filePath: file.file_path };
 }
 
+export async function telegramUnbanChatMember(
+  token: string,
+  chatId: number,
+  userId: number,
+  fetchFn: TelegramFetch = fetch
+): Promise<void> {
+  await callTelegramApi<boolean>(
+    token,
+    "unbanChatMember",
+    {
+      chat_id: chatId,
+      user_id: userId,
+      only_if_banned: true,
+    },
+    fetchFn
+  );
+}
+
 export async function telegramSendMessage(
   token: string,
   chatId: number,

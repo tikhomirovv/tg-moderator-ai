@@ -45,6 +45,106 @@
       {{ ruleActionError }}
     </div>
 
+    <div
+      v-if="userActionError"
+      class="bg-red-50 border border-red-200 text-red-700 rounded p-3 text-sm"
+    >
+      {{ userActionError }}
+    </div>
+
+    <div class="bg-white border rounded p-4">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <h3 class="font-medium">Chat users</h3>
+        <button
+          type="button"
+          class="text-sm text-blue-600 hover:underline"
+          :disabled="usersLoading"
+          @click="loadUsers"
+        >
+          {{ usersLoading ? "Loading..." : "Refresh" }}
+        </button>
+      </div>
+
+      <p class="text-sm text-gray-500 mb-3">
+        Warn counts and ban status for users seen in this chat. Owner and manager
+        can reset warnings, unban, or pardon (both).
+      </p>
+
+      <div v-if="usersLoading && !chatUsers.length" class="text-gray-500 text-sm">
+        Loading users...
+      </div>
+      <div v-else-if="!chatUsers.length" class="text-gray-500 text-sm">
+        No tracked users yet — they appear after the first moderated message.
+      </div>
+      <div v-else class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="text-left text-gray-500 border-b">
+            <tr>
+              <th class="py-2 pr-4 font-medium">User</th>
+              <th class="py-2 pr-4 font-medium">Warnings</th>
+              <th class="py-2 pr-4 font-medium">Ban</th>
+              <th class="py-2 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            <tr v-for="row in chatUsers" :key="row.user_id">
+              <td class="py-2 pr-4 align-top">
+                <div class="font-medium">
+                  {{
+                    row.username
+                      ? `@${row.username}`
+                      : row.first_name || `User ${row.user_id}`
+                  }}
+                </div>
+                <div class="text-xs text-gray-500">{{ row.user_id }}</div>
+              </td>
+              <td class="py-2 pr-4 align-top">{{ row.warnings_count }}</td>
+              <td class="py-2 pr-4 align-top">
+                <span
+                  v-if="row.is_banned"
+                  class="inline-flex px-2 py-0.5 rounded text-xs bg-red-100 text-red-800"
+                >
+                  Banned
+                </span>
+                <span v-else class="text-gray-500">—</span>
+              </td>
+              <td class="py-2 align-top">
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    class="text-xs px-2 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
+                    :disabled="userActionBusy === row.user_id || row.warnings_count === 0"
+                    @click="runUserAction(row.user_id, 'reset-warnings')"
+                  >
+                    Reset warn
+                  </button>
+                  <button
+                    type="button"
+                    class="text-xs px-2 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
+                    :disabled="userActionBusy === row.user_id || !row.is_banned"
+                    @click="runUserAction(row.user_id, 'unban')"
+                  >
+                    Unban
+                  </button>
+                  <button
+                    type="button"
+                    class="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    :disabled="
+                      userActionBusy === row.user_id ||
+                      (row.warnings_count === 0 && !row.is_banned)
+                    "
+                    @click="runUserAction(row.user_id, 'pardon')"
+                  >
+                    Pardon
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div v-if="loading" class="text-gray-500">Loading...</div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -306,10 +406,26 @@ interface TemplateCatalogItem {
 
 const rulesApiBase = `/api/bots/${botId}/chats/${telegramChatId}/rules`;
 const templatesApiBase = `/api/bots/${botId}/chats/${telegramChatId}`;
+const usersApiBase = `/api/bots/${botId}/chats/${telegramChatId}/users`;
+
+interface ChatUserRow {
+  user_id: number;
+  username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  warnings_count: number;
+  is_banned: boolean;
+  banned_at: string | null;
+  last_activity: string;
+}
 
 const rules = ref<any[]>([]);
+const chatUsers = ref<ChatUserRow[]>([]);
 const chatName = ref("");
 const loading = ref(false);
+const usersLoading = ref(false);
+const userActionError = ref<string | null>(null);
+const userActionBusy = ref<number | null>(null);
 
 usePageTitle(() =>
   chatName.value ? `Правила · ${chatName.value}` : "Правила"
@@ -345,6 +461,39 @@ async function loadChatName() {
     chatName.value = chat?.name ?? "";
   } catch {
     chatName.value = "";
+  }
+}
+
+async function loadUsers() {
+  usersLoading.value = true;
+  userActionError.value = null;
+  try {
+    const resp = await $fetch<{ data?: { users?: ChatUserRow[] } }>(usersApiBase);
+    chatUsers.value = resp?.data?.users ?? [];
+  } catch (error) {
+    userActionError.value = readFetchError(error, "Failed to load chat users");
+    console.error("Error loading chat users:", error);
+  } finally {
+    usersLoading.value = false;
+  }
+}
+
+type UserModerationAction = "pardon" | "reset-warnings" | "unban";
+
+async function runUserAction(userId: number, action: UserModerationAction) {
+  userActionBusy.value = userId;
+  userActionError.value = null;
+  try {
+    await $fetch(`${usersApiBase}/${userId}/${action}`, {
+      method: "POST",
+      body: {},
+    });
+    await loadUsers();
+  } catch (error) {
+    userActionError.value = readFetchError(error, "Failed to update user");
+    console.error("Error updating chat user:", error);
+  } finally {
+    userActionBusy.value = null;
   }
 }
 
@@ -500,6 +649,6 @@ async function deleteRule(rule: any) {
 }
 
 onMounted(async () => {
-  await Promise.all([loadChatName(), load()]);
+  await Promise.all([loadChatName(), load(), loadUsers()]);
 });
 </script>

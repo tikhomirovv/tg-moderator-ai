@@ -22,6 +22,9 @@ export const actionTypeEnum = pgEnum("action_type", [
   "warning",
   "delete",
   "ban",
+  "reset_warnings",
+  "unban",
+  "pardon",
 ]);
 
 export const botMemberRoleEnum = pgEnum("bot_member_role", ["owner", "manager"]);

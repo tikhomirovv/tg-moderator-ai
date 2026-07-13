@@ -439,6 +439,56 @@
           No recent activity. Send messages to the bot to see logs here.
         </div>
       </div>
+
+      <div v-if="isOwner" class="bg-white border border-red-200 rounded p-6">
+        <h3 class="text-lg font-medium text-red-700 mb-2">Danger zone</h3>
+        <p class="text-sm text-gray-600 mb-4">
+          Удаление бота безвозвратно удалит чаты, правила, участников команды и
+          историю модерации. Отключение бота (Disable) данные не удаляет.
+        </p>
+
+        <div v-if="!showDeleteConfirm" class="flex">
+          <button
+            type="button"
+            class="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+            @click="openDeleteConfirm"
+          >
+            Удалить бота
+          </button>
+        </div>
+
+        <div v-else class="space-y-3 max-w-md">
+          <p class="text-sm text-gray-700">
+            Введите <code class="bg-gray-100 px-1 rounded">@{{ bot.id }}</code> или
+            <code class="bg-gray-100 px-1 rounded">DELETE</code> для подтверждения.
+          </p>
+          <input
+            v-model="deleteConfirmText"
+            type="text"
+            class="w-full border rounded px-3 py-2 text-sm"
+            :placeholder="`@${bot.id}`"
+          />
+          <p v-if="deleteError" class="text-sm text-red-600">{{ deleteError }}</p>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm disabled:opacity-50"
+              :disabled="!canConfirmDelete || deletingBot"
+              @click="deleteBot"
+            >
+              {{ deletingBot ? "Удаление..." : "Подтвердить удаление" }}
+            </button>
+            <button
+              type="button"
+              class="px-3 py-2 border rounded hover:bg-gray-50 text-sm"
+              :disabled="deletingBot"
+              @click="cancelDeleteConfirm"
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
       <div v-else class="text-gray-500">Bot not found</div>
@@ -522,6 +572,7 @@ import {
 } from "~/lib/bot-message-template-ui";
 
 const route = useRoute();
+const router = useRouter();
 const botId = route.params.id as string;
 
 const bot = ref<any>(null);
@@ -551,6 +602,10 @@ const templateTextareaRef = ref<HTMLTextAreaElement | null>(null);
 const savingTemplates = ref(false);
 const templateSaveError = ref("");
 const templateSaveSuccess = ref(false);
+const showDeleteConfirm = ref(false);
+const deleteConfirmText = ref("");
+const deleteError = ref("");
+const deletingBot = ref(false);
 const logs = ref<any[]>([]);
 const statistics = ref<any>({
   today: {
@@ -600,6 +655,12 @@ const aggregatedStatusClass = computed(() => {
 });
 
 const isOwner = computed(() => bot.value?.my_role === "owner");
+
+const canConfirmDelete = computed(() => {
+  const value = deleteConfirmText.value.trim();
+  if (!bot.value) return false;
+  return value === "DELETE" || value === `@${bot.value.id}` || value === bot.value.id;
+});
 
 const activationBannerClass = computed(() => {
   const value = chatActivation.status.value;
@@ -946,6 +1007,37 @@ async function removeMember(userId: string) {
     await loadTeam();
   } catch (error) {
     console.error("Error removing member:", error);
+  }
+}
+
+function openDeleteConfirm() {
+  deleteError.value = "";
+  deleteConfirmText.value = "";
+  showDeleteConfirm.value = true;
+}
+
+function cancelDeleteConfirm() {
+  showDeleteConfirm.value = false;
+  deleteConfirmText.value = "";
+  deleteError.value = "";
+}
+
+async function deleteBot() {
+  if (!canConfirmDelete.value) return;
+
+  deletingBot.value = true;
+  deleteError.value = "";
+
+  try {
+    await $fetch(`/api/bots/${botId}`, { method: "DELETE" });
+    await router.push("/bots");
+  } catch (error: any) {
+    deleteError.value =
+      error?.data?.statusMessage ||
+      error?.message ||
+      "Не удалось удалить бота";
+  } finally {
+    deletingBot.value = false;
   }
 }
 

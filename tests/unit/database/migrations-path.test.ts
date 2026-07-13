@@ -25,5 +25,6 @@ describe("resolveMigrationsFolder", () => {
     expect(existsSync(path.join(folder, "0002_productive_starhawk.sql"))).toBe(
       true
     );
+    expect(existsSync(path.join(folder, "0004_freezing_kang.sql"))).toBe(true);
   });
 });

@@ -32,7 +32,7 @@ function getDeps(overrides?: Partial<DeleteBotDeps>): DeleteBotDeps {
   };
 }
 
-/** Permanently deletes a bot; webhook removal is best-effort before DB delete. */
+/** Permanently deletes a bot; webhook removal is best-effort, DB rows cascade via FK. */
 export async function deleteBotPermanently(
   botId: string,
   deps?: Partial<DeleteBotDeps>

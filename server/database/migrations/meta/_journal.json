@@ -29,6 +29,13 @@
       "when": 1783892826408,
       "tag": "0003_flawless_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783925939535,
+      "tag": "0004_freezing_kang",
+      "breakpoints": true
     }
   ]
 }

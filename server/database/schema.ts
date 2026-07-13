@@ -166,7 +166,9 @@ export const moderationActions = pgTable(
   "moderation_actions",
   {
     id: serial("id").primaryKey(),
-    botId: varchar("bot_id", { length: 64 }).notNull(),
+    botId: varchar("bot_id", { length: 64 })
+      .notNull()
+      .references(() => bots.id, { onDelete: "cascade" }),
     chatId: bigint("chat_id", { mode: "number" }).notNull(),
     userId: bigint("user_id", { mode: "number" }).notNull(),
     messageId: bigint("message_id", { mode: "number" }).notNull(),
@@ -201,7 +203,9 @@ export const moderationDecisions = pgTable(
   "moderation_decisions",
   {
     id: serial("id").primaryKey(),
-    botId: varchar("bot_id", { length: 64 }).notNull(),
+    botId: varchar("bot_id", { length: 64 })
+      .notNull()
+      .references(() => bots.id, { onDelete: "cascade" }),
     chatId: bigint("chat_id", { mode: "number" }).notNull(),
     userId: bigint("user_id", { mode: "number" }).notNull(),
     messageId: bigint("message_id", { mode: "number" }).notNull(),
@@ -231,7 +235,9 @@ export const userContexts = pgTable(
   "user_contexts",
   {
     id: serial("id").primaryKey(),
-    botId: varchar("bot_id", { length: 64 }).notNull(),
+    botId: varchar("bot_id", { length: 64 })
+      .notNull()
+      .references(() => bots.id, { onDelete: "cascade" }),
     chatId: bigint("chat_id", { mode: "number" }).notNull(),
     userId: bigint("user_id", { mode: "number" }).notNull(),
     username: varchar("username", { length: 255 }),
@@ -264,7 +270,9 @@ export const userMessages = pgTable(
   "user_messages",
   {
     id: serial("id").primaryKey(),
-    botId: varchar("bot_id", { length: 64 }).notNull(),
+    botId: varchar("bot_id", { length: 64 })
+      .notNull()
+      .references(() => bots.id, { onDelete: "cascade" }),
     chatId: bigint("chat_id", { mode: "number" }).notNull(),
     userId: bigint("user_id", { mode: "number" }).notNull(),
     messageId: bigint("message_id", { mode: "number" }).notNull(),
@@ -298,7 +306,9 @@ export const chatStatistics = pgTable(
   "chat_statistics",
   {
     id: serial("id").primaryKey(),
-    botId: varchar("bot_id", { length: 64 }).notNull(),
+    botId: varchar("bot_id", { length: 64 })
+      .notNull()
+      .references(() => bots.id, { onDelete: "cascade" }),
     chatId: bigint("chat_id", { mode: "number" }).notNull(),
     date: date("date").notNull(),
     messagesProcessed: integer("messages_processed").notNull().default(0),

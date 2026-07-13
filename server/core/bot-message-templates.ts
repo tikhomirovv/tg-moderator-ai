@@ -94,13 +94,61 @@ export function appendMentionIfMissing(
   return `${rendered}\n\n${mentionHtml}`;
 }
 
+/**
+ * When {user_mention} is placed right after another placeholder (e.g.
+ * `{rule_name}{user_mention}`), substitution glues mention to rule text.
+ * Ensures a blank line before the mention block.
+ */
+export function ensureMentionOnOwnLine(
+  rendered: string,
+  mentionHtml: string
+): string {
+  if (!mentionHtml) {
+    return rendered;
+  }
+
+  let result = rendered;
+  let searchFrom = 0;
+
+  while (searchFrom < result.length) {
+    const idx = result.indexOf(mentionHtml, searchFrom);
+    if (idx === -1) {
+      break;
+    }
+
+    if (idx > 0) {
+      const charBefore = result[idx - 1];
+      if (charBefore !== "\n" && charBefore !== " " && charBefore !== "\t") {
+        result = `${result.slice(0, idx)}\n\n${result.slice(idx)}`;
+        searchFrom = idx + 2 + mentionHtml.length;
+        continue;
+      }
+
+      if (charBefore === "\n" && (idx < 2 || result[idx - 2] !== "\n")) {
+        result = `${result.slice(0, idx)}\n${result.slice(idx)}`;
+        searchFrom = idx + 1 + mentionHtml.length;
+        continue;
+      }
+    }
+
+    searchFrom = idx + mentionHtml.length;
+  }
+
+  return result;
+}
+
 export function renderBotMessage(
   template: string,
   context: TemplateContext
 ): string {
   const rendered = substitutePlaceholders(template, context);
   if ("user_mention" in context) {
-    return appendMentionIfMissing(template, rendered, context.user_mention);
+    const withMention = appendMentionIfMissing(
+      template,
+      rendered,
+      context.user_mention
+    );
+    return ensureMentionOnOwnLine(withMention, context.user_mention);
   }
   return rendered;
 }

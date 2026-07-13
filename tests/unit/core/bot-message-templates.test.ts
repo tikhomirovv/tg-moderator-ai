@@ -4,6 +4,7 @@ import {
   buildUserMention,
   DEFAULT_BAN_TEMPLATE,
   DEFAULT_WARNING_TEMPLATE,
+  ensureMentionOnOwnLine,
   renderBotMessage,
   resolveModerationReplyToMessageId,
 } from "../../../server/core/bot-message-templates";
@@ -63,6 +64,27 @@ describe("bot-message-templates", () => {
 
     expect(text).toContain("Hate");
     expect(text).not.toContain("{warnings");
+    expect(text).toEndWith("<a>@carol</a>");
+    expect(text).toMatch(/Hate<\/b>\n\n<a>@carol<\/a>$/);
+  });
+
+  test("separates inline user_mention from glued rule_name in ban template", () => {
+    const template = "Правило: <b>{rule_name}</b>{user_mention}";
+    const mention = "@MacArtur";
+    const text = renderBotMessage(template, {
+      user_mention: mention,
+      user_name: "MacArtur",
+      rule_name: "Оскорбления и агрессия",
+    });
+
+    expect(text).toContain("</b>\n\n@MacArtur");
+    expect(text).not.toContain("агрессия@MacArtur");
+  });
+
+  test("ensureMentionOnOwnLine inserts blank line before glued mention", () => {
+    expect(
+      ensureMentionOnOwnLine("Rule: <b>Spam</b>@bob", "@bob")
+    ).toBe("Rule: <b>Spam</b>\n\n@bob");
   });
 
   test("buildUserMention uses plain @username without t.me link", () => {

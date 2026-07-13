@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { InMemoryBotRepository } from "../../helpers/in-memory-bot-repository";
 import { TEST_OWNER_USER_ID } from "../../helpers/constants";
-import { validateBotMessageTemplate } from "../../../server/utils/bot-message-template-validation";
+import { validateBotMessageTemplate, detectGluedUserMentionPlaceholder } from "../../../server/utils/bot-message-template-validation";
 
 describe("bot message template API fields", () => {
   test("PUT persistence via repository update stores templates", async () => {
@@ -29,5 +29,14 @@ describe("bot message template API fields", () => {
 
   test("validateBotMessageTemplate allows null reset", () => {
     expect(validateBotMessageTemplate(null, "warning_message_template")).toBeNull();
+  });
+
+  test("detectGluedUserMentionPlaceholder flags glued placeholders", () => {
+    expect(
+      detectGluedUserMentionPlaceholder("Rule {rule_name}{user_mention}")
+    ).toContain("{rule_name}");
+    expect(
+      detectGluedUserMentionPlaceholder("Hi {user_mention}")
+    ).toBeNull();
   });
 });

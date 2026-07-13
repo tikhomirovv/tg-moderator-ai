@@ -103,7 +103,16 @@
       </div>
 
       <div class="bg-white border rounded p-6">
-        <h3 class="text-lg font-medium mb-2">Moderation messages</h3>
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
+          <h3 class="text-lg font-medium">Moderation messages</h3>
+          <button
+            type="button"
+            class="text-sm text-blue-600 hover:underline"
+            @click="showHtmlHelpModal = true"
+          >
+            Как оформить сообщение
+          </button>
+        </div>
         <p class="text-sm text-gray-600 mb-4">
           Per-bot Warning and Ban texts (Telegram HTML). If
           <code class="text-xs">{user_mention}</code>
@@ -569,6 +578,11 @@
       </div>
     </div>
   </div>
+
+  <BotsBotMessageHtmlHelpModal
+    :open="showHtmlHelpModal"
+    @close="showHtmlHelpModal = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -612,6 +626,7 @@ const templateTextareaRef = ref<HTMLTextAreaElement | null>(null);
 const savingTemplates = ref(false);
 const templateSaveError = ref("");
 const templateSaveSuccess = ref(false);
+const showHtmlHelpModal = ref(false);
 const showDeleteConfirm = ref(false);
 const deleteConfirmText = ref("");
 const deleteError = ref("");

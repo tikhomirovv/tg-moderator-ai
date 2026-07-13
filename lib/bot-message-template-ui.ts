@@ -27,3 +27,60 @@ export const DEFAULT_BAN_TEMPLATE_PREVIEW = `🚫 <b>Пользователь з
 
 Нарушение правил чата.
 Правило: <b>{rule_name}</b>`;
+
+export const TELEGRAM_HTML_DOCS_URL =
+  "https://core.telegram.org/bots/api#html-style";
+
+export type BotMessageHtmlHelpSection = {
+  title: string;
+  body: string;
+  example?: string;
+};
+
+/** Copy for the Telegram HTML help modal (RU product text). */
+export const BOT_MESSAGE_HTML_HELP: BotMessageHtmlHelpSection[] = [
+  {
+    title: "Формат",
+    body:
+      "Сообщения Warning и Ban отправляются в Telegram с parse_mode HTML. " +
+      "Используйте только поддерживаемые теги; вложенные теги не нужны.",
+  },
+  {
+    title: "Поддерживаемые теги",
+    body:
+      "<b>жирный</b>, <i>курсив</i>, <u>подчёркнутый</u>, <s>зачёркнутый</s>, " +
+      "<code>моноширинный</code>, <pre>блок кода</pre>, " +
+      '<a href="https://example.com">ссылка</a>, <tg-spoiler>спойлер</tg-spoiler>.',
+    example: "<b>Важно!</b> Нарушение: <i>{rule_name}</i>",
+  },
+  {
+    title: "Плейсхолдеры",
+    body:
+      "Подставляются сервером: {user_mention}, {user_name}, {rule_name}, " +
+      "{warnings_current}, {warnings_max}, {warnings_left} (только Warning). " +
+      "Кнопки над полем вставляют их в курсор.",
+  },
+  {
+    title: "Упоминание пользователя",
+    body:
+      "Если в шаблоне нет {user_mention}, бот допишет mention в конце отдельным абзацем. " +
+      "Если ставите {user_mention} сами — оставьте пустую строку перед ним, " +
+      "не пишите сразу после {rule_name}.",
+  },
+  {
+    title: "Переносы строк",
+    body:
+      "Новая строка — символ перевода строки (Enter в поле). " +
+      "Для пустой строки между блоками нажмите Enter дважды.",
+  },
+  {
+    title: "Экранирование",
+    body:
+      "Символы <, > и & в обычном тексте должны быть &lt;, &gt;, &amp;. " +
+      "В плейсхолдерах и готовых HTML-тегах экранировать не нужно.",
+  },
+  {
+    title: "Длина",
+    body: "Не больше 4096 символов на шаблон (лимит Telegram).",
+  },
+];

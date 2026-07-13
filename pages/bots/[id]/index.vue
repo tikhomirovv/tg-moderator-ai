@@ -816,7 +816,7 @@ function retryChatActivation() {
 }
 
 function chatPhotoUrl(chatRowId: number) {
-  return `/api/bots/${botId}/chats/${chatRowId}/photo`;
+  return `/api/bots/${botId}/chats/row/${chatRowId}/photo`;
 }
 
 function chatHealthLabel(chat: any) {

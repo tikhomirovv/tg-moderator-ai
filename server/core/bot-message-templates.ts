@@ -54,8 +54,10 @@ export function buildUserMention(
     from.first_name || from.username || String(from.id)
   );
 
+  // Plain @username — Telegram parses as mention (ping, no profile preview).
+  // tg://user?id= — same as picking a member without username in the client.
   if (from.username) {
-    return `<a href="https://t.me/${from.username}">@${escapeTelegramHtml(from.username)}</a>`;
+    return `@${escapeTelegramHtml(from.username)}`;
   }
 
   return `<a href="tg://user?id=${from.id}">${displayName}</a>`;

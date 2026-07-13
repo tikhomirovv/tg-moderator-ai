@@ -65,6 +65,19 @@ describe("bot-message-templates", () => {
     expect(text).not.toContain("{warnings");
   });
 
+  test("buildUserMention uses plain @username without t.me link", () => {
+    const mention = buildUserMention({
+      id: 1,
+      first_name: "Alice",
+      username: "alice",
+      is_bot: false,
+    });
+
+    expect(mention).toBe("@alice");
+    expect(mention).not.toContain("<a");
+    expect(mention).not.toContain("t.me");
+  });
+
   test("buildUserMention uses tg link when username is missing", () => {
     const mention = buildUserMention({
       id: 42,

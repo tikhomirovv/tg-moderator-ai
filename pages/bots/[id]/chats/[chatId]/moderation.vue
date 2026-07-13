@@ -38,6 +38,13 @@
       {{ templateError }}
     </div>
 
+    <div
+      v-if="ruleActionError"
+      class="bg-red-50 border border-red-200 text-red-700 rounded p-3 text-sm"
+    >
+      {{ ruleActionError }}
+    </div>
+
     <div v-if="loading" class="text-gray-500">Loading...</div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -171,6 +178,13 @@
         </h3>
 
         <form class="space-y-4" @submit.prevent="saveRule">
+          <div
+            v-if="saveError"
+            class="bg-red-50 border border-red-200 text-red-700 rounded p-3 text-sm"
+          >
+            {{ saveError }}
+          </div>
+
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1"
               >Rule name</label
@@ -302,6 +316,8 @@ usePageTitle(() =>
 );
 const saving = ref(false);
 const templateError = ref<string | null>(null);
+const ruleActionError = ref<string | null>(null);
+const saveError = ref<string | null>(null);
 const showModal = ref(false);
 const showTemplateLibrary = ref(false);
 const templatesLoading = ref(false);
@@ -405,10 +421,12 @@ async function addTemplate(templateId: string) {
 function openCreateModal() {
   editingRule.value = null;
   form.value = emptyForm();
+  saveError.value = null;
   showModal.value = true;
 }
 
 function openEditModal(rule: any) {
+  saveError.value = null;
   editingRule.value = rule;
   form.value = {
     name: rule.name,
@@ -425,10 +443,13 @@ function closeModal() {
   showModal.value = false;
   editingRule.value = null;
   form.value = emptyForm();
+  saveError.value = null;
 }
 
 async function saveRule() {
   saving.value = true;
+  saveError.value = null;
+  ruleActionError.value = null;
   try {
     const payload = {
       name: form.value.name,
@@ -456,6 +477,7 @@ async function saveRule() {
     closeModal();
     await load();
   } catch (error) {
+    saveError.value = readFetchError(error, "Failed to save rule");
     console.error("Error saving rule:", error);
   } finally {
     saving.value = false;
@@ -467,10 +489,12 @@ async function deleteRule(rule: any) {
     return;
   }
 
+  ruleActionError.value = null;
   try {
     await $fetch(`${rulesApiBase}/${rule.id}`, { method: "DELETE" });
     await load();
   } catch (error) {
+    ruleActionError.value = readFetchError(error, "Failed to delete rule");
     console.error("Error deleting rule:", error);
   }
 }

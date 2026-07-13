@@ -1,8 +1,8 @@
-import { BotRepository } from "../../../../../database/repositories/bot-repository";
-import { ChatRepository } from "../../../../../database/repositories/chat-repository";
-import { requireBotAccess } from "../../../../../utils/bot-access";
-import { requireBotIdParam } from "../../../../../utils/get-bot-id-param";
-import { telegramFetchFileStream } from "../../../../../utils/telegram-bot-api";
+import { BotRepository } from "../../../../../../database/repositories/bot-repository";
+import { ChatRepository } from "../../../../../../database/repositories/chat-repository";
+import { requireBotAccess } from "../../../../../../utils/bot-access";
+import { requireBotIdParam } from "../../../../../../utils/get-bot-id-param";
+import { telegramFetchFileStream } from "../../../../../../utils/telegram-bot-api";
 
 export default defineEventHandler(async (event) => {
   const botId = requireBotIdParam(event);
@@ -46,7 +46,11 @@ export default defineEventHandler(async (event) => {
 
   const extension = filePath.split(".").pop()?.toLowerCase();
   if (extension) {
-    setHeader(event, "Content-Disposition", `inline; filename="chat-photo.${extension}"`);
+    setHeader(
+      event,
+      "Content-Disposition",
+      `inline; filename="chat-photo.${extension}"`
+    );
   }
 
   return sendStream(event, response.body!);

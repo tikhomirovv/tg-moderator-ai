@@ -1,5 +1,5 @@
 export const WARNING_TEMPLATE_PLACEHOLDERS = [
-  { key: "{user_mention}", label: "Mention", hint: "Ping user (@username or tg link)" },
+  { key: "{user_mention}", label: "Mention", hint: "Ping user (@username or name link)" },
   { key: "{user_name}", label: "Name", hint: "Display name without ping" },
   { key: "{rule_name}", label: "Rule", hint: "Violated rule name" },
   { key: "{warnings_current}", label: "Warn #", hint: "Warning number after this warn" },
@@ -8,7 +8,7 @@ export const WARNING_TEMPLATE_PLACEHOLDERS = [
 ] as const;
 
 export const BAN_TEMPLATE_PLACEHOLDERS = [
-  { key: "{user_mention}", label: "Mention", hint: "Ping user (@username or tg link)" },
+  { key: "{user_mention}", label: "Mention", hint: "Ping user (@username or name link)" },
   { key: "{user_name}", label: "Name", hint: "Display name without ping" },
   { key: "{rule_name}", label: "Rule", hint: "Violated rule name" },
 ] as const;

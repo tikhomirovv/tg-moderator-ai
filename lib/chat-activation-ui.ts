@@ -1,7 +1,7 @@
 /** Shown in Add Chat modal — platform + Telegram preconditions. */
 export const CHAT_ACTIVATION_PREREQUISITES = [
   "Войти на платформу тем же Telegram-аккаунтом, что пишет /activate.",
-  "Вы — owner бота на платформе (не manager).",
+  "Вы — owner или manager бота на платформе.",
   "Бот — администратор группы с правами удалять сообщения и ограничивать участников.",
   "Бот включён (Enable) — иначе webhook не обработает /activate.",
 ] as const;

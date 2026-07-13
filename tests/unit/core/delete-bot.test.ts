@@ -64,7 +64,8 @@ describe("deleteBotPermanently", () => {
     ).rejects.toBeInstanceOf(DeleteBotError);
   });
 
-  test("manager cannot pass owner-only access gate", () => {
-    expect(() => enforceBotAccess("manager", ["owner"])).toThrow();
+  test("manager can pass member access gate without owner role", () => {
+    expect(enforceBotAccess("manager")).toBe("manager");
+    expect(enforceBotAccess("owner")).toBe("owner");
   });
 });

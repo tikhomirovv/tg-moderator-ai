@@ -68,6 +68,7 @@ export interface BotResponse {
   chats: Chat[];
   is_active: boolean;
   my_role?: BotMemberRole;
+  my_user_id?: string;
   photo_file_id?: string | null;
   telegram_bot_id?: number | null;
   warning_message_template?: string | null;

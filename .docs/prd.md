@@ -34,7 +34,7 @@ Web application to manage Telegram moderation bots: connect bot token, configure
 
 1. **Owner** generates access code on bot detail → shares link or code
 2. **Manager** logs in via Telegram → joins with code (`POST /api/bots/join` or `/join?code=…`)
-3. Managers can manage bot/chats/rules; owners additionally manage access codes and members
+3. Owner and manager have the same bot operations (chats, rules, team, danger zone); the owner row in `bot_members` cannot be removed
 
 ### Dashboard
 

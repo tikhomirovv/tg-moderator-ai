@@ -7,7 +7,7 @@ import { requireBotIdParam } from "../../../../utils/get-bot-id-param";
 
 export default defineEventHandler(async (event) => {
   const botId = requireBotIdParam(event);
-  const { user } = await requireBotAccess(event, botId, ["owner"]);
+  const { user } = await requireBotAccess(event, botId);
 
   const pendingRepo = new ChatActivationPendingRepository();
   const expiresAt = new Date(Date.now() + CHAT_ACTIVATION_PENDING_TTL_MS);

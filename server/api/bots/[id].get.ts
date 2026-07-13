@@ -7,7 +7,7 @@ import { refreshBotAvatar } from "../../core/bot-avatar";
 export default defineEventHandler(async (event) => {
   try {
     const botId = requireBotIdParam(event);
-    const { role } = await requireBotAccess(event, botId);
+    const { user, role } = await requireBotAccess(event, botId);
     const botRepo = new BotRepository();
 
     let bot = await botRepo.findById(botId);
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      data: withDeliveryHealth({ ...bot, my_role: role }, health),
+      data: withDeliveryHealth({ ...bot, my_role: role, my_user_id: user.id }, health),
     };
   } catch (error) {
     if (error && typeof error === "object" && "statusCode" in error) {

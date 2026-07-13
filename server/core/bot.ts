@@ -154,10 +154,7 @@ export class TelegramBot {
     );
 
     if (!result.ok) {
-      if (
-        result.code === "not_owner" ||
-        result.code === "not_platform_member"
-      ) {
+      if (result.code === "not_platform_member") {
         logger.debug(
           {
             botId: this.botId,
@@ -165,7 +162,7 @@ export class TelegramBot {
             fromId: update.from.id,
             code: result.code,
           },
-          "Ignored my_chat_member from non-owner platform user"
+          "Ignored my_chat_member from user without bot access"
         );
         return;
       }

@@ -86,7 +86,7 @@ Health: `GET /api/health` → `{"ok":true}`. В контейнере порт **
 | [deploy/compose.example.yml](deploy/compose.example.yml) | Пример Traefik compose |
 | [AGENTS.md](AGENTS.md) | Контекст для AI-агентов |
 | [docs/logging.md](docs/logging.md) | Уровни логирования |
-| [.docs/SPEC.md](.docs/SPEC.md) | Архив ранней спецификации (MongoDB) |
+| [.docs/archive/SPEC-legacy.md](.docs/archive/SPEC-legacy.md) | Архив ранней спецификации (MongoDB) |
 
 ## API (кратко)
 

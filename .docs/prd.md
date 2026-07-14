@@ -65,5 +65,5 @@ Aggregated KPIs and activity across all bots the user can access (owner or manag
 
 ## Open questions
 
-- User-facing release notes for v1.0.0 still describe pre-refactor model — update on next published release
+- ~~User-facing release notes for v1.0.0 still describe pre-refactor model~~ — resolved in #109: archive banner on `data/releases/v1.0.0.md`; full rewrite on next published release
 - Optional: E2E tests for OIDC flow in CI

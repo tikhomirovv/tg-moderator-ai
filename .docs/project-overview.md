@@ -29,8 +29,7 @@ User (telegram_id)
   → Bot (owner_user_id)
       → bot_members (owner | manager)
       → bot_access_codes (invite)
-      → rules[] (per bot)
-      → chats[] → moderation
+      → chats[] → rules[] (per chat) → moderation
 ```
 
 ## Status
@@ -49,4 +48,4 @@ User (telegram_id)
 | [i18n.md](i18n.md) | Admin UI locales, keys, conventions |
 | [deploy.md](deploy.md) | Production deployment |
 | [database-migrations.md](database-migrations.md) | Drizzle migration policy |
-| [SPEC.md](SPEC.md) | **Archived** early spec (MongoDB era) |
+| [archive/SPEC-legacy.md](archive/SPEC-legacy.md) | **Archived** early spec (MongoDB era) |

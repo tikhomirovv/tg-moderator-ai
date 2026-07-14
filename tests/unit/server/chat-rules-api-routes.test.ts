@@ -25,4 +25,17 @@ describe("chat API routes", () => {
       existsSync(path.join(CHATS_API_DIR, "row/[chatRowId]/photo.get.ts"))
     ).toBe(true);
   });
+
+  test("legacy empty API dirs from route moves are absent", () => {
+    const legacyDirs = [
+      path.resolve(import.meta.dir, "../../../server/api/moderation"),
+      path.join(RULE_ROUTE_DIR, "[ruleId]"),
+      path.join(RULE_ROUTE_DIR, "from-template"),
+      path.join(CHATS_API_DIR, "[chatRowId]"),
+    ];
+
+    for (const dir of legacyDirs) {
+      expect(existsSync(dir)).toBe(false);
+    }
+  });
 });

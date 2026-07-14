@@ -1,7 +1,7 @@
 # Telegram AI Moderator Bot - Спецификация
 
 > **Архив.** Ранняя версия (MongoDB, workspace, `/api/config/*`).  
-> Актуально: [project-overview.md](project-overview.md) · [prd.md](prd.md) · [technical-design.md](technical-design.md) · [AGENTS.md](../AGENTS.md)
+> Актуально: [project-overview.md](../project-overview.md) · [prd.md](../prd.md) · [technical-design.md](../technical-design.md) · [AGENTS.md](../../AGENTS.md)
 
 ## Обзор проекта
 

@@ -37,3 +37,15 @@ alwaysApply: false
 ## Тесты
 
 При правках `server/**` — см. правило `unit-tests` (отдельный glob).
+
+## i18n (admin UI)
+
+При правках **user-facing UI** (`pages/`, `components/`, `layouts/`, клиентские composables):
+
+- Строки только через **`$t()` / `t()`** — ключи в `i18n/locales/en.json` + **паритет** в `ru.json`.
+- Именование: nested JSON, dot keys (`nav.bots`, `bot.chats.addChat`, `common.save`).
+- Document title: `usePageTitle(() => t('page.*.documentTitle'))`; app name — `app.name`.
+- Breadcrumbs: переведённые `label` из `t()`, не литералы.
+- В locale JSON: экранировать литеральные `{user_mention}`, `@username` — см. [`.docs/i18n.md`](.docs/i18n.md).
+- После правок локалей: `bun test tests/unit/i18n/locale-key-parity.test.ts` + `bun run build`.
+- **Не переводить:** per-bot warn/ban шаблоны, `RULE_TEMPLATES`, API `statusMessage`, тела release notes.

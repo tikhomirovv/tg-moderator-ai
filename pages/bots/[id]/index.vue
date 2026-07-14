@@ -8,15 +8,6 @@
     >
       <template #actions>
         <button
-          v-if="canManageBot"
-          type="button"
-          class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-          :disabled="chatActivation.status.value === 'waiting'"
-          @click="openAddChatActivationModal"
-        >
-          Add Chat
-        </button>
-        <button
           @click="toggleBotStatus"
           :class="
             bot?.is_active
@@ -98,6 +89,15 @@
           <h3 class="text-lg font-medium">
             Chats ({{ bot.chats?.length || 0 }})
           </h3>
+          <button
+            v-if="canManageBot"
+            type="button"
+            class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+            :disabled="chatActivation.status.value === 'waiting'"
+            @click="openAddChatActivationModal"
+          >
+            Add Chat
+          </button>
         </div>
         <div v-if="bot.chats && bot.chats.length > 0" class="space-y-3">
           <div

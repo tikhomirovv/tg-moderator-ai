@@ -1,7 +1,10 @@
 <template>
   <div class="mb-6">
     <div class="flex flex-wrap items-start justify-between gap-4">
-      <div class="flex items-center gap-2 min-w-0">
+      <div
+        v-if="showBreadcrumbs"
+        class="flex items-center gap-2 min-w-0"
+      >
         <button
           v-if="backTo"
           type="button"
@@ -33,22 +36,28 @@
           </ol>
         </nav>
       </div>
-      <div v-if="$slots.actions" class="flex flex-wrap gap-2 shrink-0">
+      <div v-if="$slots.actions" class="flex flex-wrap gap-2 shrink-0 ml-auto">
         <slot name="actions" />
       </div>
     </div>
-    <h1 v-if="title" class="text-xl font-semibold mt-3">{{ title }}</h1>
+    <h1 v-if="title" class="text-xl font-semibold" :class="showBreadcrumbs ? 'mt-3' : ''">
+      {{ title }}
+    </h1>
     <p v-if="subtitle" class="text-sm text-gray-500 mt-1">{{ subtitle }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import type { BreadcrumbItem } from "~/composables/usePageBreadcrumbs";
 
-defineProps<{
+const props = defineProps<{
   breadcrumbs: BreadcrumbItem[];
   backTo?: string;
   title?: string;
   subtitle?: string;
 }>();
+
+// Top-level pages (Dashboard, Bots, …) only pass one crumb — same as h1, so hide the trail.
+const showBreadcrumbs = computed(() => props.breadcrumbs.length > 1);
 </script>

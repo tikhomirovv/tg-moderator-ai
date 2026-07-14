@@ -86,11 +86,13 @@
           </div>
           <div>
             {{ t("moderation.banOnViolation") }}
-            <span class="font-medium">{{
-              rule.ban_on_violation ? t("common.yes") : t("common.no")
-            }}</span>
-            <span v-if="rule.ban_on_violation">
-              {{ t("moderation.afterWarnings", { count: rule.warnings_before_ban ?? 3 }) }}
+            <span class="font-medium">
+              <template v-if="rule.ban_on_violation">
+                {{ t("common.yes") }} {{ t("moderation.afterWarnings", { count: rule.warnings_before_ban ?? 3 }) }}
+              </template>
+              <template v-else>
+                {{ t("common.no") }}
+              </template>
             </span>
           </div>
         </div>

@@ -19,4 +19,16 @@ describe("bots page routing", () => {
     expect(existsSync(auditVue)).toBe(true);
     expect(existsSync(moderationVue)).toBe(true);
   });
+
+  test("pre-refactor workspace route dirs are absent", () => {
+    const legacyDirs = [
+      path.join(PAGES_ROOT, "moderation"),
+      path.join(PAGES_ROOT, "w"),
+      path.join(PAGES_ROOT, "w-[slug]"),
+    ];
+
+    for (const dir of legacyDirs) {
+      expect(existsSync(dir)).toBe(false);
+    }
+  });
 });

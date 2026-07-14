@@ -13,13 +13,6 @@
         >
           Add bot
         </button>
-        <button
-          type="button"
-          class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-          @click="refresh"
-        >
-          Refresh
-        </button>
       </template>
     </LayoutPageHeader>
 
@@ -330,10 +323,6 @@ async function joinTeam() {
   } finally {
     joining.value = false;
   }
-}
-
-function refresh() {
-  load();
 }
 
 function applyAddModalFromQuery() {

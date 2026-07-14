@@ -1,0 +1,462 @@
+{
+  "app": {
+    "name": "TG Модератор"
+  },
+  "nav": {
+    "main": "Основная",
+    "dashboard": "Панель",
+    "bots": "Боты",
+    "signOut": "Выйти"
+  },
+  "footer": {
+    "releaseNotes": "Что нового",
+    "author": "Автор",
+    "site": "Сайт",
+    "docs": "Документация",
+    "terms": "Условия",
+    "localeEn": "English",
+    "localeRu": "Русский"
+  },
+  "common": {
+    "loading": "Загрузка...",
+    "cancel": "Отмена",
+    "close": "Закрыть",
+    "save": "Сохранить",
+    "saving": "Сохранение...",
+    "refresh": "Обновить",
+    "edit": "Изменить",
+    "delete": "Удалить",
+    "back": "Назад",
+    "previous": "Назад",
+    "next": "Вперёд",
+    "yes": "Да",
+    "no": "Нет",
+    "add": "Добавить",
+    "adding": "Добавление...",
+    "added": "Добавлено",
+    "create": "Создать",
+    "creating": "Создание...",
+    "update": "Обновить",
+    "joining": "Подключение...",
+    "copy": "Копировать",
+    "revoke": "Отозвать",
+    "remove": "Удалить",
+    "leaveTeam": "Покинуть команду",
+    "enable": "Включить",
+    "disable": "Отключить",
+    "unknown": "Неизвестно",
+    "dash": "—",
+    "breadcrumb": "Навигационная цепочка",
+    "pageOf": "Страница {page} из {totalPages}",
+    "pageOfWithTotal": "Страница {page} из {totalPages} ({total} пользователей)",
+    "loadingCharts": "Загрузка графиков...",
+    "confirm": {
+      "removeChat": "Вы уверены, что хотите удалить этот чат?",
+      "deleteRule": "Удалить правило «{name}»?"
+    },
+    "errors": {
+      "loadDashboard": "Не удалось загрузить данные панели. Попробуйте снова.",
+      "createBot": "Не удалось создать бота",
+      "joinTeam": "Не удалось присоединиться к команде",
+      "saveMessageTemplates": "Не удалось сохранить шаблоны сообщений",
+      "resetMessageTemplates": "Не удалось сбросить шаблоны сообщений",
+      "startChatActivation": "Не удалось начать подключение чата",
+      "updateBotStatus": "Не удалось обновить статус бота",
+      "deleteBot": "Не удалось удалить бота",
+      "loadRuleTemplates": "Не удалось загрузить шаблоны правил",
+      "addRuleTemplate": "Не удалось добавить шаблон правила",
+      "saveRule": "Не удалось сохранить правило",
+      "deleteRule": "Не удалось удалить правило",
+      "loadChatUsers": "Не удалось загрузить пользователей чата",
+      "updateUser": "Не удалось обновить пользователя",
+      "loadReleaseNotes": "Не удалось загрузить release notes."
+    },
+    "roles": {
+      "owner": "Владелец",
+      "manager": "Участник"
+    },
+    "actions": {
+      "warning": "предупреждение",
+      "delete": "удаление",
+      "ban": "бан"
+    }
+  },
+  "page": {
+    "dashboard": {
+      "title": "Панель",
+      "documentTitle": "Панель",
+      "loading": "Загрузка панели...",
+      "emptyState": "Ботов пока нет. Откройте раздел «Боты», чтобы создать своего или присоединиться к команде по коду доступа.",
+      "manageBots": "Управление ботами"
+    },
+    "bots": {
+      "title": "Боты",
+      "documentTitle": "Боты"
+    },
+    "botDetail": {
+      "titleFallback": "Бот",
+      "documentTitleFallback": "Бот",
+      "notFound": "Бот не найден"
+    },
+    "moderation": {
+      "title": "Модерация",
+      "documentTitle": "Правила",
+      "documentTitleWithChat": "Правила · {chatName}",
+      "chatSubtitle": "Чат {chatId}"
+    },
+    "audit": {
+      "title": "Аудит модерации",
+      "documentTitle": "Аудит",
+      "subtitle": "Бот {'@'}{botId} — решения LLM (сначала новые)"
+    },
+    "releaseNotes": {
+      "title": "Что нового",
+      "documentTitle": "Что нового",
+      "subtitle": "История обновлений приложения. Здесь только то, что важно при работе с ботами, правилами и модерацией.",
+      "paginationNav": "Навигация по релизам"
+    },
+    "login": {
+      "documentTitle": "Вход"
+    },
+    "docs": {
+      "title": "Документация",
+      "documentTitle": "Документация",
+      "breadcrumb": "Документация",
+      "subtitle": "Скоро.",
+      "body": "Документация появится здесь. Пока используйте подсказки в интерфейсе и release notes."
+    },
+    "terms": {
+      "title": "Условия использования",
+      "documentTitle": "Условия",
+      "breadcrumb": "Условия",
+      "subtitle": "Скоро.",
+      "body": "Условия использования будут опубликованы здесь."
+    }
+  },
+  "dashboard": {
+    "kpi": {
+      "bots": "Боты",
+      "active": "{count} активных",
+      "inactive": "{count} неактивных",
+      "chats": "Чаты",
+      "acrossAllBots": "По всем ботам",
+      "today": "Сегодня",
+      "messages": "Сообщения",
+      "warnings": "Предупреждения",
+      "deletes": "Удаления",
+      "bans": "Баны",
+      "users": "Пользователи",
+      "active24h": "Активны (24 ч)",
+      "bannedDistinct": "Забанены (уник.)"
+    },
+    "chart": {
+      "activityTitle": "Активность (7 дней)",
+      "actionsTitle": "Действия (7 дней)",
+      "noActivity": "Нет активности за последние 7 дней",
+      "noActions": "Действий модерации пока нет",
+      "messages": "Сообщения",
+      "violations": "Нарушения",
+      "warnings": "Предупреждения",
+      "deletes": "Удаления",
+      "bans": "Баны"
+    },
+    "recentActivity": {
+      "title": "Недавняя активность",
+      "empty": "Событий модерации пока нет",
+      "time": "Время",
+      "bot": "Бот",
+      "chat": "Чат",
+      "action": "Действие",
+      "rule": "Правило",
+      "unknownRule": "Неизвестное правило"
+    }
+  },
+  "bot": {
+    "addBot": "Добавить бота",
+    "status": "Статус",
+    "statusLabel": "Статус:",
+    "active": "Активен",
+    "inactive": "Неактивен",
+    "chatsCount": "Чаты: {count}",
+    "emptyState": "У вас пока нет ботов. Создайте своего бота модерации или присоединитесь к существующей команде по коду доступа от владельца бота.",
+    "modal": {
+      "title": "Добавить бота",
+      "createTab": "Создать бота",
+      "joinTab": "Войти по коду",
+      "tokenLabel": "Токен бота",
+      "tokenPlaceholder": "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz",
+      "tokenHint": "Имя {'@'}username и отображаемое имя бота определяются автоматически по токену.",
+      "createButton": "Создать бота",
+      "joinDescription": "Введите код доступа от владельца бота. Вы присоединитесь как участник команды (manager).",
+      "accessCodeLabel": "Код доступа",
+      "accessCodePlaceholder": "abc123...",
+      "joinButton": "Присоединиться"
+    },
+    "tabs": {
+      "overview": "Обзор",
+      "moderation": "Модерация",
+      "team": "Команда"
+    },
+    "deliveryStatus": {
+      "healthy": "Работает",
+      "disabled": "Отключён",
+      "problem": "Проблема",
+      "unknown": "Неизвестно"
+    },
+    "created": "Создан {date}",
+    "chats": {
+      "title": "Чаты ({count})",
+      "addChat": "Добавить чат",
+      "noChats": "Чаты не настроены",
+      "id": "ID: {id}",
+      "rules": "Правила: {count}",
+      "silentMode": "Тихий режим:",
+      "moderation": "Модерация",
+      "placeholderInitials": "TG",
+      "health": {
+        "ok": "Готов",
+        "degraded": "Внимание",
+        "unhealthy": "Не работает",
+        "unknown": "Неизвестно"
+      },
+      "silentModeValues": {
+        "monitorOnly": "Только мониторинг",
+        "fullModeration": "Полная модерация"
+      },
+      "editModal": {
+        "title": "Редактировать чат",
+        "silentModeTitle": "Тихий режим",
+        "enableSilentMode": "Включить тихий режим",
+        "silentModeHelpTitle": "Тихий режим:",
+        "silentModeEnabled": "Включён: нарушения только в БД — без удаления, бана и предупреждений в Telegram",
+        "silentModeDisabled": "Выключен: действия по каждому правилу (удаление, предупреждение, бан — как настроено в правиле)",
+        "updateButton": "Обновить чат"
+      }
+    },
+    "statistics": {
+      "title": "Статистика",
+      "messagesToday": "Обработано сообщений (сегодня)",
+      "warningsToday": "Выдано предупреждений (сегодня)",
+      "bannedTotal": "Забанено пользователей (всего)",
+      "thisWeek": "За неделю",
+      "totalMessages": "Всего сообщений:",
+      "totalWarnings": "Всего предупреждений:",
+      "messagesDeleted": "Удалено сообщений:",
+      "usersSection": "Пользователи",
+      "active24h": "Активны (24 ч):",
+      "banned": "Забанены:",
+      "maxUnique": "Макс. уникальных:"
+    },
+    "recentActivity": {
+      "title": "Недавняя активность",
+      "audit": "Аудит",
+      "empty": "Недавней активности нет. Отправьте сообщения боту, чтобы увидеть логи здесь."
+    },
+    "dangerZone": {
+      "title": "Опасная зона",
+      "description": "Удаление бота безвозвратно удалит чаты, правила, участников команды и историю модерации. Отключение бота (Disable) данные не удаляет.",
+      "deleteButton": "Удалить бота",
+      "confirmHint": "Введите {botId} или DELETE для подтверждения.",
+      "confirmPlaceholder": "{'@'}{botId}",
+      "confirmButton": "Подтвердить удаление",
+      "deleting": "Удаление..."
+    },
+    "messageTemplates": {
+      "title": "Сообщения модерации",
+      "helpLink": "Как оформить сообщение",
+      "description": "Тексты Warning и Ban для бота (Telegram HTML). Если в шаблоне нет {'{'}user_mention{'}'}, упоминание добавится автоматически.",
+      "warningTab": "Предупреждение",
+      "banTab": "Бан",
+      "saved": "Шаблоны сохранены.",
+      "resetToDefault": "Сбросить к умолчанию"
+    },
+    "team": {
+      "title": "Доступ команды",
+      "loading": "Загрузка команды...",
+      "accessCode": "Код доступа:",
+      "accessCodeForOperators": "Код доступа доступен операторам бота.",
+      "accessCodeManagedByTeam": "Коды доступа управляются командой бота.",
+      "members": "Участники"
+    }
+  },
+  "chat": {
+    "activation": {
+      "retry": "Попробовать снова"
+    }
+  },
+  "moderation": {
+    "addFromTemplate": "Добавить из шаблона",
+    "addRule": "Добавить правило",
+    "loadingRules": "Загрузка правил...",
+    "emptyRules": "Правил пока нет. Добавьте своё правило или выберите пресет из каталога.",
+    "deleteOnViolation": "Удалять при нарушении:",
+    "banOnViolation": "Банить при нарушении:",
+    "afterWarnings": "(после {count} предупреждений)",
+    "chatUsers": {
+      "title": "Пользователи чата",
+      "description": "Пользователи с предупреждениями или банами. Владелец и manager могут сбросить предупреждения, разбанить или помиловать (оба действия).",
+      "loading": "Загрузка пользователей...",
+      "empty": "Нет пользователей с предупреждениями или банами.",
+      "user": "Пользователь",
+      "warnings": "Предупреждения",
+      "ban": "Бан",
+      "actions": "Действия",
+      "banned": "Забанен",
+      "userFallback": "Пользователь {userId}",
+      "resetWarn": "Сбросить warn",
+      "unban": "Разбанить",
+      "pardon": "Помиловать"
+    },
+    "templateLibrary": {
+      "title": "Шаблоны правил",
+      "description": "Готовые правила модерации. Каждая копия независима для этого чата.",
+      "loading": "Загрузка шаблонов..."
+    },
+    "ruleModal": {
+      "editTitle": "Редактировать правило",
+      "addTitle": "Добавить правило",
+      "nameLabel": "Название правила",
+      "descriptionLabel": "Описание",
+      "criteriaLabel": "Критерии",
+      "actionsTitle": "Действия при нарушении",
+      "deleteOnViolation": "Удалять сообщение при нарушении",
+      "banAfterWarnings": "Банить после порога предупреждений",
+      "warningsBeforeBanLabel": "Предупреждений до бана"
+    }
+  },
+  "audit": {
+    "loading": "Загрузка...",
+    "time": "Время",
+    "chat": "Чат",
+    "user": "Пользователь",
+    "message": "Сообщение",
+    "result": "Результат",
+    "rule": "Правило",
+    "confidence": "Уверенность",
+    "reasoning": "Обоснование",
+    "violation": "Нарушение",
+    "pass": "Ок",
+    "unknownRule": "Неизвестное правило",
+    "chatFallback": "Чат {chatId}",
+    "mobileMeta": "{chatName} · пользователь {userId}",
+    "mobileRule": "Правило:",
+    "empty": "Решений пока нет. Отправьте сообщения боту, чтобы увидеть записи аудита здесь.",
+    "breadcrumb": "Аудит"
+  },
+  "releaseNotes": {
+    "loading": "Загрузка...",
+    "empty": "Пока нет опубликованных релизов. После первого релиза здесь появится описание изменений.",
+    "githubLink": "Подробнее на GitHub",
+    "back": "Назад",
+    "forward": "Вперёд"
+  },
+  "login": {
+    "subtitle": "Войдите через Telegram, чтобы управлять ботами модерации.",
+    "signInButton": "Войти через Telegram",
+    "trouble": "Проблемы со входом?",
+    "getLinkFromBot": "Получить ссылку у бота"
+  },
+  "chatActivation": {
+    "prerequisites": [
+      "Войти на платформу тем же Telegram-аккаунтом, что пишет /activate.",
+      "Вы — owner или manager бота на платформе.",
+      "Бот — администратор группы с правами удалять сообщения и ограничивать участников.",
+      "Бот включён (Enable) — иначе webhook не обработает /activate."
+    ],
+    "existingGroupHint": "Откройте группу в Telegram и отправьте /activate (или /activate{'@'}имя_бота). Бот ответит об успехе или ошибке; чат появится здесь после подключения.",
+    "newGroupHint": "Откроется Telegram для добавления бота в группу. Если бот уже в нужной группе — выберите «Бот уже в группе».",
+    "popupBlockedMessage": "Браузер заблокировал окно Telegram. Разрешите всплывающие окна или выберите «Бот уже в группе» и выполните /activate.",
+    "expiredMessage": "Время ожидания истекло. Если бот уже в группе — выполните /activate там. Иначе попробуйте снова.",
+    "completed": "Чат подключён",
+    "failedDefault": "Не удалось подключить чат",
+    "modal": {
+      "title": "Подключить чат",
+      "intro": "Выберите сценарий. Войдите тем же Telegram-аккаунтом, что пишет /activate.",
+      "newGroupTitle": "Добавить в новую группу",
+      "newGroupHint": "Откроется Telegram (startgroup)",
+      "existingGroupTitle": "Бот уже в группе",
+      "existingGroupHint": "Выполните /activate в группе"
+    }
+  },
+  "botTemplate": {
+    "htmlHelp": {
+      "title": "Формат Telegram HTML",
+      "closeAria": "Закрыть",
+      "closeButton": "Закрыть",
+      "docsLink": "Официальная документация Telegram Bot API — HTML",
+      "sections": {
+        "format": {
+          "title": "Формат",
+          "body": "Сообщения Warning и Ban отправляются в Telegram с parse_mode HTML. Используйте только поддерживаемые теги; вложенные теги не нужны."
+        },
+        "supportedTags": {
+          "title": "Поддерживаемые теги",
+          "body": "<b>жирный</b>, <i>курсив</i>, <u>подчёркнутый</u>, <s>зачёркнутый</s>, <code>моноширинный</code>, <pre>блок кода</pre>, <a href=\"https://example.com\">ссылка</a>, <tg-spoiler>спойлер</tg-spoiler>.",
+          "example": "<b>Важно!</b> Нарушение: <i>{'{'}rule_name{'}'}</i>"
+        },
+        "placeholders": {
+          "title": "Плейсхолдеры",
+          "body": "Подставляются сервером: {'{'}user_mention{'}'}, {'{'}user_name{'}'}, {'{'}rule_name{'}'}, {'{'}warnings_current{'}'}, {'{'}warnings_max{'}'}, {'{'}warnings_left{'}'} (только Warning). Кнопки над полем вставляют их в курсор."
+        },
+        "userMention": {
+          "title": "Упоминание пользователя",
+          "body": "Если в шаблоне нет {'{'}user_mention{'}'}, бот допишет mention в конце отдельным абзацем."
+        },
+        "lineBreaks": {
+          "title": "Переносы строк",
+          "body": "Новая строка — символ перевода строки (Enter в поле). Для пустой строки между блоками нажмите Enter дважды."
+        },
+        "escaping": {
+          "title": "Экранирование",
+          "body": "Символы <, > и & в обычном тексте должны быть &lt;, &gt;, &amp;. В плейсхолдерах и готовых HTML-тегах экранировать не нужно."
+        },
+        "length": {
+          "title": "Длина",
+          "body": "Не больше 4096 символов на шаблон (лимит Telegram)."
+        }
+      }
+    },
+    "placeholders": {
+      "warning": {
+        "userMention": {
+          "label": "Упоминание",
+          "hint": "Пинг пользователя ({'@'}username или ссылка на имя)"
+        },
+        "userName": {
+          "label": "Имя",
+          "hint": "Отображаемое имя без пинга"
+        },
+        "ruleName": {
+          "label": "Правило",
+          "hint": "Название нарушенного правила"
+        },
+        "warningsCurrent": {
+          "label": "Warn #",
+          "hint": "Номер предупреждения после этого warn"
+        },
+        "warningsMax": {
+          "label": "Макс. warn",
+          "hint": "Порог до бана"
+        },
+        "warningsLeft": {
+          "label": "Осталось",
+          "hint": "Предупреждений до бана"
+        }
+      },
+      "ban": {
+        "userMention": {
+          "label": "Упоминание",
+          "hint": "Пинг пользователя ({'@'}username или ссылка на имя)"
+        },
+        "userName": {
+          "label": "Имя",
+          "hint": "Отображаемое имя без пинга"
+        },
+        "ruleName": {
+          "label": "Правило",
+          "hint": "Название нарушенного правила"
+        }
+      }
+    }
+  }
+}

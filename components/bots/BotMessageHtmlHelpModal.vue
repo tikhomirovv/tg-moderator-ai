@@ -15,12 +15,12 @@
       >
         <div class="flex items-start justify-between gap-4 mb-4">
           <h3 id="bot-message-html-help-title" class="text-lg font-semibold">
-            Формат Telegram HTML
+            {{ t("botTemplate.htmlHelp.title") }}
           </h3>
           <button
             type="button"
             class="text-gray-500 hover:text-gray-800 text-xl leading-none"
-            aria-label="Закрыть"
+            :aria-label="t('botTemplate.htmlHelp.closeAria')"
             @click="emit('close')"
           >
             ×
@@ -28,14 +28,16 @@
         </div>
 
         <div class="space-y-4 text-sm text-gray-700">
-          <section v-for="section in BOT_MESSAGE_HTML_HELP" :key="section.title">
-            <h4 class="font-medium text-gray-900 mb-1">{{ section.title }}</h4>
-            <p>{{ section.body }}</p>
+          <section v-for="sectionKey in htmlHelpSectionKeys" :key="sectionKey">
+            <h4 class="font-medium text-gray-900 mb-1">
+              {{ t(`botTemplate.htmlHelp.sections.${sectionKey}.title`) }}
+            </h4>
+            <p>{{ t(`botTemplate.htmlHelp.sections.${sectionKey}.body`) }}</p>
             <p
-              v-if="section.example"
+              v-if="sectionKey === 'supportedTags'"
               class="mt-2 font-mono text-xs bg-gray-50 border rounded px-2 py-1 whitespace-pre-wrap"
             >
-              {{ section.example }}
+              {{ t("botTemplate.htmlHelp.sections.supportedTags.example") }}
             </p>
           </section>
 
@@ -46,7 +48,7 @@
               rel="noopener noreferrer"
               class="text-blue-600 hover:underline"
             >
-              Официальная документация Telegram Bot API — HTML
+              {{ t("botTemplate.htmlHelp.docsLink") }}
             </a>
           </p>
         </div>
@@ -57,7 +59,7 @@
             class="px-3 py-2 border rounded hover:bg-gray-50 text-sm"
             @click="emit('close')"
           >
-            Закрыть
+            {{ t("botTemplate.htmlHelp.closeButton") }}
           </button>
         </div>
       </div>
@@ -67,10 +69,17 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
-import {
-  BOT_MESSAGE_HTML_HELP,
-  TELEGRAM_HTML_DOCS_URL,
-} from "~/lib/bot-message-template-ui";
+import { TELEGRAM_HTML_DOCS_URL } from "~/lib/bot-message-template-ui";
+
+const htmlHelpSectionKeys = [
+  "format",
+  "supportedTags",
+  "placeholders",
+  "userMention",
+  "lineBreaks",
+  "escaping",
+  "length",
+] as const;
 
 const props = defineProps<{
   open: boolean;
@@ -79,6 +88,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: [];
 }>();
+
+const { t } = useI18n();
 
 const dialogRef = ref<HTMLElement | null>(null);
 

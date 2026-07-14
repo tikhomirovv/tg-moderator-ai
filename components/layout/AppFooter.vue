@@ -2,7 +2,7 @@
   <footer class="border-t bg-white py-4 px-4 text-center text-sm text-gray-500">
     <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
       <NuxtLink to="/release-notes" class="hover:text-gray-800 hover:underline">
-        Что нового
+        {{ t("footer.releaseNotes") }}
       </NuxtLink>
       <span class="text-gray-300">·</span>
       <a
@@ -11,7 +11,7 @@
         rel="noopener noreferrer"
         class="hover:text-gray-800 hover:underline"
       >
-        Author
+        {{ t("footer.author") }}
       </a>
       <span class="text-gray-300">·</span>
       <a
@@ -20,12 +20,21 @@
         rel="noopener noreferrer"
         class="hover:text-gray-800 hover:underline"
       >
-        Site
+        {{ t("footer.site") }}
       </a>
       <span class="text-gray-300">·</span>
-      <NuxtLink to="/docs" class="hover:text-gray-800 hover:underline">Docs</NuxtLink>
+      <NuxtLink to="/docs" class="hover:text-gray-800 hover:underline">
+        {{ t("footer.docs") }}
+      </NuxtLink>
       <span class="text-gray-300">·</span>
-      <NuxtLink to="/terms" class="hover:text-gray-800 hover:underline">Terms</NuxtLink>
+      <NuxtLink to="/terms" class="hover:text-gray-800 hover:underline">
+        {{ t("footer.terms") }}
+      </NuxtLink>
+      <span class="text-gray-300 hidden sm:inline">·</span>
+      <LayoutLocaleSwitcher class="hidden sm:inline-flex" />
+    </div>
+    <div class="mt-2 flex flex-col items-center gap-2 sm:hidden">
+      <LayoutLocaleSwitcher />
     </div>
     <div class="mt-2">
       <NuxtLink to="/release-notes" class="hover:text-gray-800 hover:underline">
@@ -37,6 +46,8 @@
 
 <script setup lang="ts">
 import { APP_LINKS } from "~/lib/app-config";
+
+const { t } = useI18n();
 
 const runtimeConfig = useRuntimeConfig();
 const appVersion = computed(() => runtimeConfig.public.appVersion as string);

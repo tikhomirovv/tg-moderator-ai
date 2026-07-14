@@ -3,34 +3,34 @@
     <LayoutPageHeader
       :breadcrumbs="breadcrumbs"
       :back-to="backTo"
-      title="Moderation audit"
-      :subtitle="bot ? `Bot @${bot.id} — LLM decisions (newest first)` : undefined"
+      :title="t('page.audit.title')"
+      :subtitle="bot ? t('page.audit.subtitle', { botId: bot.id }) : undefined"
     >
       <template #actions>
         <button
           @click="loadDecisions"
           class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
         >
-          Refresh
+          {{ t("common.refresh") }}
         </button>
       </template>
     </LayoutPageHeader>
 
-    <div v-if="loading" class="text-gray-500">Loading...</div>
+    <div v-if="loading" class="text-gray-500">{{ t("audit.loading") }}</div>
 
     <div v-else class="bg-white border rounded overflow-hidden">
       <div v-if="decisions.length > 0" class="hidden md:block overflow-x-auto">
         <table class="min-w-full text-sm">
           <thead class="bg-gray-50 text-left text-gray-600">
             <tr>
-              <th class="px-4 py-3 font-medium">Time</th>
-              <th class="px-4 py-3 font-medium">Chat</th>
-              <th class="px-4 py-3 font-medium">User</th>
-              <th class="px-4 py-3 font-medium">Message</th>
-              <th class="px-4 py-3 font-medium">Result</th>
-              <th class="px-4 py-3 font-medium">Rule</th>
-              <th class="px-4 py-3 font-medium">Confidence</th>
-              <th class="px-4 py-3 font-medium">Reasoning</th>
+              <th class="px-4 py-3 font-medium">{{ t("audit.time") }}</th>
+              <th class="px-4 py-3 font-medium">{{ t("audit.chat") }}</th>
+              <th class="px-4 py-3 font-medium">{{ t("audit.user") }}</th>
+              <th class="px-4 py-3 font-medium">{{ t("audit.message") }}</th>
+              <th class="px-4 py-3 font-medium">{{ t("audit.result") }}</th>
+              <th class="px-4 py-3 font-medium">{{ t("audit.rule") }}</th>
+              <th class="px-4 py-3 font-medium">{{ t("audit.confidence") }}</th>
+              <th class="px-4 py-3 font-medium">{{ t("audit.reasoning") }}</th>
             </tr>
           </thead>
           <tbody class="divide-y">
@@ -58,7 +58,7 @@
               </td>
               <td class="px-4 py-3">
                 <span :class="resultBadgeClass(item.violation_detected)">
-                  {{ item.violation_detected ? "Violation" : "Pass" }}
+                  {{ item.violation_detected ? t("audit.violation") : t("audit.pass") }}
                 </span>
               </td>
               <td class="px-4 py-3 text-gray-700">
@@ -87,16 +87,22 @@
         <div v-for="item in decisions" :key="`card-${item._id}`" class="p-4 space-y-2">
           <div class="flex items-center justify-between gap-2">
             <span :class="resultBadgeClass(item.violation_detected)">
-              {{ item.violation_detected ? "Violation" : "Pass" }}
+              {{ item.violation_detected ? t("audit.violation") : t("audit.pass") }}
             </span>
             <span class="text-xs text-gray-500">{{ formatDate(item.timestamp) }}</span>
           </div>
           <div class="text-sm text-gray-600">
-            {{ chatName(item.chat_id) }} · user {{ item.user_id }}
+            {{
+              t("audit.mobileMeta", {
+                chatName: chatName(item.chat_id),
+                userId: item.user_id,
+              })
+            }}
           </div>
           <div class="text-sm">{{ displayText(item.message_text, `msg-${item._id}`) }}</div>
           <div v-if="item.rule_violated || item.rule_name" class="text-sm">
-            Rule: <span class="font-medium">{{ formatRuleLabel(item) }}</span>
+            {{ t("audit.mobileRule") }}
+            <span class="font-medium">{{ formatRuleLabel(item) }}</span>
             · {{ Math.round(item.ai_confidence * 100) }}%
           </div>
           <div class="text-sm text-gray-700">
@@ -106,7 +112,7 @@
       </div>
 
       <div v-else class="text-gray-500 text-center py-10 px-4">
-        No decisions yet. Send messages to the bot to see audit entries here.
+        {{ t("audit.empty") }}
       </div>
 
       <div
@@ -119,10 +125,10 @@
           :disabled="pagination.page <= 1"
           @click="goToPage(pagination.page - 1)"
         >
-          Previous
+          {{ t("common.previous") }}
         </button>
         <span class="text-gray-600">
-          Page {{ pagination.page }} of {{ pagination.total_pages }}
+          {{ t("common.pageOf", { page: pagination.page, totalPages: pagination.total_pages }) }}
         </span>
         <button
           type="button"
@@ -130,7 +136,7 @@
           :disabled="pagination.page >= pagination.total_pages"
           @click="goToPage(pagination.page + 1)"
         >
-          Next
+          {{ t("common.next") }}
         </button>
       </div>
     </div>
@@ -153,15 +159,17 @@ type DecisionItem = {
   timestamp: string;
 };
 
+const { t, locale } = useI18n();
+
 const route = useRoute();
 const botId = route.params.id as string;
 
-usePageTitle("Аудит");
+usePageTitle(() => t("page.audit.documentTitle"));
 
 const { breadcrumbs, backTo } = usePageBreadcrumbs(() => [
-  { label: "Bots", to: "/bots" },
+  { label: t("nav.bots"), to: "/bots" },
   { label: bot.value ? `@${bot.value.id}` : `@${botId}`, to: `/bots/${botId}` },
-  { label: "Audit" },
+  { label: t("audit.breadcrumb") },
 ]);
 
 const bot = ref<any>(null);
@@ -178,7 +186,8 @@ const expanded = ref<Record<string, boolean>>({});
 const TRUNCATE_LEN = 120;
 
 function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString("ru-RU", {
+  const loc = locale.value === "ru" ? "ru-RU" : "en-US";
+  return new Date(dateString).toLocaleDateString(loc, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -210,7 +219,7 @@ function resultBadgeClass(violation: boolean) {
 
 function chatName(chatId: number) {
   const chat = bot.value?.chats?.find((c: any) => c.chat_id === chatId);
-  return chat?.name || `Chat ${chatId}`;
+  return chat?.name || t("audit.chatFallback", { chatId });
 }
 
 function formatRuleLabel(item: DecisionItem) {
@@ -218,9 +227,9 @@ function formatRuleLabel(item: DecisionItem) {
     return item.rule_name;
   }
   if (item.rule_violated) {
-    return "Unknown rule";
+    return t("audit.unknownRule");
   }
-  return "—";
+  return t("common.dash");
 }
 
 async function loadBot() {

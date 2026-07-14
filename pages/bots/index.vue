@@ -3,7 +3,7 @@
     <LayoutPageHeader
       :breadcrumbs="breadcrumbs"
       :back-to="backTo"
-      title="Bots"
+      :title="t('page.bots.title')"
     >
       <template #actions>
         <button
@@ -11,12 +11,12 @@
           class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
           @click="openAddModal('create')"
         >
-          Add bot
+          {{ t("bot.addBot") }}
         </button>
       </template>
     </LayoutPageHeader>
 
-    <div v-if="loading" class="text-gray-500">Loading...</div>
+    <div v-if="loading" class="text-gray-500">{{ t("common.loading") }}</div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <NuxtLink
@@ -50,14 +50,14 @@
             </div>
             <div class="text-xs text-gray-500">@{{ bot.id }}</div>
             <div class="text-xs text-gray-500">
-              Status:
+              {{ t("bot.statusLabel") }}
               <span
                 :class="bot.is_active ? 'text-green-600' : 'text-red-600'"
-                >{{ bot.is_active ? "Active" : "Inactive" }}</span
+                >{{ bot.is_active ? t("bot.active") : t("bot.inactive") }}</span
               >
             </div>
             <div class="text-xs text-gray-500">
-              Chats: {{ bot.chats?.length || 0 }}
+              {{ t("bot.chatsCount", { count: bot.chats?.length || 0 }) }}
             </div>
           </div>
         </div>
@@ -69,15 +69,14 @@
       class="bg-white border rounded p-8 text-center text-gray-600"
     >
       <p class="mb-4">
-        You have no bots yet. Create your own moderation bot or join an existing
-        team with an access code from the bot owner.
+        {{ t("bot.emptyState") }}
       </p>
       <button
         type="button"
         class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
         @click="openAddModal('create')"
       >
-        Add bot
+        {{ t("bot.addBot") }}
       </button>
     </div>
 
@@ -86,7 +85,7 @@
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
     >
       <div class="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 class="text-lg font-semibold mb-4">Add bot</h3>
+        <h3 class="text-lg font-semibold mb-4">{{ t("bot.modal.title") }}</h3>
 
         <div class="flex gap-2 mb-4 border-b">
           <button
@@ -99,7 +98,7 @@
             "
             @click="addModalTab = 'create'"
           >
-            Create bot
+            {{ t("bot.modal.createTab") }}
           </button>
           <button
             type="button"
@@ -111,7 +110,7 @@
             "
             @click="addModalTab = 'join'"
           >
-            Join with code
+            {{ t("bot.modal.joinTab") }}
           </button>
         </div>
 
@@ -121,18 +120,18 @@
           @submit.prevent="createBot"
         >
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Bot Token</label
-            >
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{
+              t("bot.modal.tokenLabel")
+            }}</label>
             <input
               v-model="newBotToken"
               type="password"
               class="w-full border rounded px-3 py-2"
-              placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
+              :placeholder="t('bot.modal.tokenPlaceholder')"
               required
             />
             <p class="text-xs text-gray-500 mt-1">
-              Bot @username and display name are resolved automatically from the token.
+              {{ t("bot.modal.tokenHint") }}
             </p>
           </div>
 
@@ -144,32 +143,31 @@
               class="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
               :disabled="creating"
             >
-              {{ creating ? "Creating..." : "Create bot" }}
+              {{ creating ? t("common.creating") : t("bot.modal.createButton") }}
             </button>
             <button
               type="button"
               class="px-3 py-2 border rounded hover:bg-gray-50"
               @click="closeAddModal"
             >
-              Cancel
+              {{ t("common.cancel") }}
             </button>
           </div>
         </form>
 
         <form v-else class="space-y-4" @submit.prevent="joinTeam">
           <p class="text-sm text-gray-600">
-            Enter the access code from the bot owner. You will join as a team
-            member (manager).
+            {{ t("bot.modal.joinDescription") }}
           </p>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Access code</label
-            >
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{
+              t("bot.modal.accessCodeLabel")
+            }}</label>
             <input
               v-model="joinCode"
               type="text"
               class="w-full border rounded px-3 py-2"
-              placeholder="abc123..."
+              :placeholder="t('bot.modal.accessCodePlaceholder')"
               required
             />
           </div>
@@ -180,14 +178,14 @@
               class="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               :disabled="joining"
             >
-              {{ joining ? "Joining..." : "Join team" }}
+              {{ joining ? t("common.joining") : t("bot.modal.joinButton") }}
             </button>
             <button
               type="button"
               class="px-3 py-2 border rounded hover:bg-gray-50"
               @click="closeAddModal"
             >
-              Cancel
+              {{ t("common.cancel") }}
             </button>
           </div>
         </form>
@@ -200,9 +198,13 @@
 import { ref, onMounted } from "vue";
 import type { BotListItem, BotMemberRole } from "~/types/bot";
 
-usePageTitle("Боты");
+const { t } = useI18n();
 
-const { breadcrumbs, backTo } = usePageBreadcrumbs([{ label: "Bots" }]);
+usePageTitle(() => t("page.bots.documentTitle"));
+
+const { breadcrumbs, backTo } = usePageBreadcrumbs(() => [
+  { label: t("page.bots.title") },
+]);
 
 type AddModalTab = "create" | "join";
 
@@ -221,9 +223,8 @@ const joinCode = ref("");
 const newBotToken = ref("");
 
 function roleLabel(role: BotMemberRole | undefined) {
-  if (role === "owner") return "Owner";
-  if (role === "manager") return "Member";
-  return "Member";
+  if (role === "owner") return t("common.roles.owner");
+  return t("common.roles.manager");
 }
 
 function roleBadgeClass(role: BotMemberRole | undefined) {
@@ -298,7 +299,7 @@ async function createBot() {
     closeAddModal();
     await load();
   } catch (error) {
-    createError.value = readFetchError(error, "Failed to create bot");
+    createError.value = readFetchError(error, t("common.errors.createBot"));
     console.error("Error creating bot:", error);
   } finally {
     creating.value = false;
@@ -318,7 +319,7 @@ async function joinTeam() {
     await load();
     await navigateTo(`/bots/${response.data.bot_id}`);
   } catch (error) {
-    joinError.value = readFetchError(error, "Failed to join team");
+    joinError.value = readFetchError(error, t("common.errors.joinTeam"));
     console.error("Error joining team:", error);
   } finally {
     joining.value = false;

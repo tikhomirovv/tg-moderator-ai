@@ -3,7 +3,7 @@
     <LayoutPageHeader
       :breadcrumbs="breadcrumbs"
       :back-to="backTo"
-      :title="bot?.name ?? 'Bot'"
+      :title="bot?.name ?? t('page.botDetail.titleFallback')"
       :subtitle="bot ? `@${bot.id}` : undefined"
     >
       <template #actions>
@@ -16,12 +16,12 @@
           "
           class="px-3 py-2 text-white rounded text-sm"
         >
-          {{ bot?.is_active ? "Disable" : "Enable" }}
+          {{ bot?.is_active ? t("common.disable") : t("common.enable") }}
         </button>
       </template>
     </LayoutPageHeader>
 
-    <div v-if="loading" class="text-gray-500">Loading...</div>
+    <div v-if="loading" class="text-gray-500">{{ t("common.loading") }}</div>
 
     <template v-else>
       <div
@@ -36,7 +36,7 @@
           class="mt-2 text-blue-700 hover:underline"
           @click="retryChatActivation"
         >
-          Попробовать снова
+          {{ t("chat.activation.retry") }}
         </button>
       </div>
 
@@ -70,10 +70,10 @@
           v-if="bot.my_role"
           class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
         >
-          {{ bot.my_role }}
+          {{ roleLabel(bot.my_role) }}
         </span>
         <span class="inline-flex px-2.5 py-1 rounded-full text-xs text-gray-600 bg-gray-50">
-          Created {{ formatDate(bot.created_at) }}
+          {{ t("bot.created", { date: formatDate(bot.created_at) }) }}
         </span>
         <p
           v-if="deliveryProblemMessage"
@@ -87,7 +87,7 @@
       <div class="bg-white border rounded p-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-medium">
-            Chats ({{ bot.chats?.length || 0 }})
+            {{ t("bot.chats.title", { count: bot.chats?.length || 0 }) }}
           </h3>
           <button
             v-if="canManageBot"
@@ -96,7 +96,7 @@
             :disabled="chatActivation.status.value === 'waiting'"
             @click="openAddChatActivationModal"
           >
-            Add Chat
+            {{ t("bot.chats.addChat") }}
           </button>
         </div>
         <div v-if="bot.chats && bot.chats.length > 0" class="space-y-3">
@@ -117,16 +117,16 @@
                   v-else
                   class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500"
                 >
-                  TG
+                  {{ t("bot.chats.placeholderInitials") }}
                 </div>
                 <div class="min-w-0">
                   <div class="font-medium truncate">{{ chat.name }}</div>
-                  <div class="text-sm text-gray-600">ID: {{ chat.chat_id }}</div>
+                  <div class="text-sm text-gray-600">{{ t("bot.chats.id", { id: chat.chat_id }) }}</div>
                   <div class="text-sm text-gray-600">
-                    Rules: {{ chat.rules_count || 0 }}
+                    {{ t("bot.chats.rules", { count: chat.rules_count || 0 }) }}
                   </div>
                   <div class="text-sm text-gray-600">
-                    Silent Mode:
+                    {{ t("bot.chats.silentMode") }}
                     <span :class="getSilentModeClass(chat)">
                       {{ getSilentModeText(chat) }}
                     </span>
@@ -152,36 +152,36 @@
                   :to="`/bots/${botId}/chats/${chat.chat_id}/moderation`"
                   class="text-green-700 text-sm hover:underline"
                 >
-                  Moderation
+                  {{ t("bot.chats.moderation") }}
                 </NuxtLink>
                 <button
                   @click="editChat(chat)"
                   class="text-blue-600 text-sm hover:underline"
                 >
-                  Edit
+                  {{ t("common.edit") }}
                 </button>
                 <button
                   @click="removeChat(chat.chat_id)"
                   class="text-red-600 text-sm hover:underline"
                 >
-                  Remove
+                  {{ t("common.remove") }}
                 </button>
               </div>
             </div>
           </div>
         </div>
-        <div v-else class="text-gray-500">No chats configured</div>
+        <div v-else class="text-gray-500">{{ t("bot.chats.noChats") }}</div>
       </div>
 
       <!-- Статистика -->
       <div class="bg-white border rounded p-6">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-medium">Statistics</h3>
+          <h3 class="text-lg font-medium">{{ t("bot.statistics.title") }}</h3>
           <button
             @click="loadStatistics"
             class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
           >
-            Refresh
+            {{ t("common.refresh") }}
           </button>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -189,41 +189,41 @@
             <div class="text-2xl font-bold text-blue-600">
               {{ statistics?.today?.messages_processed || 0 }}
             </div>
-            <div class="text-sm text-gray-600">Messages Processed (Today)</div>
+            <div class="text-sm text-gray-600">{{ t("bot.statistics.messagesToday") }}</div>
           </div>
           <div class="text-center">
             <div class="text-2xl font-bold text-yellow-600">
               {{ statistics?.today?.warnings_issued || 0 }}
             </div>
-            <div class="text-sm text-gray-600">Warnings Issued (Today)</div>
+            <div class="text-sm text-gray-600">{{ t("bot.statistics.warningsToday") }}</div>
           </div>
           <div class="text-center">
             <div class="text-2xl font-bold text-red-600">
               {{ statistics?.users?.banned_count || 0 }}
             </div>
-            <div class="text-sm text-gray-600">Users Banned (Total)</div>
+            <div class="text-sm text-gray-600">{{ t("bot.statistics.bannedTotal") }}</div>
           </div>
         </div>
 
         <!-- Дополнительная статистика -->
         <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="bg-gray-50 rounded p-4">
-            <h4 class="font-medium text-gray-700 mb-2">This Week</h4>
+            <h4 class="font-medium text-gray-700 mb-2">{{ t("bot.statistics.thisWeek") }}</h4>
             <div class="space-y-1 text-sm">
               <div class="flex justify-between">
-                <span>Total Messages:</span>
+                <span>{{ t("bot.statistics.totalMessages") }}</span>
                 <span class="font-medium">{{
                   statistics?.week?.total_messages_processed || 0
                 }}</span>
               </div>
               <div class="flex justify-between">
-                <span>Total Warnings:</span>
+                <span>{{ t("bot.statistics.totalWarnings") }}</span>
                 <span class="font-medium">{{
                   statistics?.week?.total_warnings_issued || 0
                 }}</span>
               </div>
               <div class="flex justify-between">
-                <span>Messages Deleted:</span>
+                <span>{{ t("bot.statistics.messagesDeleted") }}</span>
                 <span class="font-medium">{{
                   statistics?.week?.total_messages_deleted || 0
                 }}</span>
@@ -231,22 +231,22 @@
             </div>
           </div>
           <div class="bg-gray-50 rounded p-4">
-            <h4 class="font-medium text-gray-700 mb-2">Users</h4>
+            <h4 class="font-medium text-gray-700 mb-2">{{ t("bot.statistics.usersSection") }}</h4>
             <div class="space-y-1 text-sm">
               <div class="flex justify-between">
-                <span>Active (24h):</span>
+                <span>{{ t("bot.statistics.active24h") }}</span>
                 <span class="font-medium text-green-600">{{
                   statistics?.users?.active_count || 0
                 }}</span>
               </div>
               <div class="flex justify-between">
-                <span>Banned:</span>
+                <span>{{ t("bot.statistics.banned") }}</span>
                 <span class="font-medium text-red-600">{{
                   statistics?.users?.banned_count || 0
                 }}</span>
               </div>
               <div class="flex justify-between">
-                <span>Max Unique:</span>
+                <span>{{ t("bot.statistics.maxUnique") }}</span>
                 <span class="font-medium">{{
                   statistics?.week?.max_unique_users || 0
                 }}</span>
@@ -259,19 +259,19 @@
       <!-- Recent Logs -->
       <div class="bg-white border rounded p-6">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-medium">Recent Activity</h3>
+          <h3 class="text-lg font-medium">{{ t("bot.recentActivity.title") }}</h3>
           <div class="flex gap-2">
             <NuxtLink
               :to="`/bots/${botId}/audit`"
               class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
             >
-              Audit
+              {{ t("bot.recentActivity.audit") }}
             </NuxtLink>
             <button
               @click="loadLogs"
               class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
             >
-              Refresh
+              {{ t("common.refresh") }}
             </button>
           </div>
         </div>
@@ -293,15 +293,14 @@
           </div>
         </div>
         <div v-else class="text-gray-500 text-center py-4">
-          No recent activity. Send messages to the bot to see logs here.
+          {{ t("bot.recentActivity.empty") }}
         </div>
       </div>
 
       <div v-if="canManageBot" class="bg-white border border-red-200 rounded p-6">
-        <h3 class="text-lg font-medium text-red-700 mb-2">Danger zone</h3>
+        <h3 class="text-lg font-medium text-red-700 mb-2">{{ t("bot.dangerZone.title") }}</h3>
         <p class="text-sm text-gray-600 mb-4">
-          Удаление бота безвозвратно удалит чаты, правила, участников команды и
-          историю модерации. Отключение бота (Disable) данные не удаляет.
+          {{ t("bot.dangerZone.description") }}
         </p>
 
         <div v-if="!showDeleteConfirm" class="flex">
@@ -310,20 +309,19 @@
             class="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
             @click="openDeleteConfirm"
           >
-            Удалить бота
+            {{ t("bot.dangerZone.deleteButton") }}
           </button>
         </div>
 
         <div v-else class="space-y-3 max-w-md">
           <p class="text-sm text-gray-700">
-            Введите <code class="bg-gray-100 px-1 rounded">@{{ bot.id }}</code> или
-            <code class="bg-gray-100 px-1 rounded">DELETE</code> для подтверждения.
+            {{ t("bot.dangerZone.confirmHint", { botId: bot.id }) }}
           </p>
           <input
             v-model="deleteConfirmText"
             type="text"
             class="w-full border rounded px-3 py-2 text-sm"
-            :placeholder="`@${bot.id}`"
+            :placeholder="t('bot.dangerZone.confirmPlaceholder', { botId: bot.id })"
           />
           <p v-if="deleteError" class="text-sm text-red-600">{{ deleteError }}</p>
           <div class="flex gap-2">
@@ -333,7 +331,7 @@
               :disabled="!canConfirmDelete || deletingBot"
               @click="deleteBot"
             >
-              {{ deletingBot ? "Удаление..." : "Подтвердить удаление" }}
+              {{ deletingBot ? t("bot.dangerZone.deleting") : t("bot.dangerZone.confirmButton") }}
             </button>
             <button
               type="button"
@@ -341,7 +339,7 @@
               :disabled="deletingBot"
               @click="cancelDeleteConfirm"
             >
-              Отмена
+              {{ t("common.cancel") }}
             </button>
           </div>
         </div>
@@ -353,19 +351,17 @@
         class="bg-white border rounded p-6"
       >
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
-          <h3 class="text-lg font-medium">Moderation messages</h3>
+          <h3 class="text-lg font-medium">{{ t("bot.messageTemplates.title") }}</h3>
           <button
             type="button"
             class="text-sm text-blue-600 hover:underline"
             @click="showHtmlHelpModal = true"
           >
-            Как оформить сообщение
+            {{ t("bot.messageTemplates.helpLink") }}
           </button>
         </div>
         <p class="text-sm text-gray-600 mb-4">
-          Per-bot Warning and Ban texts (Telegram HTML). If
-          <code class="text-xs">{user_mention}</code>
-          is missing from the template, a mention is appended automatically.
+          {{ t("bot.messageTemplates.description") }}
         </p>
 
         <div class="flex gap-2 mb-4 border-b">
@@ -379,7 +375,7 @@
             "
             @click="messageTemplateTab = 'warning'"
           >
-            Warning
+            {{ t("bot.messageTemplates.warningTab") }}
           </button>
           <button
             type="button"
@@ -391,7 +387,7 @@
             "
             @click="messageTemplateTab = 'ban'"
           >
-            Ban
+            {{ t("bot.messageTemplates.banTab") }}
           </button>
         </div>
 
@@ -401,10 +397,10 @@
             :key="chip.key"
             type="button"
             class="text-xs px-2 py-1 rounded-full bg-gray-100 hover:bg-gray-200"
-            :title="chip.hint"
+            :title="t(chip.hintKey)"
             @click="insertTemplatePlaceholder(chip.key)"
           >
-            {{ chip.label }}
+            {{ t(chip.labelKey) }}
           </button>
         </div>
 
@@ -419,7 +415,7 @@
           {{ templateSaveError }}
         </p>
         <p v-if="templateSaveSuccess" class="text-sm text-green-600 mt-2">
-          Templates saved.
+          {{ t("bot.messageTemplates.saved") }}
         </p>
 
         <div class="flex gap-2 mt-4">
@@ -429,7 +425,7 @@
             :disabled="savingTemplates"
             @click="saveMessageTemplates"
           >
-            {{ savingTemplates ? "Saving..." : "Save" }}
+            {{ savingTemplates ? t("common.saving") : t("common.save") }}
           </button>
           <button
             type="button"
@@ -437,18 +433,18 @@
             :disabled="savingTemplates"
             @click="resetAndSaveMessageTemplates"
           >
-            Reset to default
+            {{ t("bot.messageTemplates.resetToDefault") }}
           </button>
         </div>
       </div>
 
       <div v-if="activeTab === 'team'" class="bg-white border rounded p-6">
-        <h3 class="text-lg font-medium mb-4">Team Access</h3>
-        <div v-if="teamLoading" class="text-gray-500 text-sm">Loading team...</div>
+        <h3 class="text-lg font-medium mb-4">{{ t("bot.team.title") }}</h3>
+        <div v-if="teamLoading" class="text-gray-500 text-sm">{{ t("bot.team.loading") }}</div>
         <div v-else class="space-y-4">
           <div v-if="canManageBot && accessCode" class="flex flex-wrap items-center gap-3">
             <div class="text-sm">
-              Access code:
+              {{ t("bot.team.accessCode") }}
               <code class="bg-gray-100 px-2 py-1 rounded">{{ accessCode }}</code>
             </div>
             <button
@@ -456,25 +452,25 @@
               class="text-sm text-blue-600 hover:underline"
               @click="copyAccessCode"
             >
-              Copy
+              {{ t("common.copy") }}
             </button>
             <button
               type="button"
               class="text-sm text-red-600 hover:underline"
               @click="revokeAccessCode"
             >
-              Revoke
+              {{ t("common.revoke") }}
             </button>
           </div>
           <p v-else-if="canManageBot" class="text-sm text-gray-500">
-            Access code is available to bot operators.
+            {{ t("bot.team.accessCodeForOperators") }}
           </p>
           <p v-else class="text-sm text-gray-500">
-            Access codes are managed by the bot team.
+            {{ t("bot.team.accessCodeManagedByTeam") }}
           </p>
 
           <div v-if="teamMembers.length" class="space-y-2">
-            <h4 class="text-sm font-medium text-gray-700">Members</h4>
+            <h4 class="text-sm font-medium text-gray-700">{{ t("bot.team.members") }}</h4>
             <div
               v-for="member in teamMembers"
               :key="member.user_id"
@@ -484,7 +480,7 @@
                 <span class="font-medium">
                   {{ member.username ? `@${member.username}` : member.name }}
                 </span>
-                <span class="text-gray-500 ml-2">{{ member.role }}</span>
+                <span class="text-gray-500 ml-2">{{ roleLabel(member.role) }}</span>
               </div>
               <button
                 v-if="canManageBot && member.role === 'manager' && member.user_id !== bot?.my_user_id"
@@ -492,7 +488,7 @@
                 class="text-red-600 hover:underline"
                 @click="removeMember(member.user_id)"
               >
-                Remove
+                {{ t("common.remove") }}
               </button>
               <button
                 v-else-if="canManageBot && member.role === 'manager' && member.user_id === bot?.my_user_id"
@@ -500,7 +496,7 @@
                 class="text-red-600 hover:underline"
                 @click="removeMember(member.user_id)"
               >
-                Leave team
+                {{ t("common.leaveTeam") }}
               </button>
             </div>
           </div>
@@ -508,7 +504,7 @@
       </div>
     </div>
 
-      <div v-else class="text-gray-500">Bot not found</div>
+      <div v-else class="text-gray-500">{{ t("page.botDetail.notFound") }}</div>
     </template>
 
     <!-- Add Chat activation -->
@@ -524,14 +520,14 @@
         aria-labelledby="add-chat-activation-title"
       >
         <h3 id="add-chat-activation-title" class="text-lg font-semibold mb-2">
-          Подключить чат
+          {{ t("chatActivation.modal.title") }}
         </h3>
         <p class="text-sm text-gray-600 mb-4">
-          Выберите сценарий. Войдите тем же Telegram-аккаунтом, что пишет /activate.
+          {{ t("chatActivation.modal.intro") }}
         </p>
 
         <ul class="text-sm text-gray-600 list-disc pl-5 mb-4 space-y-1">
-          <li v-for="item in CHAT_ACTIVATION_PREREQUISITES" :key="item">
+          <li v-for="(item, index) in activationPrerequisites" :key="index">
             {{ item }}
           </li>
         </ul>
@@ -542,9 +538,9 @@
             class="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm text-left"
             @click="startChatActivation('new_group')"
           >
-            <span class="font-medium">Добавить в новую группу</span>
+            <span class="font-medium">{{ t("chatActivation.modal.newGroupTitle") }}</span>
             <span class="block text-blue-100 text-xs mt-1">
-              Откроется Telegram (startgroup)
+              {{ t("chatActivation.modal.newGroupHint") }}
             </span>
           </button>
           <button
@@ -552,9 +548,9 @@
             class="w-full px-3 py-2 border rounded hover:bg-gray-50 text-sm text-left"
             @click="startChatActivation('existing_group')"
           >
-            <span class="font-medium">Бот уже в группе</span>
+            <span class="font-medium">{{ t("chatActivation.modal.existingGroupTitle") }}</span>
             <span class="block text-gray-500 text-xs mt-1">
-              Выполните /activate в группе
+              {{ t("chatActivation.modal.existingGroupHint") }}
             </span>
           </button>
         </div>
@@ -564,7 +560,7 @@
           class="mt-4 w-full px-3 py-2 border rounded hover:bg-gray-50 text-sm"
           @click="closeAddChatActivationModal"
         >
-          Отмена
+          {{ t("common.cancel") }}
         </button>
       </div>
     </div>
@@ -577,17 +573,16 @@
       <div
         class="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
       >
-        <h3 class="text-lg font-semibold mb-4">Edit Chat</h3>
+        <h3 class="text-lg font-semibold mb-4">{{ t("bot.chats.editModal.title") }}</h3>
 
         <form @submit.prevent="saveChat" class="space-y-4">
           <div class="text-sm text-gray-600">
             <div class="font-medium">{{ editingChat?.name }}</div>
-            <div>ID: {{ editingChat?.chat_id }}</div>
+            <div>{{ t("bot.chats.id", { id: editingChat?.chat_id }) }}</div>
           </div>
 
-          <!-- Silent mode: DB logging only, no Telegram side effects -->
           <div class="border-t pt-4">
-            <h4 class="font-medium text-gray-700 mb-3">Silent Mode</h4>
+            <h4 class="font-medium text-gray-700 mb-3">{{ t("bot.chats.editModal.silentModeTitle") }}</h4>
 
             <div class="space-y-3">
               <label class="flex items-center">
@@ -596,22 +591,16 @@
                   type="checkbox"
                   class="mr-2"
                 />
-                <span class="text-sm font-medium text-gray-700"
-                  >Enable Silent Mode</span
-                >
+                <span class="text-sm font-medium text-gray-700">{{
+                  t("bot.chats.editModal.enableSilentMode")
+                }}</span>
               </label>
             </div>
 
             <div class="mt-3 text-xs text-gray-500 bg-gray-50 p-2 rounded">
-              <p class="font-medium mb-1">Silent Mode:</p>
-              <p>
-                • <strong>Enabled:</strong> violations logged to DB only — no
-                Telegram delete, ban, or warning messages
-              </p>
-              <p>
-                • <strong>Disabled:</strong> per-rule actions apply (delete,
-                warn, ban as configured on each rule)
-              </p>
+              <p class="font-medium mb-1">{{ t("bot.chats.editModal.silentModeHelpTitle") }}</p>
+              <p>• {{ t("bot.chats.editModal.silentModeEnabled") }}</p>
+              <p>• {{ t("bot.chats.editModal.silentModeDisabled") }}</p>
             </div>
           </div>
 
@@ -621,14 +610,14 @@
               class="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
               :disabled="saving"
             >
-              {{ saving ? "Saving..." : "Update Chat" }}
+              {{ saving ? t("common.saving") : t("bot.chats.editModal.updateButton") }}
             </button>
             <button
               type="button"
               @click="closeChatModal"
               class="px-3 py-2 border rounded hover:bg-gray-50"
             >
-              Cancel
+              {{ t("common.cancel") }}
             </button>
           </div>
         </form>
@@ -650,10 +639,10 @@ import {
   DEFAULT_WARNING_TEMPLATE_PREVIEW,
   WARNING_TEMPLATE_PLACEHOLDERS,
 } from "~/lib/bot-message-template-ui";
-import {
-  CHAT_ACTIVATION_PREREQUISITES,
-} from "~/lib/chat-activation-ui";
 import type { ChatActivationStartMode } from "~/composables/useChatActivationWait";
+import type { BotMemberRole } from "~/types/bot";
+
+const { t, tm, locale } = useI18n();
 
 const route = useRoute();
 const router = useRouter();
@@ -663,18 +652,22 @@ const bot = ref<any>(null);
 
 type BotDetailTab = "overview" | "moderation" | "team";
 const activeTab = ref<BotDetailTab>("overview");
-const botTabs: { id: BotDetailTab; label: string }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "moderation", label: "Moderation" },
-  { id: "team", label: "Team" },
-];
+const botTabs = computed(() => [
+  { id: "overview" as const, label: t("bot.tabs.overview") },
+  { id: "moderation" as const, label: t("bot.tabs.moderation") },
+  { id: "team" as const, label: t("bot.tabs.team") },
+]);
+
+const activationPrerequisites = computed(
+  () => tm("chatActivation.prerequisites") as string[]
+);
 
 const { breadcrumbs, backTo } = usePageBreadcrumbs(() => [
-  { label: "Bots", to: "/bots" },
+  { label: t("nav.bots"), to: "/bots" },
   { label: bot.value ? `@${bot.value.id}` : `@${botId}` },
 ]);
 
-usePageTitle(() => bot.value?.name ?? "Бот");
+usePageTitle(() => bot.value?.name ?? t("page.botDetail.documentTitleFallback"));
 
 const chatActivation = useChatActivationWait({
   botId,
@@ -737,10 +730,10 @@ const newChat = ref({
 
 const aggregatedStatusText = computed(() => {
   const status = bot.value?.delivery_status;
-  if (status === "healthy") return "Working";
-  if (status === "disabled") return "Disabled";
-  if (status === "degraded" || status === "unavailable") return "Problem";
-  return "Unknown";
+  if (status === "healthy") return t("bot.deliveryStatus.healthy");
+  if (status === "disabled") return t("bot.deliveryStatus.disabled");
+  if (status === "degraded" || status === "unavailable") return t("bot.deliveryStatus.problem");
+  return t("bot.deliveryStatus.unknown");
 });
 
 const overviewStatusBadgeClass = computed(() => {
@@ -806,13 +799,20 @@ const deliveryProblemMessage = computed(() => {
 });
 
 function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString("ru-RU", {
+  const loc = locale.value === "ru" ? "ru-RU" : "en-US";
+  return new Date(dateString).toLocaleDateString(loc, {
     year: "numeric",
     month: "long",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function roleLabel(role: BotMemberRole | string | undefined) {
+  if (role === "owner") return t("common.roles.owner");
+  if (role === "manager") return t("common.roles.manager");
+  return t("common.roles.manager");
 }
 
 async function loadBot() {
@@ -861,7 +861,7 @@ async function saveMessageTemplates() {
     templateSaveError.value =
       error?.data?.statusMessage ||
       error?.message ||
-      "Failed to save message templates";
+      t("common.errors.saveMessageTemplates");
   } finally {
     savingTemplates.value = false;
   }
@@ -896,7 +896,7 @@ async function resetAndSaveMessageTemplates() {
     templateSaveError.value =
       error?.data?.statusMessage ||
       error?.message ||
-      "Failed to reset message templates";
+      t("common.errors.resetMessageTemplates");
   } finally {
     savingTemplates.value = false;
   }
@@ -910,7 +910,7 @@ async function startChatActivation(mode: ChatActivationStartMode) {
   } catch (error: any) {
     chatActivation.status.value = "failed";
     chatActivation.message.value =
-      error?.data?.statusMessage || error?.message || "Failed to start chat activation";
+      error?.data?.statusMessage || error?.message || t("common.errors.startChatActivation");
   }
 }
 
@@ -944,10 +944,10 @@ function botInitials(name: string) {
 }
 
 function chatHealthLabel(chat: any) {
-  if (chat.health_status === "ok") return "Готов";
-  if (chat.health_status === "degraded") return "Внимание";
-  if (chat.health_status === "unhealthy") return "Не работает";
-  return "Неизвестно";
+  if (chat.health_status === "ok") return t("bot.chats.health.ok");
+  if (chat.health_status === "degraded") return t("bot.chats.health.degraded");
+  if (chat.health_status === "unhealthy") return t("bot.chats.health.unhealthy");
+  return t("bot.chats.health.unknown");
 }
 
 function chatHealthBadgeClass(chat: any) {
@@ -975,7 +975,7 @@ async function toggleBotStatus() {
     statusError.value =
       error?.data?.statusMessage ||
       error?.message ||
-      "Failed to update bot status";
+      t("common.errors.updateBotStatus");
     console.error("Error updating bot status:", error);
   }
 }
@@ -1046,7 +1046,7 @@ async function saveChat() {
 }
 
 async function removeChat(chatId: number) {
-  if (!confirm("Are you sure you want to remove this chat?")) return;
+  if (!confirm(t("common.confirm.removeChat"))) return;
 
   try {
     const updatedChats = bot.value.chats.filter(
@@ -1085,10 +1085,9 @@ function getSilentModeClass(chat: any) {
 
 function getSilentModeText(chat: any) {
   if (chat.silent_mode) {
-    return "Monitor Only";
-  } else {
-    return "Full Moderation";
+    return t("bot.chats.silentModeValues.monitorOnly");
   }
+  return t("bot.chats.silentModeValues.fullModeration");
 }
 
 async function loadTeam() {
@@ -1160,7 +1159,7 @@ async function deleteBot() {
     deleteError.value =
       error?.data?.statusMessage ||
       error?.message ||
-      "Не удалось удалить бота";
+      t("common.errors.deleteBot");
   } finally {
     deletingBot.value = false;
   }

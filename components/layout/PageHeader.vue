@@ -9,12 +9,12 @@
           v-if="backTo"
           type="button"
           class="shrink-0 rounded border px-2 py-1 text-sm text-gray-700 hover:bg-gray-50"
-          aria-label="Back"
+          :aria-label="t('common.back')"
           @click="navigateTo(backTo)"
         >
           ←
         </button>
-        <nav class="text-sm text-gray-600 min-w-0" aria-label="Breadcrumb">
+        <nav class="text-sm text-gray-600 min-w-0" :aria-label="t('common.breadcrumb')">
           <ol class="flex flex-wrap items-center gap-1">
             <li
               v-for="(item, index) in breadcrumbs"
@@ -50,6 +50,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { BreadcrumbItem } from "~/composables/usePageBreadcrumbs";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   breadcrumbs: BreadcrumbItem[];

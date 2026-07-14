@@ -3,19 +3,21 @@
     <LayoutPageHeader
       :breadcrumbs="breadcrumbs"
       :back-to="backTo"
-      title="Terms of Service"
-      subtitle="Coming soon."
+      :title="t('page.terms.title')"
+      :subtitle="t('page.terms.subtitle')"
     />
     <p class="text-gray-600">
-      Terms and conditions will be published here.
+      {{ t("page.terms.body") }}
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
-const { breadcrumbs, backTo } = usePageBreadcrumbs([
-  { label: "Terms" },
+const { t } = useI18n();
+
+const { breadcrumbs, backTo } = usePageBreadcrumbs(() => [
+  { label: t("page.terms.breadcrumb") },
 ]);
 
-usePageTitle("Terms");
+usePageTitle(() => t("page.terms.documentTitle"));
 </script>

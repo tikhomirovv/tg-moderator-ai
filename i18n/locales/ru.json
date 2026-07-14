@@ -11,11 +11,10 @@
   "footer": {
     "releaseNotes": "Что нового",
     "author": "Автор",
-    "site": "Сайт",
     "docs": "Документация",
     "terms": "Условия",
-    "localeEn": "English",
-    "localeRu": "Русский"
+    "localeEn": "EN",
+    "localeRu": "RU"
   },
   "common": {
     "loading": "Загрузка...",

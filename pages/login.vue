@@ -17,7 +17,14 @@
           {{ t("login.getLinkFromBot") }}
         </a>
       </p>
-      <div class="pt-2">
+      <div class="pt-2 flex flex-wrap items-center justify-center gap-x-2 text-sm text-gray-500">
+        <span>
+          {{ t("app.name") }}
+          <NuxtLink to="/release-notes" class="hover:text-gray-800 hover:underline">
+            v{{ appVersion }}
+          </NuxtLink>
+        </span>
+        <span class="text-gray-300">|</span>
         <LayoutLocaleSwitcher />
       </div>
     </div>
@@ -34,6 +41,7 @@ const { t } = useI18n();
 usePageTitle(() => t("page.login.documentTitle"));
 
 const config = useRuntimeConfig();
+const appVersion = computed(() => config.public.appVersion as string);
 
 const route = useRoute();
 

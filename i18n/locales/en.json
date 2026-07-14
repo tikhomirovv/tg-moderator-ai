@@ -1,0 +1,461 @@
+{
+  "app": {
+    "name": "TG Moderator"
+  },
+  "nav": {
+    "main": "Main",
+    "dashboard": "Dashboard",
+    "bots": "Bots",
+    "signOut": "Sign out"
+  },
+  "footer": {
+    "releaseNotes": "What's new",
+    "author": "Author",
+    "docs": "Docs",
+    "terms": "Terms",
+    "localeEn": "EN",
+    "localeRu": "RU"
+  },
+  "common": {
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "saving": "Saving...",
+    "refresh": "Refresh",
+    "edit": "Edit",
+    "delete": "Delete",
+    "back": "Back",
+    "previous": "Previous",
+    "next": "Next",
+    "yes": "Yes",
+    "no": "No",
+    "add": "Add",
+    "adding": "Adding...",
+    "added": "Added",
+    "create": "Create",
+    "creating": "Creating...",
+    "update": "Update",
+    "joining": "Joining...",
+    "copy": "Copy",
+    "revoke": "Revoke",
+    "remove": "Remove",
+    "leaveTeam": "Leave team",
+    "enable": "Enable",
+    "disable": "Disable",
+    "unknown": "Unknown",
+    "dash": "—",
+    "breadcrumb": "Breadcrumb",
+    "pageOf": "Page {page} of {totalPages}",
+    "pageOfWithTotal": "Page {page} of {totalPages} ({total} users)",
+    "loadingCharts": "Loading charts...",
+    "confirm": {
+      "removeChat": "Are you sure you want to remove this chat?",
+      "deleteRule": "Delete rule \"{name}\"?"
+    },
+    "errors": {
+      "loadDashboard": "Failed to load dashboard data. Please try again.",
+      "createBot": "Failed to create bot",
+      "joinTeam": "Failed to join team",
+      "saveMessageTemplates": "Failed to save message templates",
+      "resetMessageTemplates": "Failed to reset message templates",
+      "startChatActivation": "Failed to start chat activation",
+      "updateBotStatus": "Failed to update bot status",
+      "deleteBot": "Failed to delete bot",
+      "loadRuleTemplates": "Failed to load rule templates",
+      "addRuleTemplate": "Failed to add rule template",
+      "saveRule": "Failed to save rule",
+      "deleteRule": "Failed to delete rule",
+      "loadChatUsers": "Failed to load chat users",
+      "updateUser": "Failed to update user",
+      "loadReleaseNotes": "Failed to load release notes"
+    },
+    "roles": {
+      "owner": "Owner",
+      "manager": "Member"
+    },
+    "actions": {
+      "warning": "warning",
+      "delete": "delete",
+      "ban": "ban"
+    }
+  },
+  "page": {
+    "dashboard": {
+      "title": "Dashboard",
+      "documentTitle": "Dashboard",
+      "loading": "Loading dashboard...",
+      "emptyState": "No bots yet. Open Bots to create your own or join a team with an access code.",
+      "manageBots": "Manage bots"
+    },
+    "bots": {
+      "title": "Bots",
+      "documentTitle": "Bots"
+    },
+    "botDetail": {
+      "titleFallback": "Bot",
+      "documentTitleFallback": "Bot",
+      "notFound": "Bot not found"
+    },
+    "moderation": {
+      "title": "Moderation",
+      "documentTitle": "Rules",
+      "documentTitleWithChat": "Rules · {chatName}",
+      "chatSubtitle": "Chat {chatId}"
+    },
+    "audit": {
+      "title": "Moderation audit",
+      "documentTitle": "Audit",
+      "subtitle": "Bot {'@'}{botId} — LLM decisions (newest first)"
+    },
+    "releaseNotes": {
+      "title": "What's new",
+      "documentTitle": "What's new",
+      "subtitle": "App update history. Only changes that matter for bots, rules, and moderation.",
+      "paginationNav": "Release notes pagination"
+    },
+    "login": {
+      "documentTitle": "Sign in"
+    },
+    "docs": {
+      "title": "Documentation",
+      "documentTitle": "Docs",
+      "breadcrumb": "Docs",
+      "subtitle": "Coming soon.",
+      "body": "Product documentation will appear here. For now, use in-app tooltips and release notes."
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "documentTitle": "Terms",
+      "breadcrumb": "Terms",
+      "subtitle": "Coming soon.",
+      "body": "Terms and conditions will be published here."
+    }
+  },
+  "dashboard": {
+    "kpi": {
+      "bots": "Bots",
+      "active": "{count} active",
+      "inactive": "{count} inactive",
+      "chats": "Chats",
+      "acrossAllBots": "Across all bots",
+      "today": "Today",
+      "messages": "Messages",
+      "warnings": "Warnings",
+      "deletes": "Deletes",
+      "bans": "Bans",
+      "users": "Users",
+      "active24h": "Active (24h)",
+      "bannedDistinct": "Banned (distinct)"
+    },
+    "chart": {
+      "activityTitle": "Activity (7 days)",
+      "actionsTitle": "Actions (7 days)",
+      "noActivity": "No activity in the last 7 days",
+      "noActions": "No moderation actions yet",
+      "messages": "Messages",
+      "violations": "Violations",
+      "warnings": "Warnings",
+      "deletes": "Deletes",
+      "bans": "Bans"
+    },
+    "recentActivity": {
+      "title": "Recent activity",
+      "empty": "No moderation events yet",
+      "time": "Time",
+      "bot": "Bot",
+      "chat": "Chat",
+      "action": "Action",
+      "rule": "Rule",
+      "unknownRule": "Unknown rule"
+    }
+  },
+  "bot": {
+    "addBot": "Add bot",
+    "status": "Status",
+    "statusLabel": "Status:",
+    "active": "Active",
+    "inactive": "Inactive",
+    "chatsCount": "Chats: {count}",
+    "emptyState": "You have no bots yet. Create your own moderation bot or join an existing team with an access code from the bot owner.",
+    "modal": {
+      "title": "Add bot",
+      "createTab": "Create bot",
+      "joinTab": "Join with code",
+      "tokenLabel": "Bot Token",
+      "tokenPlaceholder": "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz",
+      "tokenHint": "Bot {'@'}username and display name are resolved automatically from the token.",
+      "createButton": "Create bot",
+      "joinDescription": "Enter the access code from the bot owner. You will join as a team member (manager).",
+      "accessCodeLabel": "Access code",
+      "accessCodePlaceholder": "abc123...",
+      "joinButton": "Join team"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "moderation": "Moderation",
+      "team": "Team"
+    },
+    "deliveryStatus": {
+      "healthy": "Working",
+      "disabled": "Disabled",
+      "problem": "Problem",
+      "unknown": "Unknown"
+    },
+    "created": "Created {date}",
+    "chats": {
+      "title": "Chats ({count})",
+      "addChat": "Add Chat",
+      "noChats": "No chats configured",
+      "id": "ID: {id}",
+      "rules": "Rules: {count}",
+      "silentMode": "Silent Mode:",
+      "moderation": "Moderation",
+      "placeholderInitials": "TG",
+      "health": {
+        "ok": "Ready",
+        "degraded": "Attention",
+        "unhealthy": "Not working",
+        "unknown": "Unknown"
+      },
+      "silentModeValues": {
+        "monitorOnly": "Monitor Only",
+        "fullModeration": "Full Moderation"
+      },
+      "editModal": {
+        "title": "Edit Chat",
+        "silentModeTitle": "Silent Mode",
+        "enableSilentMode": "Enable Silent Mode",
+        "silentModeHelpTitle": "Silent Mode:",
+        "silentModeEnabled": "Enabled: violations logged to DB only — no Telegram delete, ban, or warning messages",
+        "silentModeDisabled": "Disabled: per-rule actions apply (delete, warn, ban as configured on each rule)",
+        "updateButton": "Update Chat"
+      }
+    },
+    "statistics": {
+      "title": "Statistics",
+      "messagesToday": "Messages Processed (Today)",
+      "warningsToday": "Warnings Issued (Today)",
+      "bannedTotal": "Users Banned (Total)",
+      "thisWeek": "This Week",
+      "totalMessages": "Total Messages:",
+      "totalWarnings": "Total Warnings:",
+      "messagesDeleted": "Messages Deleted:",
+      "usersSection": "Users",
+      "active24h": "Active (24h):",
+      "banned": "Banned:",
+      "maxUnique": "Max Unique:"
+    },
+    "recentActivity": {
+      "title": "Recent Activity",
+      "audit": "Audit",
+      "empty": "No recent activity. Send messages to the bot to see logs here."
+    },
+    "dangerZone": {
+      "title": "Danger zone",
+      "description": "Deleting the bot permanently removes chats, rules, team members, and moderation history. Disabling the bot (Disable) does not delete data.",
+      "deleteButton": "Delete bot",
+      "confirmHint": "Enter {botId} or DELETE to confirm.",
+      "confirmPlaceholder": "{'@'}{botId}",
+      "confirmButton": "Confirm deletion",
+      "deleting": "Deleting..."
+    },
+    "messageTemplates": {
+      "title": "Moderation messages",
+      "helpLink": "How to format messages",
+      "description": "Per-bot Warning and Ban texts (Telegram HTML). If {'{'}user_mention{'}'} is missing from the template, a mention is appended automatically.",
+      "warningTab": "Warning",
+      "banTab": "Ban",
+      "saved": "Templates saved.",
+      "resetToDefault": "Reset to default"
+    },
+    "team": {
+      "title": "Team Access",
+      "loading": "Loading team...",
+      "accessCode": "Access code:",
+      "accessCodeForOperators": "Access code is available to bot operators.",
+      "accessCodeManagedByTeam": "Access codes are managed by the bot team.",
+      "members": "Members"
+    }
+  },
+  "chat": {
+    "activation": {
+      "retry": "Try again"
+    }
+  },
+  "moderation": {
+    "addFromTemplate": "Add from template",
+    "addRule": "Add rule",
+    "loadingRules": "Loading rules...",
+    "emptyRules": "No rules yet. Add a custom rule or pick a preset template.",
+    "deleteOnViolation": "Delete on violation:",
+    "banOnViolation": "Ban on violation:",
+    "afterWarnings": "(after {count} warnings)",
+    "chatUsers": {
+      "title": "Chat users",
+      "description": "Users with warnings or bans. Owner and manager can reset warnings, unban, or pardon (both).",
+      "loading": "Loading users...",
+      "empty": "No users with warnings or bans.",
+      "user": "User",
+      "warnings": "Warnings",
+      "ban": "Ban",
+      "actions": "Actions",
+      "banned": "Banned",
+      "userFallback": "User {userId}",
+      "resetWarn": "Reset warn",
+      "unban": "Unban",
+      "pardon": "Pardon"
+    },
+    "templateLibrary": {
+      "title": "Rule templates",
+      "description": "Preset moderation rules. Each copy is independent for this chat.",
+      "loading": "Loading templates..."
+    },
+    "ruleModal": {
+      "editTitle": "Edit rule",
+      "addTitle": "Add rule",
+      "nameLabel": "Rule name",
+      "descriptionLabel": "Description",
+      "criteriaLabel": "Criteria",
+      "actionsTitle": "Actions on violation",
+      "deleteOnViolation": "Delete message on violation",
+      "banAfterWarnings": "Ban user after warnings threshold",
+      "warningsBeforeBanLabel": "Warnings before ban"
+    }
+  },
+  "audit": {
+    "loading": "Loading...",
+    "time": "Time",
+    "chat": "Chat",
+    "user": "User",
+    "message": "Message",
+    "result": "Result",
+    "rule": "Rule",
+    "confidence": "Confidence",
+    "reasoning": "Reasoning",
+    "violation": "Violation",
+    "pass": "Pass",
+    "unknownRule": "Unknown rule",
+    "chatFallback": "Chat {chatId}",
+    "mobileMeta": "{chatName} · user {userId}",
+    "mobileRule": "Rule:",
+    "empty": "No decisions yet. Send messages to the bot to see audit entries here.",
+    "breadcrumb": "Audit"
+  },
+  "releaseNotes": {
+    "loading": "Loading...",
+    "empty": "No published releases yet. After the first release, change descriptions will appear here.",
+    "githubLink": "More on GitHub",
+    "back": "Back",
+    "forward": "Forward"
+  },
+  "login": {
+    "subtitle": "Sign in with Telegram to manage moderation bots.",
+    "signInButton": "Sign in with Telegram",
+    "trouble": "Having trouble signing in?",
+    "getLinkFromBot": "Get a link from the bot"
+  },
+  "chatActivation": {
+    "prerequisites": [
+      "Sign in to the platform with the same Telegram account that sends /activate.",
+      "You are an owner or manager of the bot on the platform.",
+      "The bot is a group admin with permission to delete messages and restrict members.",
+      "The bot is enabled — otherwise the webhook will not process /activate."
+    ],
+    "existingGroupHint": "Open the group in Telegram and send /activate (or /activate{'@'}bot_username). The bot will reply with success or an error; the chat will appear here once connected.",
+    "newGroupHint": "Telegram will open to add the bot to a group. If the bot is already in the target group — choose \"Bot already in group\".",
+    "popupBlockedMessage": "The browser blocked the Telegram window. Allow pop-ups or choose \"Bot already in group\" and run /activate.",
+    "expiredMessage": "Waiting time expired. If the bot is already in the group — run /activate there. Otherwise try again.",
+    "completed": "Chat connected",
+    "failedDefault": "Failed to connect chat",
+    "modal": {
+      "title": "Connect chat",
+      "intro": "Choose a scenario. Sign in with the same Telegram account that sends /activate.",
+      "newGroupTitle": "Add to a new group",
+      "newGroupHint": "Opens Telegram (startgroup)",
+      "existingGroupTitle": "Bot already in group",
+      "existingGroupHint": "Run /activate in the group"
+    }
+  },
+  "botTemplate": {
+    "htmlHelp": {
+      "title": "Telegram HTML format",
+      "closeAria": "Close",
+      "closeButton": "Close",
+      "docsLink": "Official Telegram Bot API documentation — HTML",
+      "sections": {
+        "format": {
+          "title": "Format",
+          "body": "Warning and Ban messages are sent to Telegram with parse_mode HTML. Use only supported tags; nested tags are not required."
+        },
+        "supportedTags": {
+          "title": "Supported tags",
+          "body": "<b>bold</b>, <i>italic</i>, <u>underline</u>, <s>strikethrough</s>, <code>monospace</code>, <pre>code block</pre>, <a href=\"https://example.com\">link</a>, <tg-spoiler>spoiler</tg-spoiler>.",
+          "example": "<b>Important!</b> Violation: <i>{'{'}rule_name{'}'}</i>"
+        },
+        "placeholders": {
+          "title": "Placeholders",
+          "body": "Substituted by the server: {'{'}user_mention{'}'}, {'{'}user_name{'}'}, {'{'}rule_name{'}'}, {'{'}warnings_current{'}'}, {'{'}warnings_max{'}'}, {'{'}warnings_left{'}'} (Warning only). Buttons above the field insert them at the cursor."
+        },
+        "userMention": {
+          "title": "User mention",
+          "body": "If {'{'}user_mention{'}'} is missing from the template, the bot appends a mention at the end in a separate paragraph."
+        },
+        "lineBreaks": {
+          "title": "Line breaks",
+          "body": "A new line is a line break character (Enter in the field). For a blank line between blocks, press Enter twice."
+        },
+        "escaping": {
+          "title": "Escaping",
+          "body": "Characters <, > and & in plain text must be &lt;, &gt;, &amp;. Do not escape placeholders or ready-made HTML tags."
+        },
+        "length": {
+          "title": "Length",
+          "body": "No more than 4096 characters per template (Telegram limit)."
+        }
+      }
+    },
+    "placeholders": {
+      "warning": {
+        "userMention": {
+          "label": "Mention",
+          "hint": "Ping user ({'@'}username or name link)"
+        },
+        "userName": {
+          "label": "Name",
+          "hint": "Display name without ping"
+        },
+        "ruleName": {
+          "label": "Rule",
+          "hint": "Violated rule name"
+        },
+        "warningsCurrent": {
+          "label": "Warn #",
+          "hint": "Warning number after this warn"
+        },
+        "warningsMax": {
+          "label": "Max warns",
+          "hint": "Threshold before ban"
+        },
+        "warningsLeft": {
+          "label": "Left",
+          "hint": "Warnings left before ban"
+        }
+      },
+      "ban": {
+        "userMention": {
+          "label": "Mention",
+          "hint": "Ping user ({'@'}username or name link)"
+        },
+        "userName": {
+          "label": "Name",
+          "hint": "Display name without ping"
+        },
+        "ruleName": {
+          "label": "Rule",
+          "hint": "Violated rule name"
+        }
+      }
+    }
+  }
+}

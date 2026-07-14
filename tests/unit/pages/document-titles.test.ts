@@ -9,11 +9,10 @@ function readPage(relativePath: string): string {
 }
 
 describe("document titles", () => {
-  test("nuxt.config sets global title and titleTemplate from app config", () => {
-    const config = readFileSync(path.join(ROOT, "nuxt.config.ts"), "utf8");
-    expect(config).toContain('import { APP_NAME } from "./lib/app-config"');
-    expect(config).toContain("title: APP_NAME");
-    expect(config).toContain("titleTemplate: `%s · ${APP_NAME}`");
+  test("default layout sets titleTemplate from i18n app name", () => {
+    const layout = readPage("layouts/default.vue");
+    expect(layout).toContain('t("app.name")');
+    expect(layout).toContain("titleTemplate:");
   });
 
   test("user-facing pages set a page title", () => {

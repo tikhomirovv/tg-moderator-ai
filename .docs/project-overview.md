@@ -20,6 +20,7 @@ Manual moderation does not scale; generic bot filters miss context. Teams need p
 - **Actions:** warn / delete / ban per rule; silent mode for dry-run logging
 - **Team access:** owner + managers via access codes; Telegram login (no separate passwords)
 - **Observability:** dashboard, bot statistics, moderation audit trail
+- **i18n:** English default admin UI + Russian; browser locale detection; footer language switcher
 
 ## Domain model
 
@@ -45,6 +46,7 @@ User (telegram_id)
 |----------|---------|
 | [prd.md](prd.md) | Scope, flows, requirements |
 | [technical-design.md](technical-design.md) | Stack, API, engineering rules |
+| [i18n.md](i18n.md) | Admin UI locales, keys, conventions |
 | [deploy.md](deploy.md) | Production deployment |
 | [database-migrations.md](database-migrations.md) | Drizzle migration policy |
 | [SPEC.md](SPEC.md) | **Archived** early spec (MongoDB era) |

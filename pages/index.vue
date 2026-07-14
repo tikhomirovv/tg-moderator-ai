@@ -3,7 +3,7 @@
     <LayoutPageHeader
       :breadcrumbs="breadcrumbs"
       :back-to="backTo"
-      title="Dashboard"
+      :title="t('page.dashboard.title')"
     >
       <template #actions>
         <button
@@ -12,12 +12,12 @@
           :disabled="loading"
           @click="load"
         >
-          {{ loading ? "Loading..." : "Refresh" }}
+          {{ loading ? t("common.loading") : t("common.refresh") }}
         </button>
       </template>
     </LayoutPageHeader>
 
-    <div v-if="loading" class="text-gray-500">Loading dashboard...</div>
+    <div v-if="loading" class="text-gray-500">{{ t("page.dashboard.loading") }}</div>
 
     <div
       v-else-if="error"
@@ -31,14 +31,13 @@
       class="bg-white border rounded p-8 text-center"
     >
       <p class="text-gray-600 mb-4">
-        No bots yet. Open Bots to create your own or join a team with an access
-        code.
+        {{ t("page.dashboard.emptyState") }}
       </p>
       <NuxtLink
         to="/bots"
         class="inline-block px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
       >
-        Manage bots
+        {{ t("page.dashboard.manageBots") }}
       </NuxtLink>
     </div>
 
@@ -52,7 +51,7 @@
         />
         <template #fallback>
           <div class="bg-white border rounded p-6 text-gray-500 text-sm">
-            Loading charts...
+            {{ t("common.loadingCharts") }}
           </div>
         </template>
       </ClientOnly>
@@ -66,9 +65,13 @@
 import { ref, onMounted } from "vue";
 import type { DashboardData } from "~/types/dashboard";
 
-usePageTitle("Панель");
+const { t } = useI18n();
 
-const { breadcrumbs, backTo } = usePageBreadcrumbs([{ label: "Dashboard" }]);
+usePageTitle(() => t("page.dashboard.documentTitle"));
+
+const { breadcrumbs, backTo } = usePageBreadcrumbs(() => [
+  { label: t("page.dashboard.title") },
+]);
 
 const dashboard = ref<DashboardData | null>(null);
 const loading = ref(false);
@@ -85,7 +88,7 @@ async function load() {
     dashboard.value = resp?.data ?? null;
   } catch (err) {
     console.error("Error loading dashboard:", err);
-    error.value = "Failed to load dashboard data. Please try again.";
+    error.value = t("common.errors.loadDashboard");
     dashboard.value = null;
   } finally {
     loading.value = false;

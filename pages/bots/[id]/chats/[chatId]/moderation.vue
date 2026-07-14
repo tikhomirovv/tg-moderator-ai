@@ -3,8 +3,8 @@
     <LayoutPageHeader
       :breadcrumbs="breadcrumbs"
       :back-to="backTo"
-      title="Moderation"
-      :subtitle="chatName || `Chat ${telegramChatId}`"
+      :title="t('page.moderation.title')"
+      :subtitle="chatName || t('page.moderation.chatSubtitle', { chatId: telegramChatId })"
     >
       <template #actions>
         <button
@@ -12,14 +12,14 @@
           class="px-3 py-2 border rounded text-sm hover:bg-gray-50"
           @click="openTemplateLibrary"
         >
-          Add from template
+          {{ t("moderation.addFromTemplate") }}
         </button>
         <button
           type="button"
           class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
           @click="openCreateModal"
         >
-          Add rule
+          {{ t("moderation.addRule") }}
         </button>
       </template>
     </LayoutPageHeader>
@@ -45,7 +45,7 @@
       {{ userActionError }}
     </div>
 
-    <div v-if="loading" class="text-gray-500">Loading rules...</div>
+    <div v-if="loading" class="text-gray-500">{{ t("moderation.loadingRules") }}</div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div
@@ -63,14 +63,14 @@
               class="text-blue-600 text-sm hover:underline"
               @click="openEditModal(rule)"
             >
-              Edit
+              {{ t("common.edit") }}
             </button>
             <button
               type="button"
               class="text-red-600 text-sm hover:underline"
               @click="deleteRule(rule)"
             >
-              Delete
+              {{ t("common.delete") }}
             </button>
           </div>
         </div>
@@ -79,18 +79,20 @@
 
         <div class="text-xs text-gray-500 space-y-1">
           <div>
-            Delete on violation:
+            {{ t("moderation.deleteOnViolation") }}
             <span class="font-medium">{{
-              rule.delete_on_violation ? "Yes" : "No"
+              rule.delete_on_violation ? t("common.yes") : t("common.no")
             }}</span>
           </div>
           <div>
-            Ban on violation:
-            <span class="font-medium">{{
-              rule.ban_on_violation ? "Yes" : "No"
-            }}</span>
-            <span v-if="rule.ban_on_violation">
-              (after {{ rule.warnings_before_ban ?? 3 }} warnings)
+            {{ t("moderation.banOnViolation") }}
+            <span class="font-medium">
+              <template v-if="rule.ban_on_violation">
+                {{ t("common.yes") }} {{ t("moderation.afterWarnings", { count: rule.warnings_before_ban ?? 3 }) }}
+              </template>
+              <template v-else>
+                {{ t("common.no") }}
+              </template>
             </span>
           </div>
         </div>
@@ -98,41 +100,40 @@
     </div>
 
     <div v-if="!loading && rules.length === 0" class="text-gray-500">
-      No rules yet. Add a custom rule or pick a preset template.
+      {{ t("moderation.emptyRules") }}
     </div>
 
     <div class="bg-white border rounded p-4">
       <div class="flex items-center justify-between gap-3 mb-3">
-        <h3 class="font-medium">Chat users</h3>
+        <h3 class="font-medium">{{ t("moderation.chatUsers.title") }}</h3>
         <button
           type="button"
           class="text-sm text-blue-600 hover:underline"
           :disabled="usersLoading"
           @click="loadUsers()"
         >
-          {{ usersLoading ? "Loading..." : "Refresh" }}
+          {{ usersLoading ? t("common.loading") : t("common.refresh") }}
         </button>
       </div>
 
       <p class="text-sm text-gray-500 mb-3">
-        Users with warnings or bans. Owner and manager can reset warnings, unban,
-        or pardon (both).
+        {{ t("moderation.chatUsers.description") }}
       </p>
 
       <div v-if="usersLoading && !chatUsers.length" class="text-gray-500 text-sm">
-        Loading users...
+        {{ t("moderation.chatUsers.loading") }}
       </div>
       <div v-else-if="!chatUsers.length" class="text-gray-500 text-sm">
-        No users with warnings or bans.
+        {{ t("moderation.chatUsers.empty") }}
       </div>
       <div v-else class="overflow-x-auto">
         <table class="min-w-full text-sm">
           <thead class="text-left text-gray-500 border-b">
             <tr>
-              <th class="py-2 pr-4 font-medium">User</th>
-              <th class="py-2 pr-4 font-medium">Warnings</th>
-              <th class="py-2 pr-4 font-medium">Ban</th>
-              <th class="py-2 font-medium">Actions</th>
+              <th class="py-2 pr-4 font-medium">{{ t("moderation.chatUsers.user") }}</th>
+              <th class="py-2 pr-4 font-medium">{{ t("moderation.chatUsers.warnings") }}</th>
+              <th class="py-2 pr-4 font-medium">{{ t("moderation.chatUsers.ban") }}</th>
+              <th class="py-2 font-medium">{{ t("moderation.chatUsers.actions") }}</th>
             </tr>
           </thead>
           <tbody class="divide-y">
@@ -142,7 +143,7 @@
                   {{
                     row.username
                       ? `@${row.username}`
-                      : row.first_name || `User ${row.user_id}`
+                      : row.first_name || t("moderation.chatUsers.userFallback", { userId: row.user_id })
                   }}
                 </div>
                 <div class="text-xs text-gray-500">{{ row.user_id }}</div>
@@ -153,9 +154,9 @@
                   v-if="row.is_banned"
                   class="inline-flex px-2 py-0.5 rounded text-xs bg-red-100 text-red-800"
                 >
-                  Banned
+                  {{ t("moderation.chatUsers.banned") }}
                 </span>
-                <span v-else class="text-gray-500">—</span>
+                <span v-else class="text-gray-500">{{ t("common.dash") }}</span>
               </td>
               <td class="py-2 align-top">
                 <div class="flex flex-wrap gap-2">
@@ -165,7 +166,7 @@
                     :disabled="userActionBusy === row.user_id || row.warnings_count === 0"
                     @click="runUserAction(row.user_id, 'reset-warnings')"
                   >
-                    Reset warn
+                    {{ t("moderation.chatUsers.resetWarn") }}
                   </button>
                   <button
                     type="button"
@@ -173,7 +174,7 @@
                     :disabled="userActionBusy === row.user_id || !row.is_banned"
                     @click="runUserAction(row.user_id, 'unban')"
                   >
-                    Unban
+                    {{ t("moderation.chatUsers.unban") }}
                   </button>
                   <button
                     type="button"
@@ -184,7 +185,7 @@
                     "
                     @click="runUserAction(row.user_id, 'pardon')"
                   >
-                    Pardon
+                    {{ t("moderation.chatUsers.pardon") }}
                   </button>
                 </div>
               </td>
@@ -197,8 +198,13 @@
           class="flex items-center justify-between gap-3 mt-4 pt-3 border-t text-sm"
         >
           <span class="text-gray-500">
-            Page {{ usersPagination.page }} of {{ usersPagination.total_pages }}
-            ({{ usersPagination.total }} users)
+            {{
+              t("common.pageOfWithTotal", {
+                page: usersPagination.page,
+                totalPages: usersPagination.total_pages,
+                total: usersPagination.total,
+              })
+            }}
           </span>
           <div class="flex gap-2">
             <button
@@ -207,7 +213,7 @@
               :disabled="usersLoading || usersPagination.page <= 1"
               @click="goToUsersPage(usersPagination.page - 1)"
             >
-              Previous
+              {{ t("common.previous") }}
             </button>
             <button
               type="button"
@@ -217,7 +223,7 @@
               "
               @click="goToUsersPage(usersPagination.page + 1)"
             >
-              Next
+              {{ t("common.next") }}
             </button>
           </div>
         </div>
@@ -233,9 +239,9 @@
       >
         <div class="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h3 class="text-lg font-semibold">Rule templates</h3>
+            <h3 class="text-lg font-semibold">{{ t("moderation.templateLibrary.title") }}</h3>
             <p class="text-sm text-gray-600 mt-1">
-              Preset moderation rules. Each copy is independent for this chat.
+              {{ t("moderation.templateLibrary.description") }}
             </p>
           </div>
           <button
@@ -243,12 +249,12 @@
             class="text-sm text-gray-500 hover:text-gray-800"
             @click="closeTemplateLibrary"
           >
-            Close
+            {{ t("common.close") }}
           </button>
         </div>
 
         <div v-if="templatesLoading" class="text-gray-500 text-sm">
-          Loading templates...
+          {{ t("moderation.templateLibrary.loading") }}
         </div>
 
         <div v-else class="space-y-3">
@@ -277,10 +283,10 @@
               >
                 {{
                   template.added
-                    ? "Added"
+                    ? t("common.added")
                     : addingTemplateId === template.id
-                      ? "Adding..."
-                      : "Add"
+                      ? t("common.adding")
+                      : t("common.add")
                 }}
               </button>
             </div>
@@ -297,7 +303,7 @@
         class="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
       >
         <h3 class="text-lg font-semibold mb-4">
-          {{ editingRule ? "Edit rule" : "Add rule" }}
+          {{ editingRule ? t("moderation.ruleModal.editTitle") : t("moderation.ruleModal.addTitle") }}
         </h3>
 
         <form class="space-y-4" @submit.prevent="saveRule">
@@ -309,9 +315,9 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Rule name</label
-            >
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{
+              t("moderation.ruleModal.nameLabel")
+            }}</label>
             <input
               v-model="form.name"
               type="text"
@@ -321,9 +327,9 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Description</label
-            >
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{
+              t("moderation.ruleModal.descriptionLabel")
+            }}</label>
             <input
               v-model="form.description"
               type="text"
@@ -333,9 +339,9 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Criteria</label
-            >
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{
+              t("moderation.ruleModal.criteriaLabel")
+            }}</label>
             <textarea
               v-model="form.ai_prompt"
               class="w-full border rounded px-3 py-2"
@@ -345,7 +351,7 @@
           </div>
 
           <div class="border-t pt-4 space-y-3">
-            <h4 class="font-medium text-gray-700">Actions on violation</h4>
+            <h4 class="font-medium text-gray-700">{{ t("moderation.ruleModal.actionsTitle") }}</h4>
 
             <label class="flex items-center">
               <input
@@ -353,7 +359,7 @@
                 type="checkbox"
                 class="mr-2"
               />
-              <span class="text-sm">Delete message on violation</span>
+              <span class="text-sm">{{ t("moderation.ruleModal.deleteOnViolation") }}</span>
             </label>
 
             <label class="flex items-center">
@@ -362,13 +368,13 @@
                 type="checkbox"
                 class="mr-2"
               />
-              <span class="text-sm">Ban user after warnings threshold</span>
+              <span class="text-sm">{{ t("moderation.ruleModal.banAfterWarnings") }}</span>
             </label>
 
             <div v-if="form.ban_on_violation">
-              <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Warnings before ban</label
-              >
+              <label class="block text-sm font-medium text-gray-700 mb-1">{{
+                t("moderation.ruleModal.warningsBeforeBanLabel")
+              }}</label>
               <input
                 v-model.number="form.warnings_before_ban"
                 type="number"
@@ -385,14 +391,20 @@
               class="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
               :disabled="saving"
             >
-              {{ saving ? "Saving..." : editingRule ? "Update" : "Create" }}
+              {{
+                saving
+                  ? t("common.saving")
+                  : editingRule
+                    ? t("common.update")
+                    : t("common.create")
+              }}
             </button>
             <button
               type="button"
               class="px-3 py-2 border rounded hover:bg-gray-50"
               @click="closeModal"
             >
-              Cancel
+              {{ t("common.cancel") }}
             </button>
           </div>
         </form>
@@ -403,6 +415,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+
+const { t } = useI18n();
 
 const route = useRoute();
 const botId = route.params.id as string;
@@ -457,15 +471,18 @@ const usersPagination = ref({
 });
 
 const { breadcrumbs, backTo } = usePageBreadcrumbs(() => [
-  { label: "Bots", to: "/bots" },
+  { label: t("nav.bots"), to: "/bots" },
   { label: `@${botId}`, to: `/bots/${botId}` },
-  { label: chatName.value || `Chat ${telegramChatId}` },
-  { label: "Moderation" },
+  { label: chatName.value || t("page.moderation.chatSubtitle", { chatId: telegramChatId }) },
+  { label: t("page.moderation.title") },
 ]);
 
 usePageTitle(() =>
-  chatName.value ? `Правила · ${chatName.value}` : "Правила"
+  chatName.value
+    ? t("page.moderation.documentTitleWithChat", { chatName: chatName.value })
+    : t("page.moderation.documentTitle")
 );
+
 const saving = ref(false);
 const templateError = ref<string | null>(null);
 const ruleActionError = ref<string | null>(null);
@@ -517,7 +534,7 @@ async function loadUsers(page = usersPagination.value.page) {
       usersPagination.value = resp.data.pagination;
     }
   } catch (error) {
-    userActionError.value = readFetchError(error, "Failed to load chat users");
+    userActionError.value = readFetchError(error, t("common.errors.loadChatUsers"));
     console.error("Error loading chat users:", error);
   } finally {
     usersLoading.value = false;
@@ -543,7 +560,7 @@ async function runUserAction(userId: number, action: UserModerationAction) {
     });
     await loadUsers();
   } catch (error) {
-    userActionError.value = readFetchError(error, "Failed to update user");
+    userActionError.value = readFetchError(error, t("common.errors.updateUser"));
     console.error("Error updating chat user:", error);
   } finally {
     userActionBusy.value = null;
@@ -585,7 +602,7 @@ async function loadTemplateCatalog() {
     }>(`${templatesApiBase}/rule-templates`);
     templateCatalog.value = resp?.data?.templates ?? [];
   } catch (error) {
-    templateError.value = readFetchError(error, "Failed to load rule templates");
+    templateError.value = readFetchError(error, t("common.errors.loadRuleTemplates"));
     console.error("Error loading rule templates:", error);
   } finally {
     templatesLoading.value = false;
@@ -613,7 +630,7 @@ async function addTemplate(templateId: string) {
     await load();
     await loadTemplateCatalog();
   } catch (error) {
-    templateError.value = readFetchError(error, "Failed to add rule template");
+    templateError.value = readFetchError(error, t("common.errors.addRuleTemplate"));
     console.error("Error adding template:", error);
   } finally {
     addingTemplateId.value = null;
@@ -679,7 +696,7 @@ async function saveRule() {
     closeModal();
     await load();
   } catch (error) {
-    saveError.value = readFetchError(error, "Failed to save rule");
+    saveError.value = readFetchError(error, t("common.errors.saveRule"));
     console.error("Error saving rule:", error);
   } finally {
     saving.value = false;
@@ -687,7 +704,7 @@ async function saveRule() {
 }
 
 async function deleteRule(rule: any) {
-  if (!confirm(`Delete rule "${rule.name}"?`)) {
+  if (!confirm(t("common.confirm.deleteRule", { name: rule.name }))) {
     return;
   }
 
@@ -696,7 +713,7 @@ async function deleteRule(rule: any) {
     await $fetch(`${rulesApiBase}/${rule.id}`, { method: "DELETE" });
     await load();
   } catch (error) {
-    ruleActionError.value = readFetchError(error, "Failed to delete rule");
+    ruleActionError.value = readFetchError(error, t("common.errors.deleteRule"));
     console.error("Error deleting rule:", error);
   }
 }

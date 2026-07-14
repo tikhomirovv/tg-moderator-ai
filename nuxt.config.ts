@@ -1,20 +1,39 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import pkg from "./package.json";
-import { APP_NAME } from "./lib/app-config";
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-08-11",
   app: {
     head: {
-      title: APP_NAME,
-      titleTemplate: `%s · ${APP_NAME}`,
+      htmlAttrs: {
+        lang: "en",
+      },
     },
   },
   devtools: { enabled: true },
-  modules: ["@nuxtjs/tailwindcss", "@nuxt/fonts"],
+  modules: ["@nuxtjs/tailwindcss", "@nuxt/fonts", "@nuxtjs/i18n"],
+  i18n: {
+    defaultLocale: "en",
+    locales: [
+      { code: "en", language: "en-US", name: "English", file: "en.json" },
+      { code: "ru", language: "ru-RU", name: "Русский", file: "ru.json" },
+    ],
+    lazy: true,
+    langDir: "locales",
+    strategy: "no_prefix",
+    vueI18n: "./i18n.config.ts",
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: "i18n_locale",
+      fallbackLocale: "en",
+      redirectOn: "root",
+    },
+    compilation: {
+      strictMessage: false,
+    },
+  },
   runtimeConfig: {
     public: {
-      appName: APP_NAME,
       appVersion: pkg.version,
       telegramLoginBotUsername: process.env.TELEGRAM_LOGIN_BOT_USERNAME || "",
     },

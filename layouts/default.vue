@@ -9,25 +9,25 @@
             to="/"
             class="text-lg font-semibold shrink-0 hover:text-gray-700"
           >
-            {{ appName }}
+            {{ t("app.name") }}
           </NuxtLink>
           <nav
             class="flex items-center gap-1 overflow-x-auto text-sm"
-            aria-label="Main"
+            :aria-label="t('nav.main')"
           >
             <NuxtLink
               to="/"
               class="px-3 py-2 rounded whitespace-nowrap hover:bg-gray-100"
               active-class="bg-gray-100 font-medium"
             >
-              Dashboard
+              {{ t("nav.dashboard") }}
             </NuxtLink>
             <NuxtLink
               to="/bots"
               class="px-3 py-2 rounded whitespace-nowrap hover:bg-gray-100"
               active-class="bg-gray-100 font-medium"
             >
-              Bots
+              {{ t("nav.bots") }}
             </NuxtLink>
           </nav>
         </div>
@@ -40,7 +40,7 @@
             class="text-red-600 hover:underline"
             @click="signOut"
           >
-            Sign out
+            {{ t("nav.signOut") }}
           </button>
         </div>
       </div>
@@ -57,13 +57,22 @@
 <script setup lang="ts">
 import { fetchSession } from "~/lib/fetch-session";
 
+const { t, locale } = useI18n();
+
+useHead({
+  titleTemplate: (titleChunk) => {
+    const appName = t("app.name");
+    return titleChunk ? `${titleChunk} · ${appName}` : appName;
+  },
+  htmlAttrs: {
+    lang: () => locale.value,
+  },
+});
+
 const { data: session, refresh: refreshSession } = await useAsyncData(
   "layout-auth-session",
   () => fetchSession()
 );
-
-const runtimeConfig = useRuntimeConfig();
-const appName = computed(() => runtimeConfig.public.appName as string);
 
 const displayName = computed(() => {
   const user = session.value?.user;

@@ -1,7 +1,4 @@
-/** Single source for public app branding and footer links. */
-export const APP_NAME = "TG Moderator";
-
+/** External links for footer; app name lives in i18n (`app.name`). */
 export const APP_LINKS = {
-  authorTelegram: "https://t.me/ambivalerii",
-  personalSite: "https://tikhomirov.me",
+  authorSite: "https://tikhomirov.me",
 } as const;

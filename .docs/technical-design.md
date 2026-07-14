@@ -5,7 +5,7 @@
 | Layer | Technology |
 |-------|------------|
 | Runtime | Bun |
-| App | Nuxt 4, Nitro, Vue 3, Tailwind |
+| App | Nuxt 4, Nitro, Vue 3, Tailwind, **@nuxtjs/i18n** (en + ru admin UI) |
 | Database | PostgreSQL, Drizzle ORM |
 | Auth | Custom Telegram OIDC (PKCE + `jose` JWT verify) — **not** Better Auth |
 | LLM | OpenAI-compatible client (`LLM_API_KEY`, optional `LLM_BASE_URL`, `LLM_MODEL`) |
@@ -18,6 +18,7 @@
 3. **Rule presets in code** — `RULE_TEMPLATES` catalog; DB stores copies per bot with UUID `rule.id`
 4. **Webhook per bot** — `POST /api/telegram/webhook/:botId` + secret token header
 5. **Incremental migrations only** — see [database-migrations.md](database-migrations.md)
+6. **Admin UI i18n** — `@nuxtjs/i18n`, `no_prefix`, lazy `i18n/locales/`; browser locale + footer switcher; see [i18n.md](i18n.md)
 
 ## Core entities (PostgreSQL)
 
@@ -56,10 +57,13 @@
 
 ```
 pages/           # Nuxt UI (bots, rules, login, dashboard)
+i18n/locales/    # en.json, ru.json — admin UI strings
+composables/     # useAppLocale, usePageBreadcrumbs, …
+components/      # layout, dashboard, bots
 server/api/      # Nitro routes
 server/core/     # Moderation, dashboard, bot lifecycle
 server/database/ # Drizzle schema, repositories, migrations
-lib/             # Isomorphic helpers (e.g. auth returnTo)
+lib/             # Isomorphic helpers (e.g. auth returnTo, APP_LINKS)
 middleware/      # Global auth redirect
 ```
 
@@ -71,6 +75,7 @@ middleware/      # Global auth redirect
 - **Env:** `.env` local only; `.env.example` committed
 - **Bot route param:** use `requireBotIdParam(event)` from `server/utils/get-bot-id-param.ts`
 - **Tests:** unit tests under `tests/unit/`; run `bun test` after `server/**` changes
+- **Admin UI strings:** no hardcoded copy in pages/components — use `$t()` / keys in `i18n/locales/`; see [i18n.md](i18n.md)
 
 ## Dev HTTPS tunnel
 

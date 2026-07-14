@@ -21,11 +21,11 @@ User (telegram_id)
 
 Публичный endpoint без session: `POST /api/telegram/webhook/*` (Telegram). Защита: per-bot `webhook_secret` в БД + заголовок `X-Telegram-Bot-Api-Secret-Token`.
 
-Подробнее: [`.docs/project-overview.md`](.docs/project-overview.md) · [`.docs/technical-design.md`](.docs/technical-design.md)
+Подробнее: [`.docs/project-overview.md`](.docs/project-overview.md) · [`.docs/technical-design.md`](.docs/technical-design.md) · [`.docs/i18n.md`](.docs/i18n.md) (admin UI locales)
 
 ## Стек
 
-- Bun, Nuxt 4, Nitro, Vue 3, Tailwind
+- Bun, Nuxt 4, Nitro, Vue 3, Tailwind, **@nuxtjs/i18n** (admin UI: en + ru)
 - PostgreSQL, Drizzle
 - Telegram OIDC login (`TELEGRAM_LOGIN_BOT_ID`, `TELEGRAM_LOGIN_CLIENT_SECRET`, `BASE_URL`)
 - LLM: OpenAI-compatible API via `LLM_API_KEY`, optional `LLM_BASE_URL` (OpenRouter/Polza), `LLM_MODEL`

@@ -3,19 +3,21 @@
     <LayoutPageHeader
       :breadcrumbs="breadcrumbs"
       :back-to="backTo"
-      title="Documentation"
-      subtitle="Coming soon."
+      :title="t('page.docs.title')"
+      :subtitle="t('page.docs.subtitle')"
     />
     <p class="text-gray-600">
-      Product documentation will appear here. For now, use in-app tooltips and release notes.
+      {{ t("page.docs.body") }}
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
-const { breadcrumbs, backTo } = usePageBreadcrumbs([
-  { label: "Docs" },
+const { t } = useI18n();
+
+const { breadcrumbs, backTo } = usePageBreadcrumbs(() => [
+  { label: t("page.docs.breadcrumb") },
 ]);
 
-usePageTitle("Docs");
+usePageTitle(() => t("page.docs.documentTitle"));
 </script>

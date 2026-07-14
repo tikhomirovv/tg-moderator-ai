@@ -3,18 +3,18 @@
     <LayoutPageHeader
       :breadcrumbs="breadcrumbs"
       :back-to="backTo"
-      title="Что нового"
-      subtitle="История обновлений приложения. Здесь только то, что важно при работе с ботами, правилами и модерацией."
+      :title="t('page.releaseNotes.title')"
+      :subtitle="t('page.releaseNotes.subtitle')"
     />
 
-    <div v-if="loading" class="text-gray-500">Загрузка...</div>
+    <div v-if="loading" class="text-gray-500">{{ t("releaseNotes.loading") }}</div>
 
     <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 rounded p-4">
       {{ error }}
     </div>
 
     <div v-else-if="releases.length === 0" class="text-gray-500 text-center py-12">
-      Пока нет опубликованных релизов. После первого релиза здесь появится описание изменений.
+      {{ t("releaseNotes.empty") }}
     </div>
 
     <div v-else class="space-y-10">
@@ -35,7 +35,7 @@
             rel="noopener noreferrer"
             class="text-blue-600 hover:underline"
           >
-            Подробнее на GitHub
+            {{ t("releaseNotes.githubLink") }}
           </a>
         </p>
 
@@ -63,7 +63,7 @@
     <nav
       v-if="pagination.total_pages > 1"
       class="flex items-center justify-between border-t border-gray-200 pt-6 mt-8"
-      aria-label="Навигация по релизам"
+      :aria-label="t('page.releaseNotes.paginationNav')"
     >
       <button
         type="button"
@@ -71,10 +71,10 @@
         :disabled="pagination.page <= 1"
         @click="goToPage(pagination.page - 1)"
       >
-        Назад
+        {{ t("releaseNotes.back") }}
       </button>
       <span class="text-sm text-gray-600">
-        Страница {{ pagination.page }} из {{ pagination.total_pages }}
+        {{ t("common.pageOf", { page: pagination.page, totalPages: pagination.total_pages }) }}
       </span>
       <button
         type="button"
@@ -82,7 +82,7 @@
         :disabled="pagination.page >= pagination.total_pages"
         @click="goToPage(pagination.page + 1)"
       >
-        Вперёд
+        {{ t("releaseNotes.forward") }}
       </button>
     </nav>
   </div>
@@ -94,10 +94,12 @@ type ReleaseSection = {
   items: string[];
 };
 
-usePageTitle("Что нового");
+const { t, locale } = useI18n();
 
-const { breadcrumbs, backTo } = usePageBreadcrumbs([
-  { label: "Release notes" },
+usePageTitle(() => t("page.releaseNotes.documentTitle"));
+
+const { breadcrumbs, backTo } = usePageBreadcrumbs(() => [
+  { label: t("page.releaseNotes.title") },
 ]);
 
 type ReleaseNote = {
@@ -127,7 +129,8 @@ const page = computed(() => {
 });
 
 function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString("ru-RU", {
+  const loc = locale.value === "ru" ? "ru-RU" : "en-US";
+  return new Date(dateString).toLocaleDateString(loc, {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -153,7 +156,7 @@ async function loadReleases(targetPage = page.value) {
     pagination.value = resp?.data?.pagination ?? pagination.value;
   } catch (loadError: unknown) {
     console.error(loadError);
-    error.value = "Не удалось загрузить release notes.";
+    error.value = t("common.errors.loadReleaseNotes");
     releases.value = [];
   } finally {
     loading.value = false;

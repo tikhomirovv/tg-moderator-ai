@@ -1,10 +1,4 @@
 import { onBeforeUnmount, ref } from "vue";
-import {
-  CHAT_ACTIVATION_EXISTING_GROUP_HINT,
-  CHAT_ACTIVATION_EXPIRED_MESSAGE,
-  CHAT_ACTIVATION_NEW_GROUP_HINT,
-  CHAT_ACTIVATION_POPUP_BLOCKED_MESSAGE,
-} from "~/lib/chat-activation-ui";
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_WAIT_MS = 3 * 60 * 1000;
@@ -33,6 +27,8 @@ type UseChatActivationWaitOptions = {
 };
 
 export function useChatActivationWait(options: UseChatActivationWaitOptions) {
+  const { t } = useI18n();
+
   const status = ref<ChatActivationWaitStatus>("idle");
   const message = ref("");
   const pendingId = ref<number | null>(null);
@@ -53,7 +49,7 @@ export function useChatActivationWait(options: UseChatActivationWaitOptions) {
 
     if (Date.now() >= stopAt) {
       status.value = "expired";
-      message.value = CHAT_ACTIVATION_EXPIRED_MESSAGE;
+      message.value = t("chatActivation.expiredMessage");
       clearPolling();
       return;
     }
@@ -66,7 +62,7 @@ export function useChatActivationWait(options: UseChatActivationWaitOptions) {
 
       if (data.status === "completed") {
         status.value = "completed";
-        message.value = "Чат подключён";
+        message.value = t("chatActivation.completed");
         clearPolling();
         await options.onCompleted?.();
         return;
@@ -74,14 +70,14 @@ export function useChatActivationWait(options: UseChatActivationWaitOptions) {
 
       if (data.status === "failed") {
         status.value = "failed";
-        message.value = data.error?.message ?? "Не удалось подключить чат";
+        message.value = data.error?.message ?? t("chatActivation.failedDefault");
         clearPolling();
         return;
       }
 
       if (data.status === "expired") {
         status.value = "expired";
-        message.value = CHAT_ACTIVATION_EXPIRED_MESSAGE;
+        message.value = t("chatActivation.expiredMessage");
         clearPolling();
       }
     } catch {
@@ -109,8 +105,8 @@ export function useChatActivationWait(options: UseChatActivationWaitOptions) {
     status.value = "waiting";
     message.value =
       mode === "existing_group"
-        ? CHAT_ACTIVATION_EXISTING_GROUP_HINT
-        : CHAT_ACTIVATION_NEW_GROUP_HINT;
+        ? t("chatActivation.existingGroupHint")
+        : t("chatActivation.newGroupHint");
     pendingId.value = null;
 
     const resp = await $fetch<{
@@ -127,7 +123,7 @@ export function useChatActivationWait(options: UseChatActivationWaitOptions) {
       const popup = window.open(deepLink, "_blank", "noopener,noreferrer");
       if (!popup) {
         status.value = "failed";
-        message.value = CHAT_ACTIVATION_POPUP_BLOCKED_MESSAGE;
+        message.value = t("chatActivation.popupBlockedMessage");
         clearPolling();
         return;
       }

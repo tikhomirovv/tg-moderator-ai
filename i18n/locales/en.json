@@ -76,9 +76,12 @@
       "manager": "Member"
     },
     "actions": {
-      "warning": "warning",
-      "delete": "delete",
-      "ban": "ban"
+      "warning": "Warning",
+      "delete": "Delete",
+      "ban": "Ban",
+      "reset_warnings": "Warnings reset",
+      "unban": "Unban",
+      "pardon": "Pardon"
     }
   },
   "page": {

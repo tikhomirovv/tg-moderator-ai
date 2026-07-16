@@ -1,5 +1,8 @@
 import type { BotResponse } from "../database/models/bot";
-import type { ModerationAction } from "../database/models/moderation-action";
+import type {
+  ModerationAction,
+  ModerationActionType,
+} from "../database/models/moderation-action";
 import { toDateKey } from "../database/mappers";
 
 export interface DashboardKpi {
@@ -30,7 +33,7 @@ export interface DashboardActionBreakdown {
 export interface DashboardRecentActivityItem {
   bot_id: string;
   chat_id: number;
-  action_type: "warning" | "delete" | "ban";
+  action_type: ModerationActionType;
   rule_violated?: string;
   timestamp: string;
 }

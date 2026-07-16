@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import { chats } from "../schema";
 import type { ChatHealthStatus } from "../models/bot";
@@ -46,6 +46,24 @@ export class ChatRepository {
       .limit(1);
 
     return row ?? null;
+  }
+
+  async findNamesByTelegramChatIds(
+    botId: string,
+    telegramChatIds: number[]
+  ): Promise<Array<{ chatId: number; name: string }>> {
+    if (telegramChatIds.length === 0) {
+      return [];
+    }
+
+    const rows = await this.db
+      .select({ chatId: chats.chatId, name: chats.name })
+      .from(chats)
+      .where(
+        and(eq(chats.botId, botId), inArray(chats.chatId, telegramChatIds))
+      );
+
+    return rows.map((row) => ({ chatId: row.chatId, name: row.name }));
   }
 
   async upsertActivatedChat(

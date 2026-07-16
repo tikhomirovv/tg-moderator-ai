@@ -8,11 +8,15 @@ import { logger } from "../logger";
 
 const YOOKASSA_API = "https://api.yookassa.ru/v3";
 
-type YooKassaPaymentResponse = {
-  id: string;
-  status: string;
+type YooKassaPaymentObject = {
+  id?: string;
+  status?: string;
+  amount?: { value?: string; currency?: string };
+  metadata?: Record<string, string>;
   confirmation?: { confirmation_url?: string };
 };
+
+type YooKassaPaymentResponse = YooKassaPaymentObject;
 
 type YooKassaWebhookPayload = {
   event?: string;
@@ -35,6 +39,52 @@ function resolveYooKassaCredentials(env: NodeJS.ProcessEnv = process.env) {
 
 function basicAuthHeader(shopId: string, secretKey: string): string {
   return `Basic ${Buffer.from(`${shopId}:${secretKey}`).toString("base64")}`;
+}
+
+function mapYooKassaStatusToBillingStatus(
+  status: string | undefined
+): BillingWebhookEvent["status"] {
+  if (status === "succeeded") {
+    return "paid";
+  }
+  if (status === "refunded") {
+    return "refunded";
+  }
+  return "failed";
+}
+
+function parseYooKassaPaymentObject(
+  object: YooKassaPaymentObject
+): BillingWebhookEvent | null {
+  if (!object.id) {
+    return null;
+  }
+
+  const metadata = object.metadata ?? {};
+  const botId = metadata.bot_id;
+  const purchaserUserId = metadata.purchaser_user_id;
+  const packageId = metadata.package_id;
+  const creditsRaw = metadata.credits;
+
+  if (!botId || !purchaserUserId || !packageId) {
+    logger.warn({ metadata, paymentId: object.id }, "YooKassa payment missing metadata");
+    return null;
+  }
+
+  const pkg = resolveCreditPackage(packageId);
+  const credits = creditsRaw ? Number(creditsRaw) : pkg?.credits ?? 0;
+  const amountRub = pkg?.amountRub ?? Number(object.amount?.value ?? 0);
+  const billingStatus = mapYooKassaStatusToBillingStatus(object.status);
+
+  return {
+    providerPaymentId: object.id,
+    botId,
+    purchaserUserId,
+    packageId,
+    credits,
+    amountRub,
+    status: billingStatus,
+  };
 }
 
 export class YooKassaBillingProvider implements BillingProvider {
@@ -111,30 +161,42 @@ export class YooKassaBillingProvider implements BillingProvider {
       throw new Error("Invalid YooKassa webhook signature");
     }
 
-    const metadata = body.object.metadata ?? {};
-    const botId = metadata.bot_id;
-    const purchaserUserId = metadata.purchaser_user_id;
-    const packageId = metadata.package_id;
-    const creditsRaw = metadata.credits;
-
-    if (!botId || !purchaserUserId || !packageId) {
-      logger.warn({ metadata }, "YooKassa webhook missing metadata");
+    const parsed = parseYooKassaPaymentObject(body.object);
+    if (!parsed) {
       return null;
     }
 
-    const pkg = resolveCreditPackage(packageId);
-    const credits = creditsRaw ? Number(creditsRaw) : pkg?.credits ?? 0;
-    const amountRub = pkg?.amountRub ?? Number(body.object.amount?.value ?? 0);
+    return { ...parsed, status: "paid" };
+  }
 
-    return {
-      providerPaymentId: body.object.id,
-      botId,
-      purchaserUserId,
-      packageId,
-      credits,
-      amountRub,
-      status: "paid",
-    };
+  async fetchPayment(
+    providerPaymentId: string
+  ): Promise<BillingWebhookEvent | null> {
+    const { shopId, secretKey } = resolveYooKassaCredentials(this.env);
+    const response = await fetch(
+      `${YOOKASSA_API}/payments/${encodeURIComponent(providerPaymentId)}`,
+      {
+        headers: {
+          Authorization: basicAuthHeader(shopId, secretKey),
+        },
+      }
+    );
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      const text = await response.text();
+      logger.error(
+        { status: response.status, text, paymentId: providerPaymentId },
+        "YooKassa fetch payment failed"
+      );
+      throw new Error("Failed to fetch YooKassa payment");
+    }
+
+    const payment = (await response.json()) as YooKassaPaymentObject;
+    return parseYooKassaPaymentObject(payment);
   }
 
   private verifyWebhookSignature(payload: unknown, headers: Headers): boolean {

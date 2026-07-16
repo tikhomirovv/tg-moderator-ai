@@ -20,4 +20,7 @@ export interface BillingProvider {
     payload: unknown,
     headers: Headers
   ): Promise<BillingWebhookEvent | null>;
+
+  /** Load payment state from provider API (fallback when webhook was missed). */
+  fetchPayment(providerPaymentId: string): Promise<BillingWebhookEvent | null>;
 }

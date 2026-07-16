@@ -63,6 +63,7 @@ export default defineNuxtConfig({
         "retention:moderation-actions",
         "retention:moderation-decisions",
         "billing:reconcile-credits",
+        "billing:reconcile-stale-payments",
       ],
     },
   },

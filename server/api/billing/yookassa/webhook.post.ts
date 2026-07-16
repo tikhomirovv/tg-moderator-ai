@@ -1,4 +1,4 @@
-import { applyCreditPurchaseFromBillingEvent } from "../../../core/apply-credit-purchase";
+import { reconcileProviderPayment } from "../../../core/provider-payment-reconciliation";
 import { createBillingProvider } from "../../../core/billing/yookassa-provider";
 import { isSaasMode } from "../../../core/deployment-mode";
 import { logger } from "../../../core/logger";
@@ -18,12 +18,12 @@ export default defineEventHandler(async (event) => {
     event.node.req.headers as unknown as Headers
   );
 
-  if (!webhookEvent || webhookEvent.status !== "paid") {
+  if (!webhookEvent) {
     return { success: true, ignored: true };
   }
 
-  const result = await applyCreditPurchaseFromBillingEvent(webhookEvent);
-  if (result.status === "duplicate") {
+  const result = await reconcileProviderPayment(webhookEvent);
+  if (result === "duplicate") {
     logger.info(
       { paymentId: webhookEvent.providerPaymentId },
       "Duplicate YooKassa webhook ignored"
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     return { success: true, duplicate: true };
   }
 
-  if (result.status === "ignored") {
+  if (result === "pending" || result === "not_found" || result === "forbidden") {
     return { success: true, ignored: true };
   }
 

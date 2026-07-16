@@ -57,6 +57,13 @@
       "when": 1784155420994,
       "tag": "0007_lowly_satana",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784195308991,
+      "tag": "0008_worthless_mole_man",
+      "breakpoints": true
     }
   ]
 }

@@ -50,6 +50,12 @@ function mapYooKassaStatusToBillingStatus(
   if (status === "refunded") {
     return "refunded";
   }
+  if (status === "canceled") {
+    return "failed";
+  }
+  if (status === "pending" || status === "waiting_for_capture") {
+    return "pending";
+  }
   return "failed";
 }
 

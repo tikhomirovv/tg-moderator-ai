@@ -3,6 +3,7 @@ import { requireBotIdParam } from "../../../../utils/get-bot-id-param";
 import { isSaasMode } from "../../../../core/deployment-mode";
 import { createBillingProvider } from "../../../../core/billing/yookassa-provider";
 import { resolveCreditPackage } from "../../../../core/credit-packages";
+import { ProviderPaymentRepository } from "../../../../database/repositories/provider-payment-repository";
 import { getWebhookBaseUrl } from "../../../../utils/telegram-webhook";
 
 type CheckoutBody = {
@@ -39,11 +40,22 @@ export default defineEventHandler(async (event) => {
 
   const returnUrl = `${baseUrl}/bots/${botId}/credits?payment=return`;
   const provider = createBillingProvider();
+  const pkg = resolveCreditPackage(packageId)!;
   const checkout = await provider.createCheckout({
     botId,
     purchaserUserId: user.id,
     packageId,
     returnUrl,
+  });
+
+  const providerPayments = new ProviderPaymentRepository();
+  await providerPayments.createPending({
+    provider_payment_id: checkout.providerPaymentId,
+    bot_id: botId,
+    package_id: packageId,
+    amount_rub: pkg.amountRub,
+    credits: pkg.credits,
+    purchaser_user_id: user.id,
   });
 
   return {

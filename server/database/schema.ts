@@ -44,6 +44,13 @@ export const creditTransactionTypeEnum = pgEnum("credit_transaction_type", [
   "reconcile_fix",
 ]);
 
+export const providerPaymentStatusEnum = pgEnum("provider_payment_status", [
+  "pending",
+  "succeeded",
+  "canceled",
+  "credited",
+]);
+
 export const bots = pgTable("bots", {
   id: varchar("id", { length: 64 }).primaryKey(),
   ownerUserId: text("owner_user_id")
@@ -385,6 +392,41 @@ export const llmUsage = pgTable(
       table.botId,
       table.chatId,
       table.messageId
+    ),
+  ]
+);
+
+export const providerPayments = pgTable(
+  "provider_payments",
+  {
+    id: serial("id").primaryKey(),
+    providerPaymentId: text("provider_payment_id").notNull(),
+    botId: varchar("bot_id", { length: 64 })
+      .notNull()
+      .references(() => bots.id, { onDelete: "cascade" }),
+    packageId: text("package_id").notNull(),
+    amountRub: integer("amount_rub").notNull(),
+    credits: integer("credits").notNull(),
+    status: providerPaymentStatusEnum("status").notNull().default("pending"),
+    purchaserUserId: text("purchaser_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    creditedAt: timestamp("credited_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("provider_payments_provider_payment_id_unique").on(
+      table.providerPaymentId
+    ),
+    index("provider_payments_bot_status_created").on(
+      table.botId,
+      table.status,
+      table.createdAt
     ),
   ]
 );

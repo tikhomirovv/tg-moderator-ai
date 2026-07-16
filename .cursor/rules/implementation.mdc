@@ -38,6 +38,15 @@ alwaysApply: false
 
 При правках `server/**` — см. правило `unit-tests` (отдельный glob).
 
+## Logging (`server/**`)
+
+При правках `logger.*` в `server/**`:
+
+- **debug** — частый operational trace (updates, LLM prompt/response, lookups); **info** — редкие business events (moderation outcome, webhook lifecycle).
+- На `LOG_LEVEL=info` одно модерированное сообщение → несколько info-строк, не пошаговый trace.
+- LLM prompts/responses только **debug**; не префикс `"Debug:"` — выбирай правильный level.
+- Политика: [`.docs/logging.md`](.docs/logging.md).
+
 ## i18n (admin UI)
 
 При правках **user-facing UI** (`pages/`, `components/`, `layouts/`, клиентские composables):

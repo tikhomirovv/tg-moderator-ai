@@ -7,7 +7,11 @@
       :subtitle="t('page.botCredits.subtitle')"
     />
 
-    <div v-if="paymentNotice" class="mb-4 rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+    <div
+      v-if="paymentNotice"
+      class="mb-4 rounded border p-3 text-sm"
+      :class="paymentNoticeClass"
+    >
       {{ paymentNotice }}
     </div>
 
@@ -17,9 +21,10 @@
       <button
         type="button"
         class="mt-3 text-sm text-blue-700 hover:underline"
+        :disabled="refreshing"
         @click="refreshBalance"
       >
-        {{ t("common.refresh") }}
+        {{ refreshing ? t("common.loading") : t("common.refresh") }}
       </button>
     </div>
 
@@ -56,6 +61,11 @@
 
 <script setup lang="ts">
 import { CREDIT_PACKAGES, type CreditPackageId } from "~/lib/credit-packages";
+import {
+  clearPendingPaymentId,
+  readPendingPaymentId,
+  writePendingPaymentId,
+} from "~/lib/credits-pending-payment";
 
 const { t } = useI18n();
 const config = useRuntimeConfig();
@@ -76,19 +86,99 @@ const { breadcrumbs, backTo } = usePageBreadcrumbs(() => [
 
 usePageTitle(() => t("page.botCredits.documentTitle"));
 
+type PaymentSyncStatus =
+  | "applied"
+  | "duplicate"
+  | "pending"
+  | "not_found"
+  | "forbidden";
+
 const balance = ref(0);
 const error = ref("");
+const refreshing = ref(false);
 const checkoutPackageId = ref<CreditPackageId | null>(null);
 const paymentNotice = ref("");
+const paymentNoticeTone = ref<"info" | "success" | "warning">("info");
+
+const paymentNoticeClass = computed(() => {
+  if (paymentNoticeTone.value === "success") {
+    return "border-green-200 bg-green-50 text-green-900";
+  }
+  if (paymentNoticeTone.value === "warning") {
+    return "border-amber-200 bg-amber-50 text-amber-900";
+  }
+  return "border-blue-200 bg-blue-50 text-blue-900";
+});
+
+function setPaymentNotice(message: string, tone: "info" | "success" | "warning") {
+  paymentNotice.value = message;
+  paymentNoticeTone.value = tone;
+}
+
+function noticeForSyncStatus(status: PaymentSyncStatus | null) {
+  if (status === "applied") {
+    setPaymentNotice(t("billing.paymentApplied"), "success");
+    return;
+  }
+  if (status === "duplicate") {
+    setPaymentNotice(t("billing.paymentAlreadyApplied"), "success");
+    return;
+  }
+  if (status === "pending") {
+    setPaymentNotice(t("billing.paymentReturnPending"), "info");
+    return;
+  }
+  if (status === "not_found" || status === "forbidden") {
+    setPaymentNotice(t("billing.paymentSyncFailed"), "warning");
+  }
+}
+
+async function syncPendingPayment(): Promise<PaymentSyncStatus | null> {
+  const paymentId = readPendingPaymentId(botId);
+  if (!paymentId) {
+    return null;
+  }
+
+  const response = await $fetch<{
+    data: { sync_status: PaymentSyncStatus; balance: number };
+  }>(`/api/bots/${botId}/credits/sync`, {
+    method: "POST",
+    body: { payment_id: paymentId },
+  });
+
+  balance.value = response.data.balance;
+
+  if (
+    response.data.sync_status === "applied" ||
+    response.data.sync_status === "duplicate"
+  ) {
+    clearPendingPaymentId(botId);
+  }
+
+  return response.data.sync_status;
+}
+
+async function loadBalanceOnly() {
+  const response = await $fetch<{ data: { balance: number } }>(
+    `/api/bots/${botId}/credits/balance`
+  );
+  balance.value = response.data.balance;
+}
 
 async function refreshBalance() {
+  refreshing.value = true;
+  error.value = "";
   try {
-    const response = await $fetch<{ data: { balance: number } }>(
-      `/api/bots/${botId}/credits/balance`
-    );
-    balance.value = response.data.balance;
+    const syncStatus = await syncPendingPayment();
+    if (syncStatus) {
+      noticeForSyncStatus(syncStatus);
+      return;
+    }
+    await loadBalanceOnly();
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : t("common.unknown");
+  } finally {
+    refreshing.value = false;
   }
 }
 
@@ -96,13 +186,13 @@ async function startCheckout(packageId: CreditPackageId) {
   checkoutPackageId.value = packageId;
   error.value = "";
   try {
-    const response = await $fetch<{ data: { checkout_url: string } }>(
-      `/api/bots/${botId}/credits/checkout`,
-      {
-        method: "POST",
-        body: { package_id: packageId },
-      }
-    );
+    const response = await $fetch<{
+      data: { checkout_url: string; provider_payment_id: string };
+    }>(`/api/bots/${botId}/credits/checkout`, {
+      method: "POST",
+      body: { package_id: packageId },
+    });
+    writePendingPaymentId(botId, response.data.provider_payment_id);
     window.location.href = response.data.checkout_url;
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : t("common.unknown");
@@ -113,19 +203,46 @@ async function startCheckout(packageId: CreditPackageId) {
 let pollTimer: ReturnType<typeof setInterval> | undefined;
 
 onMounted(async () => {
+  const queryPaymentId = route.query.payment_id;
+  if (typeof queryPaymentId === "string" && queryPaymentId.trim()) {
+    writePendingPaymentId(botId, queryPaymentId.trim());
+  }
+
   await refreshBalance();
 
-  if (route.query.payment === "return") {
-    paymentNotice.value = t("billing.paymentReturnPending");
-    pollTimer = setInterval(refreshBalance, 3000);
-    setTimeout(() => {
-      if (pollTimer) clearInterval(pollTimer);
-      paymentNotice.value = t("billing.paymentReturnSuccess");
-    }, 30_000);
+  const shouldPoll =
+    route.query.payment === "return" || Boolean(readPendingPaymentId(botId));
+  if (!shouldPoll) {
+    return;
   }
+
+  if (!paymentNotice.value) {
+    setPaymentNotice(t("billing.paymentReturnPending"), "info");
+  }
+
+  pollTimer = setInterval(async () => {
+    try {
+      const syncStatus = await syncPendingPayment();
+      if (syncStatus === "applied" || syncStatus === "duplicate") {
+        noticeForSyncStatus(syncStatus);
+        if (pollTimer) {
+          clearInterval(pollTimer);
+          pollTimer = undefined;
+        }
+        return;
+      }
+      if (syncStatus === "pending") {
+        setPaymentNotice(t("billing.paymentReturnPending"), "info");
+      }
+    } catch {
+      // Keep polling; user can hit Refresh for explicit error.
+    }
+  }, 3000);
 });
 
 onUnmounted(() => {
-  if (pollTimer) clearInterval(pollTimer);
+  if (pollTimer) {
+    clearInterval(pollTimer);
+  }
 });
 </script>

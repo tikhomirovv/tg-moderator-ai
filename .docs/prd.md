@@ -6,7 +6,9 @@ Web application to manage Telegram moderation bots: connect bot token, configure
 
 **In scope:** bot CRUD, rules, rule presets, chat binding, webhook lifecycle, team join, dashboard, audit, release notes page.
 
-**Out of scope (current):** billing, multi-region, non-Telegram channels, end-user facing signup outside Telegram.
+**Out of scope (current):** multi-region, non-Telegram channels, end-user facing signup outside Telegram.
+
+**Planned:** SaaS billing (Modr8-style credits, YooKassa, RUB tiers) + `DEPLOYMENT_MODE=self-hosted|saas` — see `.docs/billing-design.md`, `.docs/billing-economics.md`.
 
 ## User flows
 

@@ -5,6 +5,7 @@ import { UserContextRepository } from "../../../database/repositories/user-conte
 import { UserMessageRepository } from "../../../database/repositories/user-message-repository";
 import { requireBotAccess } from "../../../utils/bot-access";
 import { requireBotIdParam } from "../../../utils/get-bot-id-param";
+import { isSaasMode } from "../../../core/deployment-mode";
 
 export default defineEventHandler(async (event) => {
   try {
@@ -14,6 +15,9 @@ export default defineEventHandler(async (event) => {
     const actionRepo = new ModerationActionRepository();
     const userContextRepo = new UserContextRepository();
     const messageRepo = new UserMessageRepository();
+    const notModeratedToday = isSaasMode()
+      ? await messageRepo.countNotModeratedToday(botId)
+      : 0;
 
     // Получаем все сообщения для бота за сегодня
     const today = new Date();
@@ -76,6 +80,7 @@ export default defineEventHandler(async (event) => {
         users_banned: banActions.filter((a) => a.timestamp >= todayStart)
           .length,
         unique_users: new Set(todayMessages.map((m) => m.user_id)).size,
+        not_moderated: notModeratedToday,
       },
       week: {
         total_messages_processed:

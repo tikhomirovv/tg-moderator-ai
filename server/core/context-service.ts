@@ -71,6 +71,19 @@ export class ContextService {
     }
   }
 
+  // Mark message as LLM-moderated after successful analysis.
+  async markMessageModerated(
+    botId: string,
+    chatId: number,
+    messageId: number
+  ): Promise<void> {
+    try {
+      await this.userMessageRepo.markAsModerated(botId, chatId, messageId);
+    } catch (error) {
+      logger.error({ error: error as Error }, "Failed to mark message moderated");
+    }
+  }
+
   // Сохранение входящего сообщения
   async saveMessage(
     botId: string,

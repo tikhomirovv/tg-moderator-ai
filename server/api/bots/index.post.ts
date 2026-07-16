@@ -6,6 +6,7 @@ import {
 import { registerBotWebhook } from "../../utils/bot-lifecycle";
 import { getBotDeliveryHealth, withDeliveryHealth } from "../../utils/bot-delivery";
 import { requireSession } from "../../utils/session";
+import { CreditService } from "../../core/credit-service";
 import {
   TelegramBotApiError,
   telegramGetMe,
@@ -79,12 +80,17 @@ export default defineEventHandler(async (event) => {
       photo_file_id: photoFileId,
     });
 
+    const creditService = new CreditService();
+    await creditService.grantSignupCredits(bot.id);
+
+    const refreshedBot = (await botRepo.findById(bot.id)) ?? bot;
+
     let warning: string | undefined;
     if (bot.is_active) {
-      const botWithToken = await botRepo.findByIdWithToken(bot.id);
+      const botWithToken = await botRepo.findByIdWithToken(refreshedBot.id);
       if (botWithToken) {
         try {
-          const registration = await registerBotWebhook(bot.id, botWithToken);
+          const registration = await registerBotWebhook(refreshedBot.id, botWithToken);
           warning = registration.warning;
         } catch (error) {
           warning =
@@ -95,11 +101,11 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    const health = await getBotDeliveryHealth(event, bot.id);
+    const health = await getBotDeliveryHealth(event, refreshedBot.id);
 
     return {
       success: true,
-      data: withDeliveryHealth(bot, health),
+      data: withDeliveryHealth(refreshedBot, health),
       warning,
       message: "Bot created successfully",
     };

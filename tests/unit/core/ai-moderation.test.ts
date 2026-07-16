@@ -130,9 +130,9 @@ describe("analyzeMessage", () => {
       }
     );
 
-    expect(result.violation_detected).toBe(true);
-    expect(result.rule_violated).toBe("spam");
-    expect(result.confidence).toBeCloseTo(0.91);
+    expect(result.response.violation_detected).toBe(true);
+    expect(result.response.rule_violated).toBe("spam");
+    expect(result.response.confidence).toBeCloseTo(0.91);
   });
 
   test("sends system and user prompts without duplicated methodology", async () => {
@@ -212,7 +212,7 @@ describe("analyzeMessage", () => {
       }
     );
 
-    expect(result.violation_detected).toBe(false);
+    expect(result.response.violation_detected).toBe(false);
   });
 });
 

@@ -61,6 +61,7 @@ export function toBotResponse(
     ban_message_template: row.banMessageTemplate,
     photo_file_id: row.photoFileId,
     telegram_bot_id: row.telegramBotId,
+    credit_balance: row.creditBalance,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
   };
@@ -150,6 +151,7 @@ export function toUserMessage(row: UserMessageRow): UserMessage {
     text: row.text,
     timestamp: row.timestamp,
     is_deleted: row.isDeleted,
+    is_moderated: row.isModerated,
     deleted_at: row.deletedAt ?? undefined,
     deleted_reason: row.deletedReason ?? undefined,
     created_at: row.createdAt,

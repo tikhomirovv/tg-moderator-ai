@@ -75,6 +75,7 @@ export interface BotResponse {
   ban_message_template?: string | null;
   delivery_status?: "healthy" | "disabled" | "degraded" | "unavailable";
   delivery_message?: string;
+  credit_balance?: number;
   created_at: Date;
   updated_at: Date;
 }

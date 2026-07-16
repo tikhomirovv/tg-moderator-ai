@@ -252,6 +252,16 @@ export class BotRepository {
       .where(eq(bots.id, id));
   }
 
+  async getCreditBalance(id: string): Promise<number> {
+    const [row] = await this.db
+      .select({ creditBalance: bots.creditBalance })
+      .from(bots)
+      .where(eq(bots.id, id))
+      .limit(1);
+
+    return row?.creditBalance ?? 0;
+  }
+
   async delete(id: string): Promise<boolean> {
     const deleted = await this.db
       .delete(bots)

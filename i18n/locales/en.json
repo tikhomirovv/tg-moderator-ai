@@ -6,6 +6,7 @@
     "main": "Main",
     "dashboard": "Dashboard",
     "bots": "Bots",
+    "settings": "Settings",
     "signOut": "Sign out"
   },
   "footer": {
@@ -130,6 +131,45 @@
       "breadcrumb": "Terms",
       "subtitle": "Coming soon.",
       "body": "Terms and conditions will be published here."
+    },
+    "settingsLlm": {
+      "title": "LLM settings",
+      "documentTitle": "LLM settings",
+      "breadcrumb": "LLM settings",
+      "subtitle": "Instance-wide model configuration for self-hosted deployments."
+    },
+    "botCredits": {
+      "title": "Credits",
+      "documentTitle": "Credits",
+      "breadcrumb": "Credits",
+      "subtitle": "Purchase moderation credits for this bot."
+    }
+  },
+  "billing": {
+    "balance": "Credit balance",
+    "manageCredits": "Manage credits",
+    "purchase": "Purchase",
+    "purchasing": "Redirecting to payment...",
+    "paymentReturnSuccess": "Payment submitted — balance updates after confirmation.",
+    "paymentReturnPending": "Waiting for payment confirmation...",
+    "paymentApplied": "Credits have been added to your balance.",
+    "paymentAlreadyApplied": "This payment was already credited.",
+    "paymentSyncFailed": "Could not verify the payment. Try Refresh or contact support with your receipt.",
+    "envOverrideHint": "Environment LLM variables override these settings.",
+    "packages": {
+      "start": "Start — 10,000 credits",
+      "growth": "Growth — 50,000 credits",
+      "max": "Max — 100,000 credits"
+    },
+    "settings": {
+      "apiKey": "API key",
+      "apiKeyPlaceholder": "Leave empty to keep current key",
+      "apiKeyConfigured": "Key is saved",
+      "baseUrl": "API base URL",
+      "baseUrlPlaceholder": "https://api.openai.com/v1",
+      "model": "Model",
+      "modelPlaceholder": "gpt-4.1-nano-2025-04-14",
+      "saved": "LLM settings saved"
     }
   },
   "dashboard": {
@@ -237,6 +277,8 @@
       "messagesToday": "Messages Processed (Today)",
       "warningsToday": "Warnings Issued (Today)",
       "bannedTotal": "Users Banned (Total)",
+      "notModeratedToday": "Not checked today",
+      "notModeratedHint": "Messages saved but not moderated — usually zero credits",
       "thisWeek": "This Week",
       "totalMessages": "Total Messages:",
       "totalWarnings": "Total Warnings:",

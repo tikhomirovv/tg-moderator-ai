@@ -6,6 +6,7 @@
     "main": "Основная",
     "dashboard": "Дашборд",
     "bots": "Боты",
+    "settings": "Настройки",
     "signOut": "Выйти"
   },
   "footer": {
@@ -130,6 +131,45 @@
       "breadcrumb": "Условия",
       "subtitle": "Скоро.",
       "body": "Условия использования будут опубликованы здесь."
+    },
+    "settingsLlm": {
+      "title": "Настройки LLM",
+      "documentTitle": "Настройки LLM",
+      "breadcrumb": "Настройки LLM",
+      "subtitle": "Общие настройки модели для self-hosted инстанса."
+    },
+    "botCredits": {
+      "title": "Кредиты",
+      "documentTitle": "Кредиты",
+      "breadcrumb": "Кредиты",
+      "subtitle": "Покупка кредитов модерации для этого бота."
+    }
+  },
+  "billing": {
+    "balance": "Баланс кредитов",
+    "manageCredits": "Управление кредитами",
+    "purchase": "Купить",
+    "purchasing": "Переход к оплате...",
+    "paymentReturnSuccess": "Платёж отправлен — баланс обновится после подтверждения.",
+    "paymentReturnPending": "Ожидание подтверждения платежа...",
+    "paymentApplied": "Кредиты зачислены на баланс.",
+    "paymentAlreadyApplied": "Этот платёж уже был зачислен ранее.",
+    "paymentSyncFailed": "Не удалось проверить платёж. Нажмите «Обновить» или обратитесь в поддержку с чеком.",
+    "envOverrideHint": "Переменные LLM в окружении имеют приоритет над этими настройками.",
+    "packages": {
+      "start": "Старт — 10 000 кредитов",
+      "growth": "Рост — 50 000 кредитов",
+      "max": "Макс — 100 000 кредитов"
+    },
+    "settings": {
+      "apiKey": "Ключ API",
+      "apiKeyPlaceholder": "Оставьте пустым, чтобы не менять ключ",
+      "apiKeyConfigured": "Ключ сохранён",
+      "baseUrl": "Базовый URL API",
+      "baseUrlPlaceholder": "https://api.openai.com/v1",
+      "model": "Модель",
+      "modelPlaceholder": "gpt-4.1-nano-2025-04-14",
+      "saved": "Настройки LLM сохранены"
     }
   },
   "dashboard": {
@@ -237,6 +277,8 @@
       "messagesToday": "Обработано сообщений (сегодня)",
       "warningsToday": "Выдано предупреждений (сегодня)",
       "bannedTotal": "Забанено пользователей (всего)",
+      "notModeratedToday": "Не проверено сегодня",
+      "notModeratedHint": "Сообщения сохранены, но не прошли модерацию — обычно нет кредитов",
       "thisWeek": "За неделю",
       "totalMessages": "Всего сообщений:",
       "totalWarnings": "Всего предупреждений:",

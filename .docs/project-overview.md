@@ -38,6 +38,7 @@ User (telegram_id)
 - **Auth:** Telegram OIDC (`TELEGRAM_LOGIN_*` + `BASE_URL`)
 - **Rules:** code presets in `server/database/rule-templates.ts`; add via Rule library UI
 - **Production:** Docker image on GHCR; PostgreSQL and Traefik external to the app container
+- **Billing (planned):** `DEPLOYMENT_MODE=self-hosted` (default, BYOK) or `saas` (per-bot credits, YooKassa) — [billing-design.md](billing-design.md)
 
 ## Related docs
 
@@ -45,6 +46,8 @@ User (telegram_id)
 |----------|---------|
 | [prd.md](prd.md) | Scope, flows, requirements |
 | [technical-design.md](technical-design.md) | Stack, API, engineering rules |
+| [billing-design.md](billing-design.md) | SaaS credits, deployment mode, YooKassa |
+| [billing-economics.md](billing-economics.md) | RUB tiers, bundle lifetime tables, COGS |
 | [i18n.md](i18n.md) | Admin UI locales, keys, conventions |
 | [deploy.md](deploy.md) | Production deployment |
 | [database-migrations.md](database-migrations.md) | Drizzle migration policy |

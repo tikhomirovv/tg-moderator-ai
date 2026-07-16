@@ -310,7 +310,7 @@
           >
             <div class="flex items-center justify-between">
               <div>
-                <span class="font-medium">{{ log.action }}</span>
+                <span class="font-medium">{{ logActionLabel(log.action_type) }}</span>
                 <span class="text-gray-600"> - {{ log.message }}</span>
               </div>
               <div class="text-xs text-gray-500">
@@ -670,6 +670,7 @@ import type { ChatActivationStartMode } from "~/composables/useChatActivationWai
 import type { BotMemberRole } from "~/types/bot";
 
 const { t, tm, locale } = useI18n();
+const { actionLabel: logActionLabel } = useModerationActionDisplay();
 const config = useRuntimeConfig();
 const isSaas = computed(() => config.public.deploymentMode === "saas");
 

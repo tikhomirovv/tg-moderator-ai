@@ -1,3 +1,5 @@
+import type { ModerationActionType } from "~/lib/moderation-action-ui";
+
 export interface DashboardKpi {
   bots_total: number;
   bots_active: number;
@@ -26,7 +28,8 @@ export interface DashboardActionBreakdown {
 export interface DashboardRecentActivityItem {
   bot_id: string;
   chat_id: number;
-  action_type: "warning" | "delete" | "ban";
+  chat_name?: string | null;
+  action_type: ModerationActionType;
   rule_violated?: string;
   rule_name?: string | null;
   timestamp: string;

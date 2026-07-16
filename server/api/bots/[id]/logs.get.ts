@@ -28,14 +28,7 @@ export default defineEventHandler(async (event) => {
 
     const logs = allActions.map((action) => ({
       id: action._id,
-      action:
-        action.action_type === "warning"
-          ? "Warning Issued"
-          : action.action_type === "delete"
-          ? "Message Deleted"
-          : action.action_type === "ban"
-          ? "User Banned"
-          : "Moderation Action",
+      action_type: action.action_type,
       message:
         action.action_type === "warning"
           ? `Warning for user ${action.user_id} in chat ${action.chat_id}`
@@ -43,6 +36,12 @@ export default defineEventHandler(async (event) => {
           ? `Message ${action.message_id} deleted in chat ${action.chat_id}`
           : action.action_type === "ban"
           ? `User ${action.user_id} banned in chat ${action.chat_id}`
+          : action.action_type === "reset_warnings"
+          ? `Warnings reset for user ${action.user_id} in chat ${action.chat_id}`
+          : action.action_type === "unban"
+          ? `User ${action.user_id} unbanned in chat ${action.chat_id}`
+          : action.action_type === "pardon"
+          ? `User ${action.user_id} pardoned in chat ${action.chat_id}`
           : `Action in chat ${action.chat_id}`,
       timestamp: action.timestamp.toISOString(),
       details: {

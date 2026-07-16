@@ -1,4 +1,5 @@
 import { loadDashboardData } from "../core/dashboard-service";
+import { loadChatNameMap, resolveChatName } from "../core/chat-name-lookup";
 import { loadRuleNameMap, resolveRuleName } from "../core/rule-name-lookup";
 import { BotRepository } from "../database/repositories/bot-repository";
 import { ChatStatisticsRepository } from "../database/repositories/chat-statistics-repository";
@@ -40,9 +41,16 @@ export default defineEventHandler(async (event) => {
         ruleId: item.rule_violated,
       }))
     );
+    const chatNames = await loadChatNameMap(
+      data.recent_activity.map((item) => ({
+        botId: item.bot_id,
+        chatId: item.chat_id,
+      }))
+    );
     data.recent_activity = data.recent_activity.map((item) => ({
       ...item,
       rule_name: resolveRuleName(item.rule_violated, ruleNames),
+      chat_name: resolveChatName(item.bot_id, item.chat_id, chatNames),
     }));
 
     return {

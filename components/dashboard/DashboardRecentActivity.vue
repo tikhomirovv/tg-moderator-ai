@@ -37,7 +37,7 @@
                 @{{ item.bot_id }}
               </NuxtLink>
             </td>
-            <td class="py-2 pr-4 text-gray-700">{{ item.chat_id }}</td>
+            <td class="py-2 pr-4 text-gray-700">{{ chatLabel(item) }}</td>
             <td class="py-2 pr-4">
               <span :class="actionClass(item.action_type)">
                 {{ actionLabel(item.action_type) }}
@@ -60,6 +60,7 @@
 import type { DashboardRecentActivityItem } from "~/types/dashboard";
 
 const { t, locale } = useI18n();
+const { actionLabel, actionClass } = useModerationActionDisplay();
 
 defineProps<{
   activities: DashboardRecentActivityItem[];
@@ -70,23 +71,10 @@ function formatTime(iso: string): string {
   return new Date(iso).toLocaleString(loc);
 }
 
-function actionLabel(action: DashboardRecentActivityItem["action_type"]): string {
-  if (action === "warning" || action === "delete" || action === "ban") {
-    return t(`common.actions.${action}`);
+function chatLabel(item: DashboardRecentActivityItem): string {
+  if (item.chat_name) {
+    return item.chat_name;
   }
-  return action;
-}
-
-function actionClass(action: DashboardRecentActivityItem["action_type"]): string {
-  switch (action) {
-    case "warning":
-      return "text-yellow-600 font-medium";
-    case "delete":
-      return "text-orange-600 font-medium";
-    case "ban":
-      return "text-red-600 font-medium";
-    default:
-      return "text-gray-700";
-  }
+  return t("audit.chatFallback", { chatId: item.chat_id });
 }
 </script>

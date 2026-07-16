@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const { user, role } = await requireBotAccess(event, botId);
+  const { user, role } = await requireBotAccess(event, botId, ["owner"]);
   if (userId === user.id && role === "owner") {
     throw createError({
       statusCode: 400,

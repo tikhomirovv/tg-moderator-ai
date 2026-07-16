@@ -105,4 +105,4 @@ make tunnel
 
 - `returnTo` after login validated in `lib/auth-return-to.ts` (same-origin paths only)
 - API routes (except auth start/callback, webhook, health) require session via `server/middleware/api-auth.ts`
-- Bot operations require `bot_members` membership (`requireBotAccess`); owner and manager have parity except the owner row cannot be removed from the team
+- Bot operations require `bot_members` membership (`requireBotAccess`). Owner and manager share operational parity (chats, rules, moderation); **owner only** for bot delete, access codes, and team membership changes. The owner row cannot be removed from the team

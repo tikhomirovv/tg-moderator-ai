@@ -324,7 +324,7 @@
         </div>
       </div>
 
-      <div v-if="canManageBot" class="bg-white border border-red-200 rounded p-6">
+      <div v-if="isOwner" class="bg-white border border-red-200 rounded p-6">
         <h3 class="text-lg font-medium text-red-700 mb-2">{{ t("bot.dangerZone.title") }}</h3>
         <p class="text-sm text-gray-600 mb-4">
           {{ t("bot.dangerZone.description") }}
@@ -469,7 +469,7 @@
         <h3 class="text-lg font-medium mb-4">{{ t("bot.team.title") }}</h3>
         <div v-if="teamLoading" class="text-gray-500 text-sm">{{ t("bot.team.loading") }}</div>
         <div v-else class="space-y-4">
-          <div v-if="canManageBot && accessCode" class="flex flex-wrap items-center gap-3">
+          <div v-if="isOwner && accessCode" class="flex flex-wrap items-center gap-3">
             <div class="text-sm">
               {{ t("bot.team.accessCode") }}
               <code class="bg-gray-100 px-2 py-1 rounded">{{ accessCode }}</code>
@@ -489,11 +489,11 @@
               {{ t("common.revoke") }}
             </button>
           </div>
-          <p v-else-if="canManageBot" class="text-sm text-gray-500">
+          <p v-else-if="isOwner" class="text-sm text-gray-500">
             {{ t("bot.team.accessCodeForOperators") }}
           </p>
           <p v-else class="text-sm text-gray-500">
-            {{ t("bot.team.accessCodeManagedByTeam") }}
+            {{ t("bot.team.ownerManagesTeam") }}
           </p>
 
           <div v-if="teamMembers.length" class="space-y-2">
@@ -510,7 +510,7 @@
                 <span class="text-gray-500 ml-2">{{ roleLabel(member.role) }}</span>
               </div>
               <button
-                v-if="canManageBot && member.role === 'manager' && member.user_id !== bot?.my_user_id"
+                v-if="isOwner && member.role === 'manager' && member.user_id !== bot?.my_user_id"
                 type="button"
                 class="text-red-600 hover:underline"
                 @click="removeMember(member.user_id)"
@@ -518,7 +518,7 @@
                 {{ t("common.remove") }}
               </button>
               <button
-                v-else-if="canManageBot && member.role === 'manager' && member.user_id === bot?.my_user_id"
+                v-else-if="isOwner && member.role === 'manager' && member.user_id === bot?.my_user_id"
                 type="button"
                 class="text-red-600 hover:underline"
                 @click="removeMember(member.user_id)"
@@ -780,6 +780,8 @@ const overviewStatusBadgeClass = computed(() => {
 const canManageBot = computed(
   () => bot.value?.my_role === "owner" || bot.value?.my_role === "manager"
 );
+
+const isOwner = computed(() => bot.value?.my_role === "owner");
 
 const canConfirmDelete = computed(() => {
   const value = deleteConfirmText.value.trim();
@@ -1123,12 +1125,17 @@ function getSilentModeText(chat: any) {
 async function loadTeam() {
   teamLoading.value = true;
   try {
-    const [codeResp, membersResp] = await Promise.all([
-      $fetch<any>(`/api/bots/${botId}/team/access-code`).catch(() => null),
-      $fetch<any>(`/api/bots/${botId}/team/members`),
-    ]);
-    accessCode.value = codeResp?.data?.code ?? null;
+    const membersResp = await $fetch<any>(`/api/bots/${botId}/team/members`);
     teamMembers.value = membersResp?.data?.members ?? [];
+
+    if (isOwner.value) {
+      const codeResp = await $fetch<any>(`/api/bots/${botId}/team/access-code`).catch(
+        () => null
+      );
+      accessCode.value = codeResp?.data?.code ?? null;
+    } else {
+      accessCode.value = null;
+    }
   } catch (error) {
     console.error("Error loading team:", error);
   } finally {

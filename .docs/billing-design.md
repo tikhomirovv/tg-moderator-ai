@@ -135,6 +135,8 @@ Stats on bot page:
 
 Any bot member (owner or manager) may start checkout; credits always accrue to the **bot**. All members see balance. Personal payment data stays with YooKassa per payer.
 
+**Webhook miss fallback:** client stores `provider_payment_id` in `sessionStorage` before redirect; **Refresh** and return-url polling call `POST /api/bots/:id/credits/sync`, which runs `GET /v3/payments/{id}` at YooKassa and applies credits idempotently if status is `succeeded`. Optional recovery: `/bots/:id/credits?payment_id={yookassa_id}`.
+
 ## Credit packages (config)
 
 | package_id | Credits | Price RUB |

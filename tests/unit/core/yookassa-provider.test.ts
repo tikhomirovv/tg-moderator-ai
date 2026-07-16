@@ -72,4 +72,34 @@ describe("YooKassaBillingProvider", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("fetchPayment maps succeeded payment from API", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (url: string) => {
+      expect(url).toContain("/payments/pay-fetch");
+      return new Response(
+        JSON.stringify({
+          id: "pay-fetch",
+          status: "succeeded",
+          amount: { value: "490.00", currency: "RUB" },
+          metadata: {
+            bot_id: "mybot",
+            purchaser_user_id: "user-1",
+            package_id: "start",
+            credits: "10000",
+          },
+        }),
+        { status: 200 }
+      );
+    }) as typeof fetch;
+
+    try {
+      const provider = new YooKassaBillingProvider(TEST_ENV);
+      const event = await provider.fetchPayment("pay-fetch");
+      expect(event?.status).toBe("paid");
+      expect(event?.credits).toBe(10_000);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });

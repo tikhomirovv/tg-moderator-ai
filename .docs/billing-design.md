@@ -135,7 +135,15 @@ Stats on bot page:
 
 Any bot member (owner or manager) may start checkout; credits always accrue to the **bot**. All members see balance. Personal payment data stays with YooKassa per payer.
 
-**Webhook miss fallback:** client stores `provider_payment_id` in `sessionStorage` before redirect; **Refresh** and return-url polling call `POST /api/bots/:id/credits/sync`, which runs `GET /v3/payments/{id}` at YooKassa and applies credits idempotently if status is `succeeded`. Optional recovery: `/bots/:id/credits?payment_id={yookassa_id}`.
+**Checkout** inserts a `provider_payments` row (`pending`) with `provider_payment_id`, package snapshot, and purchaser.
+
+**Webhook** and **sync** update that row (`succeeded` / `canceled` / `credited`) and grant credits via idempotent ledger (`reference` = YooKassa payment id). Grant happens only on `succeeded`; `credited` is set after ledger apply.
+
+**Webhook miss fallback:** `POST /api/bots/:id/credits/sync` without `payment_id` reconciles all open rows for the bot (`pending` or `succeeded`) via `GET /v3/payments/{id}`. Optional: `{ "payment_id": "…" }` for one payment. Recovery URL: `/bots/:id/credits?payment_id={yookassa_id}`.
+
+**Nightly:** `billing:reconcile-stale-payments` polls `pending` rows older than 15 minutes.
+
+`credit_transactions` (ledger) and `provider_payments` (provider lifecycle) are separate tables.
 
 ## Credit packages (config)
 

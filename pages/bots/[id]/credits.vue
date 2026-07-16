@@ -61,11 +61,6 @@
 
 <script setup lang="ts">
 import { CREDIT_PACKAGES, type CreditPackageId } from "~/lib/credit-packages";
-import {
-  clearPendingPaymentId,
-  readPendingPaymentId,
-  writePendingPaymentId,
-} from "~/lib/credits-pending-payment";
 
 const { t } = useI18n();
 const config = useRuntimeConfig();
@@ -115,7 +110,10 @@ function setPaymentNotice(message: string, tone: "info" | "success" | "warning")
   paymentNoticeTone.value = tone;
 }
 
-function noticeForSyncStatus(status: PaymentSyncStatus | null) {
+function noticeForSyncStatus(status: PaymentSyncStatus | null | undefined) {
+  if (!status) {
+    return;
+  }
   if (status === "applied") {
     setPaymentNotice(t("billing.paymentApplied"), "success");
     return;
@@ -133,48 +131,26 @@ function noticeForSyncStatus(status: PaymentSyncStatus | null) {
   }
 }
 
-async function syncPendingPayment(): Promise<PaymentSyncStatus | null> {
-  const paymentId = readPendingPaymentId(botId);
-  if (!paymentId) {
-    return null;
-  }
-
+async function syncOpenPayments(
+  paymentId?: string
+): Promise<PaymentSyncStatus | undefined> {
   const response = await $fetch<{
-    data: { sync_status: PaymentSyncStatus; balance: number };
+    data: { sync_status?: PaymentSyncStatus; balance: number };
   }>(`/api/bots/${botId}/credits/sync`, {
     method: "POST",
-    body: { payment_id: paymentId },
+    body: paymentId ? { payment_id: paymentId } : {},
   });
 
   balance.value = response.data.balance;
-
-  if (
-    response.data.sync_status === "applied" ||
-    response.data.sync_status === "duplicate"
-  ) {
-    clearPendingPaymentId(botId);
-  }
-
   return response.data.sync_status;
-}
-
-async function loadBalanceOnly() {
-  const response = await $fetch<{ data: { balance: number } }>(
-    `/api/bots/${botId}/credits/balance`
-  );
-  balance.value = response.data.balance;
 }
 
 async function refreshBalance() {
   refreshing.value = true;
   error.value = "";
   try {
-    const syncStatus = await syncPendingPayment();
-    if (syncStatus) {
-      noticeForSyncStatus(syncStatus);
-      return;
-    }
-    await loadBalanceOnly();
+    const syncStatus = await syncOpenPayments();
+    noticeForSyncStatus(syncStatus);
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : t("common.unknown");
   } finally {
@@ -192,7 +168,6 @@ async function startCheckout(packageId: CreditPackageId) {
       method: "POST",
       body: { package_id: packageId },
     });
-    writePendingPaymentId(botId, response.data.provider_payment_id);
     window.location.href = response.data.checkout_url;
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : t("common.unknown");
@@ -204,14 +179,19 @@ let pollTimer: ReturnType<typeof setInterval> | undefined;
 
 onMounted(async () => {
   const queryPaymentId = route.query.payment_id;
-  if (typeof queryPaymentId === "string" && queryPaymentId.trim()) {
-    writePendingPaymentId(botId, queryPaymentId.trim());
+  const recoveryPaymentId =
+    typeof queryPaymentId === "string" ? queryPaymentId.trim() : "";
+
+  try {
+    const syncStatus = recoveryPaymentId
+      ? await syncOpenPayments(recoveryPaymentId)
+      : await syncOpenPayments();
+    noticeForSyncStatus(syncStatus);
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : t("common.unknown");
   }
 
-  await refreshBalance();
-
-  const shouldPoll =
-    route.query.payment === "return" || Boolean(readPendingPaymentId(botId));
+  const shouldPoll = route.query.payment === "return";
   if (!shouldPoll) {
     return;
   }
@@ -222,7 +202,7 @@ onMounted(async () => {
 
   pollTimer = setInterval(async () => {
     try {
-      const syncStatus = await syncPendingPayment();
+      const syncStatus = await syncOpenPayments();
       if (syncStatus === "applied" || syncStatus === "duplicate") {
         noticeForSyncStatus(syncStatus);
         if (pollTimer) {

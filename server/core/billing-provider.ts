@@ -4,7 +4,7 @@ export type BillingWebhookEvent = {
   purchaserUserId: string;
   credits: number;
   amountRub: number;
-  status: "paid" | "refunded" | "failed";
+  status: "paid" | "refunded" | "failed" | "pending";
   packageId: string;
 };
 

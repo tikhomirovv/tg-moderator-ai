@@ -1,6 +1,10 @@
 import { CreditService } from "../../../../core/credit-service";
 import { isSaasMode } from "../../../../core/deployment-mode";
-import { syncBotPurchaseFromProvider } from "../../../../core/payment-sync";
+import {
+  syncBotOpenProviderPayments,
+  syncBotPurchaseFromProvider,
+} from "../../../../core/payment-sync";
+import { ProviderPaymentRepository } from "../../../../database/repositories/provider-payment-repository";
 import { requireBotAccess } from "../../../../utils/bot-access";
 import { requireBotIdParam } from "../../../../utils/get-bot-id-param";
 
@@ -21,21 +25,29 @@ export default defineEventHandler(async (event) => {
 
   const body = (await readBody(event)) as SyncBody;
   const paymentId = body?.payment_id?.trim();
-  if (!paymentId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "payment_id is required",
-    });
+
+  let syncStatus: Awaited<
+    ReturnType<typeof syncBotPurchaseFromProvider>
+  >["status"] | undefined;
+
+  if (paymentId) {
+    const sync = await syncBotPurchaseFromProvider(botId, paymentId);
+    syncStatus = sync.status;
+  } else {
+    const open = await new ProviderPaymentRepository().findOpenByBotId(botId);
+    if (open.length > 0) {
+      const sync = await syncBotOpenProviderPayments(botId);
+      syncStatus = sync.status;
+    }
   }
 
-  const sync = await syncBotPurchaseFromProvider(botId, paymentId);
   const creditService = new CreditService();
   const balance = await creditService.getBalance(botId);
 
   return {
     success: true,
     data: {
-      sync_status: sync.status,
+      ...(syncStatus !== undefined && { sync_status: syncStatus }),
       balance,
     },
   };

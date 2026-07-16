@@ -4,16 +4,24 @@ import { Rule } from "../types/config";
 import { logger } from "./logger";
 import {
   createLlmClient,
-  loadLlmConfig,
   resolveLlmLogHost,
   resolveLlmModel,
   type LlmConfig,
 } from "./llm-provider";
+import { loadResolvedLlmConfig } from "./instance-llm-settings";
+import type { TokenUsage } from "./llm-cost";
 
 type AnalyzeMessageOptions = {
   client?: OpenAI;
   model?: string;
   config?: LlmConfig;
+};
+
+export type AnalyzeMessageResult = {
+  response: AIModerationResponse;
+  model: string;
+  usage: TokenUsage | null;
+  llmSuccess: boolean;
 };
 
 export function buildModerationSystemPrompt(): string {
@@ -69,9 +77,9 @@ export async function analyzeMessage(
   request: AIModerationRequest,
   rules: Rule[],
   options: AnalyzeMessageOptions = {}
-): Promise<AIModerationResponse> {
+): Promise<AnalyzeMessageResult> {
   try {
-    const config = options.config ?? loadLlmConfig();
+    const config = options.config ?? (await loadResolvedLlmConfig());
     const model = options.model ?? resolveLlmModel(config);
     const client = options.client ?? createLlmClient(config);
     const systemPrompt = buildModerationSystemPrompt();
@@ -120,6 +128,12 @@ export async function analyzeMessage(
     }
 
     const result = parseAIResponse(response);
+    const usage: TokenUsage | null = completion.usage
+      ? {
+          prompt_tokens: completion.usage.prompt_tokens ?? 0,
+          completion_tokens: completion.usage.completion_tokens ?? 0,
+        }
+      : null;
 
     logger.info(
       {
@@ -128,6 +142,8 @@ export async function analyzeMessage(
         confidence: result.confidence,
         model,
         llm_host: resolveLlmLogHost(config.baseUrl),
+        prompt_tokens: usage?.prompt_tokens,
+        completion_tokens: usage?.completion_tokens,
       },
       "LLM moderation analysis completed"
     );
@@ -137,7 +153,12 @@ export async function analyzeMessage(
       "LLM moderation raw response"
     );
 
-    return result;
+    return {
+      response: result,
+      model,
+      usage,
+      llmSuccess: true,
+    };
   } catch (error) {
     logger.error({ error: error as Error }, "LLM moderation analysis failed");
     throw new Error("Failed to analyze message");

@@ -5,6 +5,10 @@ import { Bot, Chat as ConfigChat } from "../types/config";
 import { Rule as DbRule } from "../database/models/rule";
 import { analyzeMessage } from "./ai-moderation";
 import { logger } from "./logger";
+import { CreditService } from "./credit-service";
+import { isSaasMode } from "./deployment-mode";
+import { estimateLlmCostRub } from "./llm-cost";
+import { LlmUsageRepository } from "../database/repositories/llm-usage-repository";
 import { RuleRepository } from "../database/repositories/rule-repository";
 import { BotRepository } from "../database/repositories/bot-repository";
 import { ChatRepository } from "../database/repositories/chat-repository";
@@ -45,6 +49,7 @@ export class TelegramBot {
   private banTemplate: string;
   private contextService: ContextService;
   private botTelegramUserId?: number;
+  private creditService: CreditService;
 
   constructor(token: string, botId: string, botConfig: DbBot) {
     this.token = token;
@@ -63,6 +68,7 @@ export class TelegramBot {
       DEFAULT_BAN_TEMPLATE
     );
     this.contextService = new ContextService();
+    this.creditService = new CreditService();
   }
 
   async handleUpdate(update: TelegramUpdate): Promise<void> {
@@ -381,6 +387,21 @@ export class TelegramBot {
         return;
       }
 
+      if (isSaasMode()) {
+        const balance = await this.creditService.getBalance(this.botId);
+        if (balance <= 0) {
+          logger.info(
+            {
+              botId: this.botId,
+              chatId: message.chat.id,
+              messageId: message.message_id,
+            },
+            "Skipping LLM — zero credit balance"
+          );
+          return;
+        }
+      }
+
       logger.debug(
         `Загружено правил для чата ${chatConfig.name}: ${applicableRules.length}`
       );
@@ -409,15 +430,71 @@ export class TelegramBot {
         },
       };
 
-      const aiResponse = await analyzeMessage(
-        aiRequest,
-        applicableRules.map((rule) => ({
-          id: rule.id,
-          name: rule.name,
-          description: rule.description,
-          ai_prompt: rule.ai_prompt,
-        }))
-      );
+      let analysis;
+      try {
+        analysis = await analyzeMessage(
+          aiRequest,
+          applicableRules.map((rule) => ({
+            id: rule.id,
+            name: rule.name,
+            description: rule.description,
+            ai_prompt: rule.ai_prompt,
+          }))
+        );
+      } catch (error) {
+        if (isSaasMode()) {
+          const llmUsageRepo = new LlmUsageRepository();
+          await llmUsageRepo.create({
+            bot_id: this.botId,
+            chat_id: message.chat.id,
+            message_id: message.message_id,
+            model: "unknown",
+            prompt_tokens: 0,
+            completion_tokens: 0,
+            estimated_cost_rub: 0,
+            success: false,
+          });
+        }
+        throw error;
+      }
+
+      const aiResponse = analysis.response;
+
+      if (isSaasMode()) {
+        const llmUsageRepo = new LlmUsageRepository();
+        await llmUsageRepo.create({
+          bot_id: this.botId,
+          chat_id: message.chat.id,
+          message_id: message.message_id,
+          model: analysis.model,
+          prompt_tokens: analysis.usage?.prompt_tokens ?? 0,
+          completion_tokens: analysis.usage?.completion_tokens ?? 0,
+          estimated_cost_rub: estimateLlmCostRub(
+            analysis.usage,
+            analysis.llmSuccess
+          ),
+          success: analysis.llmSuccess,
+        });
+
+        if (analysis.llmSuccess) {
+          await this.creditService.debitModeration({
+            botId: this.botId,
+            chatId: message.chat.id,
+            messageId: message.message_id,
+          });
+          await this.contextService.markMessageModerated(
+            this.botId,
+            message.chat.id,
+            message.message_id
+          );
+        }
+      } else if (analysis.llmSuccess) {
+        await this.contextService.markMessageModerated(
+          this.botId,
+          message.chat.id,
+          message.message_id
+        );
+      }
 
       await saveModerationDecision(
         buildModerationDecisionRequest({

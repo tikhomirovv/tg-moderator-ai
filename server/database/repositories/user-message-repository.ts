@@ -204,6 +204,54 @@ export class UserMessageRepository {
     return result?.count ?? 0;
   }
 
+  async markAsModerated(
+    botId: string,
+    chatId: number,
+    messageId: number
+  ): Promise<boolean> {
+    const updated = await this.db
+      .update(userMessages)
+      .set({ isModerated: true })
+      .where(
+        and(
+          eq(userMessages.botId, botId),
+          eq(userMessages.chatId, chatId),
+          eq(userMessages.messageId, messageId)
+        )
+      )
+      .returning({ id: userMessages.id });
+
+    return updated.length > 0;
+  }
+
+  async countNotModeratedToday(botId: string): Promise<number> {
+    const today = new Date();
+    const todayStart = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+    const todayEnd = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + 1
+    );
+
+    const [row] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(userMessages)
+      .where(
+        and(
+          eq(userMessages.botId, botId),
+          eq(userMessages.isModerated, false),
+          gte(userMessages.timestamp, todayStart),
+          lte(userMessages.timestamp, todayEnd)
+        )
+      );
+
+    return row?.count ?? 0;
+  }
+
   async deleteExcessPerScope(maxPerScope: number): Promise<number> {
     const result = await this.db.execute<{ id: number }>(sql`
       DELETE FROM user_messages

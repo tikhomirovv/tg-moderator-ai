@@ -75,6 +75,17 @@
         <span class="inline-flex px-2.5 py-1 rounded-full text-xs text-gray-600 bg-gray-50">
           {{ t("bot.created", { date: formatDate(bot.created_at) }) }}
         </span>
+        <template v-if="isSaas">
+          <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-800">
+            {{ t("billing.balance") }}: {{ (bot.credit_balance ?? 0).toLocaleString() }}
+          </span>
+          <NuxtLink
+            :to="`/bots/${botId}/credits`"
+            class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-800 hover:bg-green-100"
+          >
+            {{ t("billing.manageCredits") }}
+          </NuxtLink>
+        </template>
         <p
           v-if="deliveryProblemMessage"
           class="w-full text-sm text-red-600"
@@ -202,6 +213,22 @@
               {{ statistics?.users?.banned_count || 0 }}
             </div>
             <div class="text-sm text-gray-600">{{ t("bot.statistics.bannedTotal") }}</div>
+          </div>
+          <div
+            v-if="isSaas && (statistics?.today?.not_moderated || 0) > 0"
+            class="text-center md:col-span-3"
+          >
+            <div class="rounded border border-amber-200 bg-amber-50 p-4">
+              <div class="text-2xl font-bold text-amber-700">
+                {{ statistics?.today?.not_moderated || 0 }}
+              </div>
+              <div class="text-sm text-amber-900 font-medium">
+                {{ t("bot.statistics.notModeratedToday") }}
+              </div>
+              <p class="text-xs text-amber-800 mt-1">
+                {{ t("bot.statistics.notModeratedHint") }}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -643,6 +670,8 @@ import type { ChatActivationStartMode } from "~/composables/useChatActivationWai
 import type { BotMemberRole } from "~/types/bot";
 
 const { t, tm, locale } = useI18n();
+const config = useRuntimeConfig();
+const isSaas = computed(() => config.public.deploymentMode === "saas");
 
 const route = useRoute();
 const router = useRouter();
@@ -707,6 +736,7 @@ const statistics = ref<any>({
     messages_deleted: 0,
     users_banned: 0,
     unique_users: 0,
+    not_moderated: 0,
   },
   week: {
     total_messages_processed: 0,

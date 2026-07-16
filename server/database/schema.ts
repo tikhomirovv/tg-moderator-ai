@@ -16,6 +16,7 @@ import {
   index,
   primaryKey,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { users } from "./auth-schema";
 
 export const actionTypeEnum = pgEnum("action_type", [
@@ -35,6 +36,14 @@ export const chatHealthStatusEnum = pgEnum("chat_health_status", [
   "unhealthy",
 ]);
 
+export const creditTransactionTypeEnum = pgEnum("credit_transaction_type", [
+  "grant_signup",
+  "purchase",
+  "debit_moderation",
+  "admin_adjust",
+  "reconcile_fix",
+]);
+
 export const bots = pgTable("bots", {
   id: varchar("id", { length: 64 }).primaryKey(),
   ownerUserId: text("owner_user_id")
@@ -48,9 +57,20 @@ export const bots = pgTable("bots", {
   banMessageTemplate: text("ban_message_template"),
   photoFileId: text("photo_file_id"),
   telegramBotId: bigint("telegram_bot_id", { mode: "number" }),
+  creditBalance: integer("credit_balance").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const instanceSettings = pgTable("instance_settings", {
+  id: text("id").primaryKey().default("default"),
+  llmApiKeyEncrypted: text("llm_api_key_encrypted"),
+  llmBaseUrl: text("llm_base_url"),
+  llmModel: text("llm_model"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -284,6 +304,7 @@ export const userMessages = pgTable(
     text: text("text").notNull(),
     timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
     isDeleted: boolean("is_deleted").notNull().default(false),
+    isModerated: boolean("is_moderated").notNull().default(false),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     deletedReason: text("deleted_reason"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -304,6 +325,67 @@ export const userMessages = pgTable(
     ),
     index("user_messages_ts").on(table.timestamp),
     index("user_messages_deleted").on(table.isDeleted),
+    index("user_messages_moderated_ts").on(
+      table.botId,
+      table.isModerated,
+      table.timestamp
+    ),
+  ]
+);
+
+export const creditTransactions = pgTable(
+  "credit_transactions",
+  {
+    id: serial("id").primaryKey(),
+    botId: varchar("bot_id", { length: 64 })
+      .notNull()
+      .references(() => bots.id, { onDelete: "cascade" }),
+    type: creditTransactionTypeEnum("type").notNull(),
+    amount: integer("amount").notNull(),
+    balanceAfter: integer("balance_after").notNull(),
+    chatId: bigint("chat_id", { mode: "number" }),
+    reference: text("reference"),
+    actorUserId: text("actor_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("credit_transactions_bot_created").on(table.botId, table.createdAt),
+    uniqueIndex("credit_transactions_debit_idempotency")
+      .on(table.botId, table.chatId, table.reference)
+      .where(sql`type = 'debit_moderation'`),
+  ]
+);
+
+export const llmUsage = pgTable(
+  "llm_usage",
+  {
+    id: serial("id").primaryKey(),
+    botId: varchar("bot_id", { length: 64 })
+      .notNull()
+      .references(() => bots.id, { onDelete: "cascade" }),
+    chatId: bigint("chat_id", { mode: "number" }).notNull(),
+    messageId: bigint("message_id", { mode: "number" }).notNull(),
+    model: text("model").notNull(),
+    promptTokens: integer("prompt_tokens").notNull().default(0),
+    completionTokens: integer("completion_tokens").notNull().default(0),
+    estimatedCostRub: real("estimated_cost_rub").notNull().default(0),
+    success: boolean("success").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("llm_usage_bot_created").on(table.botId, table.createdAt),
+    index("llm_usage_bot_chat_message").on(
+      table.botId,
+      table.chatId,
+      table.messageId
+    ),
   ]
 );
 

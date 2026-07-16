@@ -7,6 +7,7 @@ export interface UserMessage {
   text: string;
   timestamp: Date;
   is_deleted: boolean;
+  is_moderated: boolean;
   deleted_at?: Date;
   deleted_reason?: string;
   created_at: Date;

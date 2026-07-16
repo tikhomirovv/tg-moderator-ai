@@ -36,6 +36,8 @@ export default defineNuxtConfig({
     public: {
       appVersion: pkg.version,
       telegramLoginBotUsername: process.env.TELEGRAM_LOGIN_BOT_USERNAME || "",
+      deploymentMode: process.env.DEPLOYMENT_MODE || "self-hosted",
+      baseUrl: process.env.BASE_URL || "",
     },
     // Переменные только для сервера
     llmApiKey: process.env.LLM_API_KEY,
@@ -60,6 +62,7 @@ export default defineNuxtConfig({
         "retention:user-messages",
         "retention:moderation-actions",
         "retention:moderation-decisions",
+        "billing:reconcile-credits",
       ],
     },
   },

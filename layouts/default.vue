@@ -29,6 +29,14 @@
             >
               {{ t("nav.bots") }}
             </NuxtLink>
+            <NuxtLink
+              v-if="isSelfHosted"
+              to="/settings/llm"
+              class="px-3 py-2 rounded whitespace-nowrap hover:bg-gray-100"
+              active-class="bg-gray-100 font-medium"
+            >
+              {{ t("nav.settings") }}
+            </NuxtLink>
           </nav>
         </div>
         <div class="flex items-center gap-4 text-sm shrink-0">
@@ -58,6 +66,10 @@
 import { fetchSession } from "~/lib/fetch-session";
 
 const { t, locale } = useI18n();
+const config = useRuntimeConfig();
+const isSelfHosted = computed(
+  () => config.public.deploymentMode === "self-hosted"
+);
 
 useHead({
   titleTemplate: (titleChunk) => {

@@ -76,7 +76,7 @@ bun run db:migrate
 
 ## Логирование
 
-Уровни и правила: [`docs/logging.md`](docs/logging.md). Переменная `LOG_LEVEL` (`info` по умолчанию, `debug` для отладки).
+Уровни и правила: [`.docs/logging.md`](.docs/logging.md). Переменная `LOG_LEVEL` (`info` по умолчанию, `debug` для отладки).
 
 ## Релизы и release notes
 

@@ -9,7 +9,7 @@
 | Database | PostgreSQL, Drizzle ORM |
 | Auth | Custom Telegram OIDC (PKCE + `jose` JWT verify) — **not** Better Auth |
 | LLM | OpenAI-compatible client (`LLM_API_KEY`, optional `LLM_BASE_URL`, `LLM_MODEL`) |
-| Logging | Pino (`LOG_LEVEL`) |
+| Logging | Pino (`LOG_LEVEL`) — see [logging.md](logging.md) |
 
 ## Key decisions
 

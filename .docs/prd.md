@@ -50,7 +50,7 @@ Aggregated KPIs and activity across all bots the user can access (owner or manag
 | Webhook security | Per-bot `webhook_secret`; header `X-Telegram-Bot-Api-Secret-Token` |
 | Rules | Stored per `bot_id`; presets are catalog in code, copied into DB on add |
 | Moderation | OpenAI-compatible LLM; configurable model via env |
-| Data retention | Moderation decisions/messages per retention policy (see `docs/logging.md`) |
+| Data retention | Moderation decisions/messages per retention policy (see `server/core/retention-policy.ts`) |
 | Migrations | Incremental Drizzle only; no destructive reset in production |
 
 ## Constraints

@@ -316,7 +316,7 @@
       "loading": "Loading team...",
       "accessCode": "Access code:",
       "accessCodeForOperators": "Access code is available to bot operators.",
-      "accessCodeManagedByTeam": "Access codes are managed by the bot team.",
+      "ownerManagesTeam": "Team management is available to the bot owner.",
       "members": "Members"
     }
   },

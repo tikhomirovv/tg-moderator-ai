@@ -12,7 +12,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/tikhomirovv/tg-moderator-ai
+  IMAGE_NAME: ghcr.io/telemodai/app
 
 jobs:
   build-and-push:

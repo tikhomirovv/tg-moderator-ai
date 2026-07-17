@@ -1,8 +1,12 @@
-# Project overview — tg-moderator-ai
+# Project overview — Telemodai (tg-moderator-ai)
+
+Repository: [github.com/telemodai/app](https://github.com/telemodai/app)
 
 ## What
 
 Self-hosted web admin + Telegram webhook service for **AI chat moderation**. Operators connect moderation bots, define rules (custom or presets), attach rule sets per chat, and review logs and audit decisions.
+
+Default product name in UI: **Telemodai** (`APP_NAME` env).
 
 ## For whom
 
@@ -37,7 +41,7 @@ User (telegram_id)
 - **Architecture:** bot-centric (post–issue #72 refactor); no workspaces / Better Auth
 - **Auth:** Telegram OIDC (`TELEGRAM_LOGIN_*` + `BASE_URL`)
 - **Rules:** code presets in `server/database/rule-templates.ts`; add via Rule library UI
-- **Production:** Docker image on GHCR; PostgreSQL and Traefik external to the app container
+- **Production:** Docker image `ghcr.io/telemodai/app` on GHCR; PostgreSQL and Traefik external to the app container
 - **Billing (planned):** `DEPLOYMENT_MODE=self-hosted` (default, BYOK) or `saas` (per-bot credits, YooKassa) — [billing-design.md](billing-design.md)
 
 ## Related docs

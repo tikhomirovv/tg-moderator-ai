@@ -202,7 +202,7 @@ function loadRepoBase(): string {
     readFileSync(path.join(import.meta.dir, "../package.json"), "utf8")
   ) as { repository?: { url?: string } };
   const url =
-    pkg.repository?.url ?? "https://github.com/tikhomirovv/tg-moderator-ai";
+    pkg.repository?.url ?? "https://github.com/telemodai/app";
   return url.replace(/\.git$/, "");
 }
 

@@ -4,11 +4,11 @@
   "description": "Telegram AI Moderator Bot - автоматическая модерация чатов с помощью искусственного интеллекта",
   "type": "module",
   "private": true,
-  "license": "CC-BY-NC-4.0",
+  "license": "MIT",
   "author": "Valerii Tikhomirov <v.tikhomirov.dev+npm@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tikhomirovv/tg-moderator-ai"
+    "url": "https://github.com/telemodai/app"
   },
   "keywords": [
     "telegram",

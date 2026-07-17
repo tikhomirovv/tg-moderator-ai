@@ -32,9 +32,11 @@ Self-hosted production guide. Образ приложения в Docker; Postgre
 ## 3. Образ GHCR
 
 ```
-ghcr.io/tikhomirovv/tg-moderator-ai:latest   # git tag v* или ручной workflow
-ghcr.io/tikhomirovv/tg-moderator-ai:v1.0.0   # git tag v1.0.0
+ghcr.io/telemodai/app:latest   # git tag v* или ручной workflow
+ghcr.io/telemodai/app:v1.3.1   # git tag v1.3.1
 ```
+
+Ранее (до переноса репозитория): `ghcr.io/tikhomirovv/tg-moderator-ai` — теги до смены CI остаются там; в `compose.yml` обновите `image:` на новый путь.
 
 CI: workflow [`.github/workflows/docker-publish.yml`](../.github/workflows/docker-publish.yml) — **только** push тега `v*` или **Run workflow** в Actions. Push в `master` образ не собирает.
 
@@ -122,7 +124,7 @@ docker compose up -d
 
 ```bash
 make docker-build TAG=local
-docker run --rm -p 3000:3000 --env-file .env ghcr.io/tikhomirovv/tg-moderator-ai:local
+docker run --rm -p 3000:3000 --env-file .env ghcr.io/telemodai/app:local
 ```
 
 ## 9. Troubleshooting

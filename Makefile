@@ -1,4 +1,4 @@
-IMAGE ?= ghcr.io/tikhomirovv/tg-moderator-ai
+IMAGE ?= ghcr.io/telemodai/app
 TAG   ?= local
 DEV_PORT ?= 3001
 

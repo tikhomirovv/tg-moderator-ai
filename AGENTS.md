@@ -1,6 +1,6 @@
-# AGENTS.md — tg-moderator-ai
+# AGENTS.md — tg-moderator-ai (Telemodai)
 
-Стабильный контекст проекта. Задачи — GitHub Issues. Поведение при разработке — `.cursor/rules/`.
+Репозиторий: [github.com/telemodai/app](https://github.com/telemodai/app). Стабильный контекст проекта. Задачи — GitHub Issues. Поведение при разработке — `.cursor/rules/`.
 
 ## Проект
 

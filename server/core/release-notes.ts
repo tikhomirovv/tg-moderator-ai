@@ -26,7 +26,7 @@ export type PaginatedReleaseNotes = {
 };
 
 const REPO_RELEASE_BASE =
-  "https://github.com/tikhomirovv/tg-moderator-ai/releases/tag";
+  "https://github.com/telemodai/app/releases/tag";
 
 /** Release markdown files live in repo root — not next to bundled Nitro output. */
 export const RELEASES_DIR = "data/releases";

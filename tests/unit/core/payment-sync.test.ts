@@ -147,6 +147,7 @@ describe("syncBotPurchaseFromProvider", () => {
     await applyCreditPurchaseFromBillingEvent(event, {
       creditService,
       ledger: store,
+      providerPayments,
     });
 
     const result = await syncBotPurchaseFromProvider(

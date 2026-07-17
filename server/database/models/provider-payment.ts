@@ -13,6 +13,7 @@ export interface ProviderPayment {
   credits: number;
   status: ProviderPaymentStatus;
   purchaser_user_id: string;
+  promo_code_id?: number | null;
   credited_at?: Date | null;
   created_at: Date;
   updated_at: Date;
@@ -25,4 +26,5 @@ export interface CreateProviderPaymentInput {
   amount_rub: number;
   credits: number;
   purchaser_user_id: string;
+  promo_code_id?: number | null;
 }

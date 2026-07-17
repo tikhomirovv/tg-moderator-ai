@@ -79,7 +79,9 @@ function parseYooKassaPaymentObject(
 
   const pkg = resolveCreditPackage(packageId);
   const credits = creditsRaw ? Number(creditsRaw) : pkg?.credits ?? 0;
-  const amountRub = pkg?.amountRub ?? Number(object.amount?.value ?? 0);
+  const paidFromProvider = Number(object.amount?.value ?? 0);
+  const amountRub =
+    paidFromProvider > 0 ? paidFromProvider : (pkg?.amountRub ?? 0);
   const billingStatus = mapYooKassaStatusToBillingStatus(object.status);
 
   return {
@@ -101,18 +103,31 @@ export class YooKassaBillingProvider implements BillingProvider {
     purchaserUserId: string;
     packageId: string;
     returnUrl: string;
+    amountRub?: number;
+    promoCode?: string;
   }): Promise<{ checkoutUrl: string; providerPaymentId: string }> {
     const pkg = resolveCreditPackage(input.packageId);
     if (!pkg) {
       throw new Error(`Unknown credit package: ${input.packageId}`);
     }
 
+    const chargeAmountRub = input.amountRub ?? pkg.amountRub;
     const { shopId, secretKey } = resolveYooKassaCredentials(this.env);
     const idempotenceKey = `${input.botId}:${input.packageId}:${Date.now()}`;
 
+    const metadata: Record<string, string> = {
+      bot_id: input.botId,
+      purchaser_user_id: input.purchaserUserId,
+      package_id: pkg.id,
+      credits: String(pkg.credits),
+    };
+    if (input.promoCode) {
+      metadata.promo_code = input.promoCode;
+    }
+
     const body = {
       amount: {
-        value: pkg.amountRub.toFixed(2),
+        value: chargeAmountRub.toFixed(2),
         currency: "RUB",
       },
       capture: true,
@@ -121,12 +136,7 @@ export class YooKassaBillingProvider implements BillingProvider {
         return_url: input.returnUrl,
       },
       description: `Credits package ${pkg.id} for bot ${input.botId}`,
-      metadata: {
-        bot_id: input.botId,
-        purchaser_user_id: input.purchaserUserId,
-        package_id: pkg.id,
-        credits: String(pkg.credits),
-      },
+      metadata,
     };
 
     const response = await fetch(`${YOOKASSA_API}/payments`, {

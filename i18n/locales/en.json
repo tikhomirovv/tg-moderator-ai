@@ -155,6 +155,12 @@
     "paymentApplied": "Credits have been added to your balance.",
     "paymentAlreadyApplied": "This payment was already credited.",
     "paymentSyncFailed": "Could not verify the payment. Try Refresh or contact support with your receipt.",
+    "promo": {
+      "label": "Promo code",
+      "placeholder": "Enter code",
+      "apply": "Apply",
+      "applied": "Code {code} applied — {percent}% off"
+    },
     "envOverrideHint": "Environment LLM variables override these settings.",
     "packages": {
       "start": "Start — 10,000 credits",

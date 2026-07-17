@@ -14,6 +14,9 @@ export interface BillingProvider {
     purchaserUserId: string;
     packageId: string;
     returnUrl: string;
+    /** Charged amount; defaults to package list price when omitted. */
+    amountRub?: number;
+    promoCode?: string;
   }): Promise<{ checkoutUrl: string; providerPaymentId: string }>;
 
   verifyWebhook(

@@ -24,6 +24,7 @@ COPY --from=build /app/.output ./.output
 COPY --from=build /app/server/database/migrations ./server/database/migrations
 COPY --from=build /app/data/releases ./data/releases
 COPY scripts/db-migrate.mjs ./scripts/db-migrate.mjs
+COPY scripts/promo-create.mjs ./scripts/promo-create.mjs
 COPY docker/entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh

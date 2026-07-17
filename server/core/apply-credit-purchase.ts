@@ -1,6 +1,9 @@
 import type { BillingWebhookEvent } from "./billing-provider";
 import { CreditService } from "./credit-service";
 import { CreditTransactionRepository } from "../database/repositories/credit-transaction-repository";
+import { PromoCodeRepository } from "../database/repositories/promo-code-repository";
+import { ProviderPaymentRepository } from "../database/repositories/provider-payment-repository";
+import { resolveCreditPackage } from "./credit-packages";
 import { logger } from "./logger";
 
 export type ApplyCreditPurchaseResult =
@@ -14,6 +17,8 @@ export async function applyCreditPurchaseFromBillingEvent(
   deps: {
     creditService?: CreditService;
     ledger?: CreditTransactionRepository;
+    providerPayments?: ProviderPaymentRepository;
+    promoCodes?: PromoCodeRepository;
   } = {}
 ): Promise<ApplyCreditPurchaseResult> {
   if (event.status !== "paid") {
@@ -28,6 +33,21 @@ export async function applyCreditPurchaseFromBillingEvent(
     return { status: "duplicate" };
   }
 
+  const providerPayments = deps.providerPayments;
+  const paymentRow = providerPayments
+    ? await providerPayments.findByProviderPaymentId(event.providerPaymentId)
+    : null;
+
+  const pkg = resolveCreditPackage(event.packageId);
+  const originalAmountRub = pkg?.amountRub ?? event.amountRub;
+
+  let promoCode: string | undefined;
+  if (paymentRow?.promo_code_id) {
+    const promoRepo = deps.promoCodes ?? new PromoCodeRepository();
+    const promo = await promoRepo.findById(paymentRow.promo_code_id);
+    promoCode = promo?.code;
+  }
+
   const creditService = deps.creditService ?? new CreditService();
   await creditService.grantPurchase({
     botId: event.botId,
@@ -36,6 +56,8 @@ export async function applyCreditPurchaseFromBillingEvent(
     providerPaymentId: event.providerPaymentId,
     packageId: event.packageId,
     amountRub: event.amountRub,
+    originalAmountRub,
+    promoCode,
   });
 
   logger.info(

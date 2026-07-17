@@ -4,6 +4,7 @@ export interface AppUser {
   username?: string | null;
   name: string;
   photo_url?: string | null;
+  referral_code?: string | null;
   created_at: Date;
   updated_at: Date;
 }

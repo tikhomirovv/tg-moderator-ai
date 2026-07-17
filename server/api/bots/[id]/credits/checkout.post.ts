@@ -10,6 +10,7 @@ import {
 import { ProviderPaymentRepository } from "../../../../database/repositories/provider-payment-repository";
 import { getWebhookBaseUrl } from "../../../../utils/telegram-webhook";
 import { readPromoCookie } from "../../../../utils/promo-cookie";
+import { readReferralCookie } from "../../../../utils/referral-cookie";
 
 type CheckoutBody = {
   package_id?: string;
@@ -89,6 +90,7 @@ export default defineEventHandler(async (event) => {
     credits: pkg.credits,
     purchaser_user_id: user.id,
     promo_code_id: promoCodeId ?? null,
+    referral_code: readReferralCookie(event) ?? null,
   });
 
   return {

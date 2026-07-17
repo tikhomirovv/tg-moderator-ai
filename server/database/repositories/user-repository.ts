@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import { users } from "../auth-schema";
 import type { AppUser, SessionUser } from "../models/user";
+import { generateReferralCode } from "../../core/referral-code";
 
 function toAppUser(row: typeof users.$inferSelect): AppUser {
   return {
@@ -10,6 +11,7 @@ function toAppUser(row: typeof users.$inferSelect): AppUser {
     username: row.username,
     name: row.name,
     photo_url: row.photoUrl,
+    referral_code: row.referralCode,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
   };
@@ -55,6 +57,42 @@ export class UserRepository {
     return row ? toAppUser(row) : null;
   }
 
+  async findByReferralCode(code: string): Promise<AppUser | null> {
+    const normalized = code.trim().toUpperCase();
+    const [row] = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.referralCode, normalized))
+      .limit(1);
+    return row ? toAppUser(row) : null;
+  }
+
+  async ensureReferralCode(userId: string): Promise<string> {
+    const existing = await this.findById(userId);
+    if (existing?.referral_code) {
+      return existing.referral_code;
+    }
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const code = generateReferralCode();
+      try {
+        const [row] = await this.db
+          .update(users)
+          .set({ referralCode: code, updatedAt: new Date() })
+          .where(eq(users.id, userId))
+          .returning({ referralCode: users.referralCode });
+
+        if (row?.referralCode) {
+          return row.referralCode;
+        }
+      } catch {
+        // Unique collision on referral_code — retry with a new code.
+      }
+    }
+
+    throw new Error(`Failed to assign referral code for user ${userId}`);
+  }
+
   async upsertFromTelegram(
     id: string,
     claims: TelegramUserClaims
@@ -82,6 +120,8 @@ export class UserRepository {
       })
       .returning();
 
-    return toAppUser(row);
+    const user = toAppUser(row);
+    const code = await this.ensureReferralCode(user.id);
+    return { ...user, referral_code: code };
   }
 }

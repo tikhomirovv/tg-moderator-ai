@@ -8,7 +8,7 @@ Web application to manage Telegram moderation bots: connect bot token, configure
 
 **Out of scope (current):** multi-region, non-Telegram channels, end-user facing signup outside Telegram.
 
-**Billing:** SaaS mode (`DEPLOYMENT_MODE=saas`) — per-bot credits, YooKassa checkout, purchase promo codes. Self-hosted default — BYOK, billing no-op. See `.docs/billing-design.md`, `.docs/billing-economics.md`.
+**Billing:** SaaS mode (`DEPLOYMENT_MODE=saas`) — per-bot credits, YooKassa checkout, purchase promo codes, referral rewards. Self-hosted default — BYOK, billing no-op. See `.docs/billing-design.md`, `.docs/billing-economics.md`.
 
 ## User flows
 

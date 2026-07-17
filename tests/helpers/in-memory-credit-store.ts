@@ -76,6 +76,17 @@ export class InMemoryCreditStore implements CreditStore, CreditLedger {
     );
   }
 
+  async findByReferenceAndType(
+    reference: string,
+    type: CreditTransaction["type"]
+  ): Promise<LedgerRow | null> {
+    return (
+      this.ledger.find(
+        (row) => row.reference === reference && row.type === type
+      ) ?? null
+    );
+  }
+
   async sumAmountByBot(botId: string): Promise<number> {
     return this.ledger
       .filter((row) => row.bot_id === botId)

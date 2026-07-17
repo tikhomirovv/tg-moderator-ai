@@ -178,6 +178,17 @@
       "saved": "LLM settings saved"
     }
   },
+  "referral": {
+    "landing": "Saving your referral link…",
+    "shareTitle": "Invite friends — earn credits on their first purchase",
+    "copyLink": "Copy link",
+    "copied": "Copied!",
+    "navPending": "{credits} referral credits",
+    "claimTitle": "Claim referral credits",
+    "claimSubtitle": "{credits} credits from {count} referrals",
+    "noOwnedBots": "Create a bot you own to claim referral credits.",
+    "claimSuccess": "{credits} credits added to the selected bot."
+  },
   "dashboard": {
     "kpi": {
       "bots": "Bots",

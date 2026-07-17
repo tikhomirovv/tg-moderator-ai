@@ -85,6 +85,24 @@ export class CreditTransactionRepository {
     return row ? toCreditTransaction(row) : null;
   }
 
+  async findByReferenceAndType(
+    reference: string,
+    type: CreditTransaction["type"]
+  ): Promise<CreditTransaction | null> {
+    const [row] = await this.db
+      .select()
+      .from(creditTransactions)
+      .where(
+        and(
+          eq(creditTransactions.reference, reference),
+          eq(creditTransactions.type, type)
+        )
+      )
+      .limit(1);
+
+    return row ? toCreditTransaction(row) : null;
+  }
+
   async sumAmountByBot(botId: string): Promise<number> {
     const [row] = await this.db
       .select({

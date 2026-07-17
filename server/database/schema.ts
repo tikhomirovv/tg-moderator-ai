@@ -42,6 +42,13 @@ export const creditTransactionTypeEnum = pgEnum("credit_transaction_type", [
   "debit_moderation",
   "admin_adjust",
   "reconcile_fix",
+  "referral_bonus",
+]);
+
+export const referrerStatusEnum = pgEnum("referrer_status", [
+  "pending",
+  "claimed",
+  "skipped_zero",
 ]);
 
 export const providerPaymentStatusEnum = pgEnum("provider_payment_status", [
@@ -455,6 +462,7 @@ export const providerPayments = pgTable(
     promoCodeId: integer("promo_code_id").references(() => promoCodes.id, {
       onDelete: "set null",
     }),
+    referralCode: text("referral_code"),
     creditedAt: timestamp("credited_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -471,6 +479,44 @@ export const providerPayments = pgTable(
       table.botId,
       table.status,
       table.createdAt
+    ),
+  ]
+);
+
+export const referrals = pgTable(
+  "referrals",
+  {
+    id: serial("id").primaryKey(),
+    referrerUserId: text("referrer_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    refereeUserId: text("referee_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    providerPaymentId: text("provider_payment_id").notNull(),
+    baseCredits: integer("base_credits").notNull(),
+    refereeBonusCredits: integer("referee_bonus_credits").notNull(),
+    referrerBonusCredits: integer("referrer_bonus_credits").notNull(),
+    refereeBotId: varchar("referee_bot_id", { length: 64 }).references(
+      () => bots.id,
+      { onDelete: "set null" }
+    ),
+    referrerStatus: referrerStatusEnum("referrer_status").notNull(),
+    referrerClaimedBotId: varchar("referrer_claimed_bot_id", {
+      length: 64,
+    }).references(() => bots.id, { onDelete: "set null" }),
+    referralCode: text("referral_code"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("referrals_referee_user_unique").on(table.refereeUserId),
+    uniqueIndex("referrals_provider_payment_unique").on(table.providerPaymentId),
+    index("referrals_referrer_status").on(
+      table.referrerUserId,
+      table.referrerStatus
     ),
   ]
 );

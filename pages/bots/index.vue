@@ -16,6 +16,23 @@
       </template>
     </LayoutPageHeader>
 
+    <div
+      v-if="isSaas && referralLink"
+      class="mb-6 bg-white border rounded p-4 flex flex-wrap items-center justify-between gap-3"
+    >
+      <div class="min-w-0">
+        <div class="text-sm font-medium">{{ t("referral.shareTitle") }}</div>
+        <div class="text-xs text-gray-500 truncate">{{ referralLink }}</div>
+      </div>
+      <button
+        type="button"
+        class="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+        @click="copyReferralLink"
+      >
+        {{ copiedReferral ? t("referral.copied") : t("referral.copyLink") }}
+      </button>
+    </div>
+
     <div v-if="loading" class="text-gray-500">{{ t("common.loading") }}</div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -195,10 +212,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import type { BotListItem, BotMemberRole } from "~/types/bot";
 
 const { t } = useI18n();
+const config = useRuntimeConfig();
+const isSaas = computed(() => config.public.deploymentMode === "saas");
 
 usePageTitle(() => t("page.bots.documentTitle"));
 
@@ -221,6 +240,35 @@ const createError = ref("");
 const joinError = ref("");
 const joinCode = ref("");
 const newBotToken = ref("");
+const referralLink = ref("");
+const copiedReferral = ref(false);
+
+async function loadReferralLink() {
+  if (!isSaas.value) {
+    return;
+  }
+  try {
+    const response = await $fetch<{ data: { link: string } }>("/api/referral/link");
+    referralLink.value = response.data.link;
+  } catch {
+    referralLink.value = "";
+  }
+}
+
+async function copyReferralLink() {
+  if (!referralLink.value) {
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(referralLink.value);
+    copiedReferral.value = true;
+    setTimeout(() => {
+      copiedReferral.value = false;
+    }, 2000);
+  } catch {
+    copiedReferral.value = false;
+  }
+}
 
 function roleLabel(role: BotMemberRole | undefined) {
   if (role === "owner") return t("common.roles.owner");
@@ -346,6 +394,7 @@ function applyAddModalFromQuery() {
 
 onMounted(async () => {
   await load();
+  await loadReferralLink();
   applyAddModalFromQuery();
 });
 </script>

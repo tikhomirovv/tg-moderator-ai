@@ -57,6 +57,36 @@ describe("llm-provider", () => {
     }
   });
 
+  test("resolveLlmModel uses model from resolved database config", () => {
+    expect(
+      resolveLlmModel({
+        apiKey: "db-key",
+        baseUrl: "https://openrouter.ai/api/v1",
+        model: "gpt-4o-from-ui",
+      })
+    ).toBe("gpt-4o-from-ui");
+  });
+
+  test("resolveLlmModel does not fall back to runtime default over config", () => {
+    const previous = process.env.LLM_MODEL;
+    delete process.env.LLM_MODEL;
+
+    try {
+      expect(
+        resolveLlmModel({
+          apiKey: "db-key",
+          model: "custom-model",
+        })
+      ).toBe("custom-model");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.LLM_MODEL;
+      } else {
+        process.env.LLM_MODEL = previous;
+      }
+    }
+  });
+
   test("createLlmClient accepts custom base URL", () => {
     const client = createLlmClient({
       apiKey: "test-key",

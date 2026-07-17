@@ -12,6 +12,24 @@ export type ResolvedLlmConfig = {
   source: ResolvedLlmConfigSource;
 };
 
+type DatabaseLlmSettings = {
+  llm_base_url?: string | null;
+  llm_model?: string | null;
+};
+
+/** Apply LLM_MODEL / LLM_BASE_URL env overrides on database instance settings. */
+export function applyDatabaseLlmEnvOverrides(
+  settings: DatabaseLlmSettings,
+  env: NodeJS.ProcessEnv = process.env
+): Pick<LlmConfig, "baseUrl" | "model"> {
+  return {
+    baseUrl:
+      env.LLM_BASE_URL?.trim() || settings.llm_base_url?.trim() || undefined,
+    model:
+      env.LLM_MODEL?.trim() || settings.llm_model?.trim() || DEFAULT_MODEL,
+  };
+}
+
 /** Env LLM_* overrides DB settings; DB used in self-hosted when env key is absent. */
 export async function resolveLlmConfig(
   env: NodeJS.ProcessEnv = process.env
@@ -49,8 +67,7 @@ export async function resolveLlmConfig(
   return {
     config: {
       apiKey,
-      baseUrl: settings.llm_base_url?.trim() || undefined,
-      model: settings.llm_model?.trim() || DEFAULT_MODEL,
+      ...applyDatabaseLlmEnvOverrides(settings, env),
     },
     source: "database",
   };

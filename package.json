@@ -4,7 +4,7 @@
   "description": "Telegram AI Moderator Bot - автоматическая модерация чатов с помощью искусственного интеллекта",
   "type": "module",
   "private": true,
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "author": "Valerii Tikhomirov <v.tikhomirov.dev+npm@gmail.com>",
   "repository": {
     "type": "git",

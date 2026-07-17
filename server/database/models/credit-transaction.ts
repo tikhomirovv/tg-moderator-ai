@@ -3,7 +3,8 @@ export type CreditTransactionType =
   | "purchase"
   | "debit_moderation"
   | "admin_adjust"
-  | "reconcile_fix";
+  | "reconcile_fix"
+  | "referral_bonus";
 
 export interface CreditTransaction {
   id: number;

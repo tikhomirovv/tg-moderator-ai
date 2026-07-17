@@ -42,7 +42,7 @@ User (telegram_id)
 - **Auth:** Telegram OIDC (`TELEGRAM_LOGIN_*` + `BASE_URL`)
 - **Rules:** code presets in `server/database/rule-templates.ts`; add via Rule library UI
 - **Production:** Docker image `ghcr.io/telemodai/app` on GHCR; PostgreSQL and Traefik external to the app container
-- **Billing (SaaS):** `DEPLOYMENT_MODE=saas` — per-bot credits, YooKassa checkout, purchase promo codes — [billing-design.md](billing-design.md)
+- **Billing (SaaS):** `DEPLOYMENT_MODE=saas` — per-bot credits, YooKassa checkout, purchase promo codes, referral rewards — [billing-design.md](billing-design.md)
 
 ## Related docs
 

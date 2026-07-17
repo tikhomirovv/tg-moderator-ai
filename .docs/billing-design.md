@@ -186,6 +186,42 @@ docker compose exec app node scripts/promo-create.mjs --code SAVE10 --percent 10
 
 Local dev: `bun run promo:create`
 
+## Product referrals (SaaS only)
+
+In-product credit rewards for inviting new paying users. Self-hosted: no referral UI, API, or nav.
+
+### Config (`lib/referral-config.ts`)
+
+- `REFERRAL_COOKIE_DAYS = 30` (last-click attribution)
+- `REFERRAL_REFEREE_PERCENT` / `REFERRAL_REFERRER_PERCENT` (default 10 / 10)
+
+### Attribution
+
+- Personal link `/r/:code` or `?ref=` on landing/login
+- Cookie `tg_referral_code` — last click within 30 days; self-referral ignored
+- Checkout snapshots cookie into `provider_payments.referral_code` (webhook has no cookie access)
+
+### Rewards (first successful purchase only)
+
+- **Referee:** `floor(package_credits * REFERRAL_REFEREE_PERCENT / 100)` credited immediately on the payment bot
+- **Referrer:** same math with `REFERRAL_REFERRER_PERCENT`, stored as **pending** until claim onto an **owned** bot (all pending summed in one claim)
+- Ledger type `referral_bonus` with metadata `{ referral_id, role, percent, base_credits, provider_payment_id }`
+- Works alongside purchase promos (#130): promo discounts RUB; referral bonuses credits
+
+### Anti-abuse
+
+- No self-referral; referrer account must predate referee
+- One referral lifecycle per referee; first purchase only
+- Claim requires bot **owner** role
+- Skip zero-bonus sides; idempotent on `provider_payments.provider_payment_id`
+
+### APIs
+
+- `POST /api/referral/attribution` — set cookie
+- `GET /api/referral/pending` — pending sum/count for nav
+- `POST /api/referral/claim` — `{ bot_id }` credits all pending to owned bot
+- `GET /api/referral/link` — current user's share link
+
 ## Credit packages (config)
 
 | package_id | Credits | Price RUB |

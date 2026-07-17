@@ -16,6 +16,7 @@ export const users = pgTable(
     username: text("username"),
     name: text("name").notNull(),
     photoUrl: text("photo_url"),
+    referralCode: text("referral_code"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -23,7 +24,10 @@ export const users = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [uniqueIndex("users_telegram_id_unique").on(table.telegramId)]
+  (table) => [
+    uniqueIndex("users_telegram_id_unique").on(table.telegramId),
+    uniqueIndex("users_referral_code_unique").on(table.referralCode),
+  ]
 );
 
 export const sessions = pgTable(

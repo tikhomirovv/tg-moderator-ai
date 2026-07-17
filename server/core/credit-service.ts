@@ -39,6 +39,10 @@ export type CreditLedger = {
   findPurchaseByProviderPaymentId(
     paymentId: string
   ): Promise<CreditTransaction | null>;
+  findByReferenceAndType?(
+    reference: string,
+    type: CreditTransaction["type"]
+  ): Promise<CreditTransaction | null>;
   sumAmountByBot(botId: string): Promise<number>;
 };
 
@@ -154,6 +158,49 @@ export class CreditService {
       actorUserId: input.actorUserId,
       reference: input.providerPaymentId,
       metadata,
+    });
+  }
+
+  async grantReferralBonus(input: {
+    botId: string;
+    credits: number;
+    actorUserId: string;
+    referralId: number;
+    role: "referrer" | "referee";
+    baseCredits: number;
+    percent: number;
+    providerPaymentId: string;
+    reference?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<CreditTransaction | null> {
+    if (input.credits <= 0) {
+      return null;
+    }
+
+    const reference =
+      input.reference ?? `referral:${input.referralId}:${input.role}`;
+    const existing = await this.ledger.findByReferenceAndType?.(
+      reference,
+      "referral_bonus"
+    );
+    if (existing) {
+      return existing;
+    }
+
+    return this.applyCreditDelta({
+      botId: input.botId,
+      amount: input.credits,
+      type: "referral_bonus",
+      actorUserId: input.actorUserId,
+      reference,
+      metadata: {
+        referral_id: input.referralId,
+        role: input.role,
+        percent: input.percent,
+        base_credits: input.baseCredits,
+        provider_payment_id: input.providerPaymentId,
+        ...input.metadata,
+      },
     });
   }
 

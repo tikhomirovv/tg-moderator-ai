@@ -2,6 +2,7 @@ import type { BillingWebhookEvent } from "./billing-provider";
 import type { ProviderPaymentStatus } from "../database/models/provider-payment";
 import { ProviderPaymentRepository } from "../database/repositories/provider-payment-repository";
 import { PromoRedemptionRepository } from "../database/repositories/promo-code-repository";
+import { ReferralService } from "./referral-service";
 import { applyCreditPurchaseFromBillingEvent } from "./apply-credit-purchase";
 import type { PaymentSyncStatus } from "./payment-sync";
 import { logger } from "./logger";
@@ -89,6 +90,24 @@ export async function reconcileProviderPayment(
         throw error;
       }
     }
+
+    const referralResult = await new ReferralService().processPaidPurchase({
+      providerPaymentId: event.providerPaymentId,
+      refereeUserId: row.purchaser_user_id,
+      botId: row.bot_id,
+      baseCredits: row.credits,
+      referralCodeFromCheckout: row.referral_code,
+    });
+    if (referralResult.status === "applied") {
+      logger.info(
+        {
+          paymentId: event.providerPaymentId,
+          referralId: referralResult.referral_id,
+        },
+        "Referral rewards applied for first purchase"
+      );
+    }
+
     return "applied";
   }
   if (applyResult.status === "duplicate") {

@@ -40,6 +40,7 @@
           </nav>
         </div>
         <div class="flex items-center gap-4 text-sm shrink-0">
+          <LayoutReferralPendingNav v-if="isSaas" />
           <span v-if="session?.user" class="text-gray-600 hidden sm:inline">
             {{ displayName }}
           </span>
@@ -71,6 +72,7 @@ const config = useRuntimeConfig();
 const isSelfHosted = computed(
   () => config.public.deploymentMode === "self-hosted"
 );
+const isSaas = computed(() => config.public.deploymentMode === "saas");
 
 useHead({
   titleTemplate: (titleChunk) => {

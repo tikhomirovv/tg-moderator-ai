@@ -1,8 +1,10 @@
 import type { BillingWebhookEvent } from "./billing-provider";
 import type { ProviderPaymentStatus } from "../database/models/provider-payment";
 import { ProviderPaymentRepository } from "../database/repositories/provider-payment-repository";
+import { PromoRedemptionRepository } from "../database/repositories/promo-code-repository";
 import { applyCreditPurchaseFromBillingEvent } from "./apply-credit-purchase";
 import type { PaymentSyncStatus } from "./payment-sync";
+import { logger } from "./logger";
 
 export function mapBillingEventToProviderStatus(
   event: BillingWebhookEvent
@@ -21,6 +23,7 @@ export function mapBillingEventToProviderStatus(
 
 export type ReconcileProviderPaymentDeps = {
   providerPayments?: ProviderPaymentRepository;
+  promoRedemptions?: PromoRedemptionRepository;
 } & Parameters<typeof applyCreditPurchaseFromBillingEvent>[1];
 
 /**
@@ -59,9 +62,33 @@ export async function reconcileProviderPayment(
     return "pending";
   }
 
-  const applyResult = await applyCreditPurchaseFromBillingEvent(event, deps);
+  const applyResult = await applyCreditPurchaseFromBillingEvent(event, {
+    ...deps,
+    providerPayments: repo,
+  });
   if (applyResult.status === "applied") {
     await repo.markCredited(event.providerPaymentId);
+    if (row.promo_code_id) {
+      const promoRedemptions =
+        deps.promoRedemptions ?? new PromoRedemptionRepository();
+      try {
+        await promoRedemptions.createIdempotent({
+          promo_code_id: row.promo_code_id,
+          user_id: row.purchaser_user_id,
+          provider_payment_id: event.providerPaymentId,
+        });
+      } catch (error) {
+        logger.error(
+          {
+            paymentId: event.providerPaymentId,
+            promoCodeId: row.promo_code_id,
+            error,
+          },
+          "Failed to record promo redemption after successful payment"
+        );
+        throw error;
+      }
+    }
     return "applied";
   }
   if (applyResult.status === "duplicate") {

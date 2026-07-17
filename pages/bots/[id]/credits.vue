@@ -28,6 +28,43 @@
       </button>
     </div>
 
+    <div class="bg-white border rounded p-4 mb-6">
+      <label class="block text-sm font-medium text-gray-700 mb-2" for="promo-code">
+        {{ t("billing.promo.label") }}
+      </label>
+      <div class="flex flex-wrap gap-2">
+        <input
+          id="promo-code"
+          v-model="promoInput"
+          type="text"
+          class="flex-1 min-w-[10rem] border rounded px-3 py-2 text-sm"
+          :placeholder="t('billing.promo.placeholder')"
+          :disabled="applyingPromo"
+          @keyup.enter="applyPromo"
+        />
+        <button
+          type="button"
+          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-sm"
+          :disabled="applyingPromo || !promoInput.trim()"
+          @click="applyPromo"
+        >
+          {{ applyingPromo ? t("common.loading") : t("billing.promo.apply") }}
+        </button>
+      </div>
+      <p v-if="appliedPromo?.valid" class="mt-2 text-sm text-green-700">
+        {{
+          t("billing.promo.applied", {
+            code: appliedPromo.code,
+            percent: appliedPromo.discount_percent,
+          })
+        }}
+      </p>
+      <p v-else-if="appliedPromo && !appliedPromo.valid" class="mt-2 text-sm text-amber-700">
+        {{ appliedPromo.error }}
+      </p>
+      <p v-if="promoError" class="mt-2 text-sm text-red-600">{{ promoError }}</p>
+    </div>
+
     <div class="space-y-3">
       <div
         v-for="pkg in packages"
@@ -37,7 +74,17 @@
         <div>
           <div class="font-medium">{{ t(pkg.labelKey) }}</div>
           <div class="text-sm text-gray-600">
-            {{ pkg.amountRub.toLocaleString() }} ₽
+            <template v-if="discountedPrice(pkg.id) !== pkg.amountRub">
+              <span class="line-through text-gray-400 mr-2">
+                {{ pkg.amountRub.toLocaleString() }} ₽
+              </span>
+              <span class="text-green-700 font-medium">
+                {{ discountedPrice(pkg.id).toLocaleString() }} ₽
+              </span>
+            </template>
+            <template v-else>
+              {{ pkg.amountRub.toLocaleString() }} ₽
+            </template>
           </div>
         </div>
         <button
@@ -88,12 +135,51 @@ type PaymentSyncStatus =
   | "not_found"
   | "forbidden";
 
+type PromoPackagePreview = {
+  package_id: CreditPackageId;
+  original_amount_rub: number;
+  discounted_amount_rub: number;
+  credits: number;
+};
+
+type AppliedPromo =
+  | {
+      code: string;
+      valid: true;
+      discount_percent: number;
+      packages: PromoPackagePreview[];
+    }
+  | {
+      code: string;
+      valid: false;
+      error: string;
+    }
+  | null;
+
 const balance = ref(0);
 const error = ref("");
+const promoError = ref("");
 const refreshing = ref(false);
+const applyingPromo = ref(false);
 const checkoutPackageId = ref<CreditPackageId | null>(null);
 const paymentNotice = ref("");
 const paymentNoticeTone = ref<"info" | "success" | "warning">("info");
+const promoInput = ref("");
+const appliedPromo = ref<AppliedPromo>(null);
+
+const discountedByPackage = computed(() => {
+  const map = new Map<CreditPackageId, number>();
+  if (appliedPromo.value?.valid) {
+    for (const row of appliedPromo.value.packages) {
+      map.set(row.package_id, row.discounted_amount_rub);
+    }
+  }
+  return map;
+});
+
+function discountedPrice(packageId: CreditPackageId): number {
+  return discountedByPackage.value.get(packageId) ?? CREDIT_PACKAGES[packageId].amountRub;
+}
 
 const paymentNoticeClass = computed(() => {
   if (paymentNoticeTone.value === "success") {
@@ -128,6 +214,82 @@ function noticeForSyncStatus(status: PaymentSyncStatus | null | undefined) {
   }
   if (status === "not_found" || status === "forbidden") {
     setPaymentNotice(t("billing.paymentSyncFailed"), "warning");
+  }
+}
+
+async function loadCurrentPromo() {
+  try {
+    const response = await $fetch<{
+      data:
+        | {
+            code: string;
+            valid: true;
+            discount_percent: number;
+            packages: PromoPackagePreview[];
+          }
+        | {
+            code: string;
+            valid: false;
+            error: string;
+          }
+        | null;
+    }>("/api/promo/current");
+
+    if (!response.data) {
+      appliedPromo.value = null;
+      return;
+    }
+
+    if ("valid" in response.data && response.data.valid === false) {
+      appliedPromo.value = response.data;
+      return;
+    }
+
+    if ("discount_percent" in response.data) {
+      appliedPromo.value = {
+        code: response.data.code,
+        valid: true,
+        discount_percent: response.data.discount_percent,
+        packages: response.data.packages,
+      };
+      promoInput.value = response.data.code;
+    }
+  } catch {
+    // Non-blocking — user can still purchase at list price.
+  }
+}
+
+async function applyPromo() {
+  const code = promoInput.value.trim();
+  if (!code) {
+    return;
+  }
+
+  applyingPromo.value = true;
+  promoError.value = "";
+  try {
+    const response = await $fetch<{
+      data: {
+        code: string;
+        discount_percent: number;
+        packages: PromoPackagePreview[];
+      };
+    }>("/api/promo/apply", {
+      method: "POST",
+      body: { code },
+    });
+
+    appliedPromo.value = {
+      code: response.data.code,
+      valid: true,
+      discount_percent: response.data.discount_percent,
+      packages: response.data.packages,
+    };
+  } catch (e: unknown) {
+    appliedPromo.value = null;
+    promoError.value = e instanceof Error ? e.message : t("common.unknown");
+  } finally {
+    applyingPromo.value = false;
   }
 }
 
@@ -178,6 +340,8 @@ async function startCheckout(packageId: CreditPackageId) {
 let pollTimer: ReturnType<typeof setInterval> | undefined;
 
 onMounted(async () => {
+  await loadCurrentPromo();
+
   const queryPaymentId = route.query.payment_id;
   const recoveryPaymentId =
     typeof queryPaymentId === "string" ? queryPaymentId.trim() : "";

@@ -145,6 +145,47 @@ Any bot member (owner or manager) may start checkout; credits always accrue to t
 
 `credit_transactions` (ledger) and `provider_payments` (provider lifecycle) are separate tables.
 
+## Purchase promo codes (SaaS only)
+
+Percent-discount promo codes for credit package checkout. Self-hosted: no promo UI, API, or CLI in product flows.
+
+### Data model
+
+- `promo_codes` — `code` (unique, uppercased), `discount_percent` (1–100), `is_active`, optional `expires_at`
+- `promo_redemptions` — unique `(promo_code_id, user_id)` after successful payment
+- `provider_payments.promo_code_id` — links checkout to promo when used
+
+### Rules
+
+- Discount on **RUB price only**; package **credits stay full**
+- Charged amount: `max(1, floor(price * (100 - percent) / 100))` (100% → 1 ₽)
+- One successful redemption per user per code; abandoned checkout does not consume
+- Cookie `tg_promo_code` is UX-only; checkout re-validates server-side
+- Applying a new code overwrites the cookie (no remove control)
+
+### Checkout flow
+
+1. User applies code on `/bots/:id/credits` → `POST /api/promo/apply` sets cookie
+2. Checkout reads cookie (or body `promo_code`), validates, charges discounted amount to YooKassa
+3. On paid webhook/sync: grant full package credits, insert redemption idempotently
+4. Ledger `purchase` metadata includes `promo_code`, `amount_rub`, `original_amount_rub` when discounted
+
+### Operator CLI
+
+Create codes in production (Node runtime image):
+
+```bash
+docker compose exec -it app node scripts/promo-create.mjs
+```
+
+Non-interactive:
+
+```bash
+docker compose exec app node scripts/promo-create.mjs --code SAVE10 --percent 10
+```
+
+Local dev: `bun run promo:create`
+
 ## Credit packages (config)
 
 | package_id | Credits | Price RUB |

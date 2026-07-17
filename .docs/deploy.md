@@ -137,6 +137,24 @@ docker run --rm -p 3000:3000 --env-file .env ghcr.io/telemodai/app:local
 | Миграции / БД | `DATABASE_URL` доступен; логи entrypoint при старте |
 | LLM не отвечает | `LLM_API_KEY`, при gateway — `LLM_BASE_URL` + `LLM_MODEL` |
 
+## 10. SaaS promo codes (operators)
+
+When `DEPLOYMENT_MODE=saas`, create purchase promo codes inside the running app container:
+
+```bash
+docker compose exec -it app node scripts/promo-create.mjs
+```
+
+`-it` is required for interactive prompts. `DATABASE_URL` is already in the container env.
+
+Non-interactive example:
+
+```bash
+docker compose exec app node scripts/promo-create.mjs --code LAUNCH20 --percent 20
+```
+
+See [billing-design.md](billing-design.md) for redemption rules and checkout behavior.
+
 ## Порты
 
 | Окружение | Порт приложения |

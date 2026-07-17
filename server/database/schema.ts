@@ -396,6 +396,47 @@ export const llmUsage = pgTable(
   ]
 );
 
+export const promoCodes = pgTable(
+  "promo_codes",
+  {
+    id: serial("id").primaryKey(),
+    code: text("code").notNull(),
+    discountPercent: integer("discount_percent").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [uniqueIndex("promo_codes_code_unique").on(table.code)]
+);
+
+export const promoRedemptions = pgTable(
+  "promo_redemptions",
+  {
+    id: serial("id").primaryKey(),
+    promoCodeId: integer("promo_code_id")
+      .notNull()
+      .references(() => promoCodes.id, { onDelete: "restrict" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    providerPaymentId: text("provider_payment_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("promo_redemptions_code_user_unique").on(
+      table.promoCodeId,
+      table.userId
+    ),
+  ]
+);
+
 export const providerPayments = pgTable(
   "provider_payments",
   {
@@ -411,6 +452,9 @@ export const providerPayments = pgTable(
     purchaserUserId: text("purchaser_user_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
+    promoCodeId: integer("promo_code_id").references(() => promoCodes.id, {
+      onDelete: "set null",
+    }),
     creditedAt: timestamp("credited_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

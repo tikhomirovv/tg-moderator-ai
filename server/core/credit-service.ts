@@ -129,18 +129,31 @@ export class CreditService {
     providerPaymentId: string;
     packageId: string;
     amountRub: number;
+    originalAmountRub?: number;
+    promoCode?: string;
   }): Promise<CreditTransaction> {
+    const metadata: Record<string, unknown> = {
+      package_id: input.packageId,
+      amount_rub: input.amountRub,
+      provider_payment_id: input.providerPaymentId,
+    };
+    if (
+      input.originalAmountRub !== undefined &&
+      input.originalAmountRub !== input.amountRub
+    ) {
+      metadata.original_amount_rub = input.originalAmountRub;
+    }
+    if (input.promoCode) {
+      metadata.promo_code = input.promoCode;
+    }
+
     return this.applyCreditDelta({
       botId: input.botId,
       amount: input.credits,
       type: "purchase",
       actorUserId: input.actorUserId,
       reference: input.providerPaymentId,
-      metadata: {
-        package_id: input.packageId,
-        amount_rub: input.amountRub,
-        provider_payment_id: input.providerPaymentId,
-      },
+      metadata,
     });
   }
 

@@ -19,6 +19,7 @@ function toProviderPayment(
     credits: row.credits,
     status: row.status,
     purchaser_user_id: row.purchaserUserId,
+    promo_code_id: row.promoCodeId,
     credited_at: row.creditedAt,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
@@ -44,6 +45,7 @@ export class ProviderPaymentRepository {
         credits: input.credits,
         status: "pending",
         purchaserUserId: input.purchaser_user_id,
+        promoCodeId: input.promo_code_id ?? null,
         createdAt: now,
         updatedAt: now,
       })

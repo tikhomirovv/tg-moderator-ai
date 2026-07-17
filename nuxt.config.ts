@@ -1,5 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import pkg from "./package.json";
+import { resolveAppName } from "./lib/app-config";
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-08-11",
@@ -34,6 +35,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
+      appName: resolveAppName(),
       appVersion: pkg.version,
       telegramLoginBotUsername: process.env.TELEGRAM_LOGIN_BOT_USERNAME || "",
       deploymentMode: process.env.DEPLOYMENT_MODE || "self-hosted",

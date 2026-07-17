@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
     <div class="w-full max-w-md bg-white rounded-lg shadow p-6 space-y-6 text-center">
-      <h1 class="text-xl font-semibold">{{ t("app.name") }}</h1>
+      <h1 class="text-xl font-semibold">{{ appName }}</h1>
       <p class="text-sm text-gray-600">
         {{ t("login.subtitle") }}
       </p>
@@ -19,7 +19,7 @@
       </p>
       <div class="pt-2 flex flex-wrap items-center justify-center gap-x-2 text-sm text-gray-500">
         <span>
-          {{ t("app.name") }}
+          {{ appName }}
           <NuxtLink to="/release-notes" class="hover:text-gray-800 hover:underline">
             v{{ appVersion }}
           </NuxtLink>
@@ -37,6 +37,7 @@ definePageMeta({
 });
 
 const { t } = useI18n();
+const appName = useAppName();
 
 usePageTitle(() => t("page.login.documentTitle"));
 

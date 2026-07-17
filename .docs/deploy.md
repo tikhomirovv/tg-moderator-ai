@@ -63,6 +63,7 @@ git push origin v1.2.3
 | `TELEGRAM_LOGIN_BOT_ID` | да | Numeric bot id из BotFather Web Login |
 | `TELEGRAM_LOGIN_CLIENT_SECRET` | да | Web Login secret (не moderation bot token) |
 | `DATABASE_URL` | да | PostgreSQL connection string |
+| `APP_NAME` | нет | Название продукта в UI (шапка, заголовки, login bot); default `Telemodai` |
 | `LLM_API_KEY` | да | Ключ LLM API |
 | `LLM_BASE_URL` | нет | OpenRouter / Polza / custom gateway |
 | `LLM_MODEL` | нет | Модель (default в `.env.example`) |

@@ -1,7 +1,4 @@
 {
-  "app": {
-    "name": "TG Moderator"
-  },
   "nav": {
     "main": "Main",
     "dashboard": "Dashboard",

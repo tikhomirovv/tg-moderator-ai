@@ -9,7 +9,7 @@
             to="/"
             class="text-lg font-semibold shrink-0 hover:text-gray-700"
           >
-            {{ t("app.name") }}
+            {{ appName }}
           </NuxtLink>
           <nav
             class="flex items-center gap-1 overflow-x-auto text-sm"
@@ -66,6 +66,7 @@
 import { fetchSession } from "~/lib/fetch-session";
 
 const { t, locale } = useI18n();
+const appName = useAppName();
 const config = useRuntimeConfig();
 const isSelfHosted = computed(
   () => config.public.deploymentMode === "self-hosted"
@@ -73,8 +74,8 @@ const isSelfHosted = computed(
 
 useHead({
   titleTemplate: (titleChunk) => {
-    const appName = t("app.name");
-    return titleChunk ? `${titleChunk} · ${appName}` : appName;
+    const name = appName.value;
+    return titleChunk ? `${titleChunk} · ${name}` : name;
   },
   htmlAttrs: {
     lang: () => locale.value,

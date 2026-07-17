@@ -9,9 +9,9 @@ function readPage(relativePath: string): string {
 }
 
 describe("document titles", () => {
-  test("default layout sets titleTemplate from i18n app name", () => {
+  test("default layout sets titleTemplate from app name config", () => {
     const layout = readPage("layouts/default.vue");
-    expect(layout).toContain('t("app.name")');
+    expect(layout).toContain("useAppName()");
     expect(layout).toContain("titleTemplate:");
   });
 

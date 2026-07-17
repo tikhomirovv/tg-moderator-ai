@@ -1,4 +1,5 @@
 import type { TelegramUpdate } from "../types/telegram";
+import { resolveAppName } from "../../lib/app-config";
 import { isLoginBotStartCommand } from "./login-bot-link";
 import { LoginBotTokenRepository } from "../database/repositories/login-bot-token-repository";
 import {
@@ -51,9 +52,10 @@ export async function handleLoginBotUpdate(update: TelegramUpdate): Promise<void
     return;
   }
 
+  const appName = resolveAppName();
   const reply =
     `Вот одноразовая ссылка для входа (действует 5 минут):\n` +
-    `<a href="${result.url}">Открыть TG Moderator</a>\n\n` +
+    `<a href="${result.url}">Открыть ${appName}</a>\n\n` +
     `Ссылку можно использовать только один раз.`;
 
   await telegramSendMessage(token, message.chat.id, reply);

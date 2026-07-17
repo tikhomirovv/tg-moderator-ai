@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { resolveLlmConfig } from "../../../server/core/instance-llm-settings";
+import {
+  applyDatabaseLlmEnvOverrides,
+  resolveLlmConfig,
+} from "../../../server/core/instance-llm-settings";
 import { encryptSecret } from "../../../server/core/settings-encryption";
 import { resetDeploymentModeCacheForTests } from "../../../server/core/deployment-mode";
 
@@ -29,6 +32,39 @@ describe("instance-llm-settings", () => {
     });
     expect(resolved.source).toBe("none");
     expect(resolved.config).toBeNull();
+  });
+
+  test("applyDatabaseLlmEnvOverrides uses database model when env model absent", () => {
+    expect(
+      applyDatabaseLlmEnvOverrides(
+        {
+          llm_base_url: "https://db.example/v1",
+          llm_model: "gpt-db",
+        },
+        {}
+      )
+    ).toEqual({
+      baseUrl: "https://db.example/v1",
+      model: "gpt-db",
+    });
+  });
+
+  test("applyDatabaseLlmEnvOverrides prefers env model and base URL", () => {
+    expect(
+      applyDatabaseLlmEnvOverrides(
+        {
+          llm_base_url: "https://db.example/v1",
+          llm_model: "gpt-db",
+        },
+        {
+          LLM_BASE_URL: "https://env.example/v1",
+          LLM_MODEL: "gpt-env",
+        }
+      )
+    ).toEqual({
+      baseUrl: "https://env.example/v1",
+      model: "gpt-env",
+    });
   });
 });
 

@@ -53,7 +53,7 @@ alwaysApply: false
 
 - Строки только через **`$t()` / `t()`** — ключи в `i18n/locales/en.json` + **паритет** в `ru.json`.
 - Именование: nested JSON, dot keys (`nav.bots`, `bot.chats.addChat`, `common.save`).
-- Document title: `usePageTitle(() => t('page.*.documentTitle'))`; app name — `app.name`.
+- Document title: `usePageTitle(() => t('page.*.documentTitle'))`; app name — `useAppName()` (`APP_NAME` env).
 - Breadcrumbs: переведённые `label` из `t()`, не литералы.
 - В locale JSON: экранировать литеральные `{user_mention}`, `@username` — см. [`.docs/i18n.md`](.docs/i18n.md).
 - После правок локалей: `bun test tests/unit/i18n/locale-key-parity.test.ts` + `bun run build`.

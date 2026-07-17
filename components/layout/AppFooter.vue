@@ -24,7 +24,7 @@
     </div>
     <div class="mt-2 flex flex-wrap items-center justify-center gap-x-2 text-sm text-gray-500">
       <span>
-        {{ t("app.name") }}
+        {{ appName }}
         <NuxtLink to="/release-notes" class="hover:text-gray-800 hover:underline">
           v{{ appVersion }}
         </NuxtLink>
@@ -39,6 +39,7 @@
 import { APP_LINKS } from "~/lib/app-config";
 
 const { t } = useI18n();
+const appName = useAppName();
 
 const runtimeConfig = useRuntimeConfig();
 const appVersion = computed(() => runtimeConfig.public.appVersion as string);

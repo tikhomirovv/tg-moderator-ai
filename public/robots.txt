@@ -1,2 +1,3 @@
-User-Agent: *
-Disallow:
+# Self-hosted admin — no public indexing. HTML also sends noindex (meta + X-Robots-Tag).
+User-agent: *
+Disallow: /

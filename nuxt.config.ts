@@ -9,6 +9,16 @@ export default defineNuxtConfig({
       htmlAttrs: {
         lang: "en",
       },
+      meta: [
+        {
+          name: "robots",
+          content: "noindex, nofollow, noarchive, nosnippet",
+        },
+        {
+          name: "googlebot",
+          content: "noindex, nofollow, noarchive, nosnippet",
+        },
+      ],
     },
   },
   devtools: { enabled: true },
@@ -52,6 +62,11 @@ export default defineNuxtConfig({
     telegramLoginClientSecret: process.env.TELEGRAM_LOGIN_CLIENT_SECRET,
   },
   routeRules: {
+    "/**": {
+      headers: {
+        "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet",
+      },
+    },
     "/api/auth/**": { cors: true },
   },
   nitro: {

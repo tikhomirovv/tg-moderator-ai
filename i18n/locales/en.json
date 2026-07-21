@@ -12,7 +12,8 @@
     "docs": "Docs",
     "terms": "Terms",
     "localeEn": "EN",
-    "localeRu": "RU"
+    "localeRu": "RU",
+    "tagline": "AI moderation for healthy communities"
   },
   "common": {
     "loading": "Loading...",

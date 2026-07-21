@@ -1,5 +1,7 @@
 # Telemodai (tg-moderator-ai)
 
+**ИИ-модерация для здоровья сообществ** · *AI moderation for healthy communities*
+
 Self-hosted веб-админка и Telegram webhook для AI-модерации чатов. Правила настраиваются **per chat** — у одного бота в разных чатах могут быть разные наборы правил.
 
 Репозиторий: [github.com/telemodai/app](https://github.com/telemodai/app)

@@ -12,7 +12,8 @@
     "docs": "Документация",
     "terms": "Условия",
     "localeEn": "EN",
-    "localeRu": "RU"
+    "localeRu": "RU",
+    "tagline": "ИИ-модерация для здоровья сообществ"
   },
   "common": {
     "loading": "Загрузка...",

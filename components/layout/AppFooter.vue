@@ -28,6 +28,8 @@
         <NuxtLink to="/release-notes" class="hover:text-gray-800 hover:underline">
           v{{ appVersion }}
         </NuxtLink>
+        <span class="text-gray-400"> — </span>
+        {{ t("footer.tagline") }}
       </span>
       <span class="text-gray-300">|</span>
       <LayoutLocaleSwitcher />

@@ -391,13 +391,35 @@
                   />
                   <button
                     type="button"
-                    class="shrink-0 px-3 py-2 border rounded hover:bg-gray-50 disabled:opacity-50 text-lg leading-none"
+                    class="shrink-0 inline-flex items-center justify-center w-10 h-10 border rounded hover:bg-gray-50 disabled:opacity-50"
                     :disabled="aiAssistLoading || !aiInstruction.trim()"
                     :aria-label="t('moderation.ruleModal.aiAssistSubmitAria')"
+                    :aria-busy="aiAssistLoading"
                     @click="submitRuleAssist"
                   >
-                    <span v-if="aiAssistLoading" class="text-sm">…</span>
-                    <span v-else aria-hidden="true">✨</span>
+                    <svg
+                      v-if="aiAssistLoading"
+                      class="animate-spin h-5 w-5 text-gray-600"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                      />
+                      <path
+                        class="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    <span v-else class="text-lg leading-none" aria-hidden="true">✨</span>
                   </button>
                 </div>
                 <p v-if="aiAssistError" class="text-xs text-red-600">
@@ -526,6 +548,12 @@ interface TemplateCatalogItem {
   ban_on_violation: boolean;
   warnings_before_ban: number | null;
   added: boolean;
+}
+
+interface RuleAssistResponse {
+  name: string;
+  description: string;
+  ai_prompt: string;
 }
 
 interface RuleTextVersion {
@@ -659,7 +687,7 @@ async function submitRuleAssist() {
   aiAssistError.value = null;
   try {
     const response = await $fetch<{
-      data: RuleTextVersion;
+      data: RuleAssistResponse;
     }>(`${rulesApiBase}/assist`, {
       method: "POST",
       body: {
@@ -676,6 +704,9 @@ async function submitRuleAssist() {
       ai_prompt: next.ai_prompt,
     });
     ruleVersionIndex.value = ruleVersions.value.length - 1;
+    if (!form.value.name.trim()) {
+      form.value.name = next.name;
+    }
     form.value.description = next.description;
     form.value.ai_prompt = next.ai_prompt;
     aiInstruction.value = "";

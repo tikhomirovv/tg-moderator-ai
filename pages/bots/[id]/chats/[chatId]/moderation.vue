@@ -340,14 +340,86 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">{{
-              t("moderation.ruleModal.criteriaLabel")
+              t("moderation.ruleModal.ruleTextLabel")
             }}</label>
+            <p class="text-xs text-gray-500 mb-1">
+              {{ t("moderation.ruleModal.ruleTextHint") }}
+            </p>
             <textarea
               v-model="form.ai_prompt"
               class="w-full border rounded px-3 py-2"
               rows="4"
               required
+              :placeholder="t('moderation.ruleModal.ruleTextPlaceholder')"
             ></textarea>
+
+            <div class="mt-2">
+              <button
+                type="button"
+                class="text-sm text-blue-600 hover:underline"
+                @click="showAiAssist = !showAiAssist"
+              >
+                {{ t("moderation.ruleModal.aiAssistToggle") }}
+              </button>
+
+              <div v-if="showAiAssist" class="mt-2 space-y-2">
+                <p class="text-xs text-gray-500">
+                  {{ t("moderation.ruleModal.aiAssistHint") }}
+                </p>
+                <div class="flex gap-2 items-center">
+                  <input
+                    v-model="aiInstruction"
+                    type="text"
+                    class="flex-1 min-w-0 border rounded px-3 py-2 text-sm"
+                    :placeholder="t('moderation.ruleModal.aiAssistInstructionPlaceholder')"
+                    :disabled="aiAssistLoading"
+                    @keydown.enter.prevent="submitRuleAssist"
+                  />
+                  <button
+                    type="button"
+                    class="shrink-0 px-3 py-2 border rounded hover:bg-gray-50 disabled:opacity-50 text-lg leading-none"
+                    :disabled="aiAssistLoading || !aiInstruction.trim()"
+                    :aria-label="t('moderation.ruleModal.aiAssistSubmitAria')"
+                    @click="submitRuleAssist"
+                  >
+                    <span v-if="aiAssistLoading" class="text-sm">…</span>
+                    <span v-else aria-hidden="true">✨</span>
+                  </button>
+                </div>
+                <p v-if="aiAssistError" class="text-xs text-red-600">
+                  {{ aiAssistError }}
+                </p>
+                <div
+                  v-if="ruleVersions.length > 0"
+                  class="flex items-center gap-2 text-xs text-gray-600"
+                >
+                  <button
+                    type="button"
+                    class="px-2 py-1 border rounded hover:bg-gray-50 disabled:opacity-40"
+                    :disabled="ruleVersionIndex <= 0"
+                    :aria-label="t('common.previous')"
+                    @click="goToRuleVersion(ruleVersionIndex - 1)"
+                  >
+                    ◀
+                  </button>
+                  <span>{{
+                    t("moderation.ruleModal.aiAssistVersion", {
+                      current: ruleVersionIndex + 1,
+                      total: ruleVersions.length,
+                    })
+                  }}</span>
+                  <button
+                    type="button"
+                    class="px-2 py-1 border rounded hover:bg-gray-50 disabled:opacity-40"
+                    :disabled="ruleVersionIndex >= ruleVersions.length - 1"
+                    :aria-label="t('common.next')"
+                    @click="goToRuleVersion(ruleVersionIndex + 1)"
+                  >
+                    ▶
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="border-t pt-4 space-y-3">
@@ -442,6 +514,11 @@ interface TemplateCatalogItem {
   added: boolean;
 }
 
+interface RuleTextVersion {
+  description: string;
+  ai_prompt: string;
+}
+
 const rulesApiBase = `/api/bots/${botId}/chats/${telegramChatId}/rules`;
 const templatesApiBase = `/api/bots/${botId}/chats/${telegramChatId}`;
 const usersApiBase = `/api/bots/${botId}/chats/${telegramChatId}/users`;
@@ -495,6 +572,13 @@ const addingTemplateId = ref<string | null>(null);
 const templateCatalog = ref<TemplateCatalogItem[]>([]);
 const editingRule = ref<any | null>(null);
 
+const showAiAssist = ref(false);
+const aiInstruction = ref("");
+const aiAssistLoading = ref(false);
+const aiAssistError = ref<string | null>(null);
+const ruleVersions = ref<RuleTextVersion[]>([]);
+const ruleVersionIndex = ref(-1);
+
 const emptyForm = (): RuleForm => ({
   name: "",
   description: "",
@@ -505,6 +589,87 @@ const emptyForm = (): RuleForm => ({
 });
 
 const form = ref<RuleForm>(emptyForm());
+
+function resetRuleAssistState() {
+  showAiAssist.value = false;
+  aiInstruction.value = "";
+  aiAssistLoading.value = false;
+  aiAssistError.value = null;
+  ruleVersions.value = [];
+  ruleVersionIndex.value = -1;
+}
+
+function initRuleVersionsFromForm() {
+  ruleVersions.value = [];
+  ruleVersionIndex.value = -1;
+  const hasText =
+    form.value.description.trim().length > 0 ||
+    form.value.ai_prompt.trim().length > 0;
+  if (hasText) {
+    ruleVersions.value = [
+      {
+        description: form.value.description,
+        ai_prompt: form.value.ai_prompt,
+      },
+    ];
+    ruleVersionIndex.value = 0;
+  }
+}
+
+function applyRuleVersion(index: number) {
+  const version = ruleVersions.value[index];
+  if (!version) {
+    return;
+  }
+  form.value.description = version.description;
+  form.value.ai_prompt = version.ai_prompt;
+  ruleVersionIndex.value = index;
+}
+
+function goToRuleVersion(index: number) {
+  if (index < 0 || index >= ruleVersions.value.length) {
+    return;
+  }
+  applyRuleVersion(index);
+}
+
+async function submitRuleAssist() {
+  const instruction = aiInstruction.value.trim();
+  if (!instruction || aiAssistLoading.value) {
+    return;
+  }
+
+  aiAssistLoading.value = true;
+  aiAssistError.value = null;
+  try {
+    const response = await $fetch<{
+      data: RuleTextVersion;
+    }>(`${rulesApiBase}/assist`, {
+      method: "POST",
+      body: {
+        name: form.value.name,
+        description: form.value.description,
+        ai_prompt: form.value.ai_prompt,
+        instruction,
+      },
+    });
+
+    const next = response.data;
+    ruleVersions.value.push({
+      description: next.description,
+      ai_prompt: next.ai_prompt,
+    });
+    ruleVersionIndex.value = ruleVersions.value.length - 1;
+    form.value.description = next.description;
+    form.value.ai_prompt = next.ai_prompt;
+    aiInstruction.value = "";
+  } catch (error) {
+    aiAssistError.value = readFetchError(error, t("common.errors.ruleAssist"));
+    console.error("Rule assist failed:", error);
+  } finally {
+    aiAssistLoading.value = false;
+  }
+}
 
 async function loadChatName() {
   try {
@@ -627,6 +792,7 @@ function openCreateModal() {
   editingRule.value = null;
   form.value = emptyForm();
   saveError.value = null;
+  resetRuleAssistState();
   showModal.value = true;
 }
 
@@ -641,6 +807,8 @@ function openEditModal(rule: any) {
     ban_on_violation: Boolean(rule.ban_on_violation),
     warnings_before_ban: rule.warnings_before_ban ?? 3,
   };
+  resetRuleAssistState();
+  initRuleVersionsFromForm();
   showModal.value = true;
 }
 
@@ -649,6 +817,7 @@ function closeModal() {
   editingRule.value = null;
   form.value = emptyForm();
   saveError.value = null;
+  resetRuleAssistState();
 }
 
 async function saveRule() {

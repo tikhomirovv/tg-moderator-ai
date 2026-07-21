@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   CreateModerationDecisionRequest,
@@ -77,7 +77,7 @@ export class ModerationDecisionRepository {
   async deleteOlderThan(cutoff: Date): Promise<number> {
     const deleted = await this.db
       .delete(moderationDecisions)
-      .where(sql`${moderationDecisions.createdAt} < ${cutoff}`)
+      .where(lt(moderationDecisions.createdAt, cutoff))
       .returning({ id: moderationDecisions.id });
 
     return deleted.length;

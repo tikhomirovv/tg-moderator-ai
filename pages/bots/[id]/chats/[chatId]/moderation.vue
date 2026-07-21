@@ -370,14 +370,22 @@
 
               <div v-if="showAiAssist" class="mt-2 space-y-2">
                 <p class="text-xs text-gray-500">
-                  {{ t("moderation.ruleModal.aiAssistHint") }}
+                  {{
+                    aiAssistIsDraftMode
+                      ? t("moderation.ruleModal.aiAssistHintCreate")
+                      : t("moderation.ruleModal.aiAssistHint")
+                  }}
                 </p>
                 <div class="flex gap-2 items-center">
                   <input
                     v-model="aiInstruction"
                     type="text"
                     class="flex-1 min-w-0 border rounded px-3 py-2 text-sm"
-                    :placeholder="t('moderation.ruleModal.aiAssistInstructionPlaceholder')"
+                    :placeholder="
+                      aiAssistIsDraftMode
+                        ? t('moderation.ruleModal.aiAssistInstructionPlaceholderCreate')
+                        : t('moderation.ruleModal.aiAssistInstructionPlaceholder')
+                    "
                     :disabled="aiAssistLoading"
                     @keydown.enter.prevent="submitRuleAssist"
                   />
@@ -492,7 +500,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { readFetchError } from "~/lib/fetch-error";
 
 const { t } = useI18n();
@@ -584,6 +592,8 @@ const aiAssistLoading = ref(false);
 const aiAssistError = ref<string | null>(null);
 const ruleVersions = ref<RuleTextVersion[]>([]);
 const ruleVersionIndex = ref(-1);
+
+const aiAssistIsDraftMode = computed(() => ruleVersions.value.length === 0);
 
 const emptyForm = (): RuleForm => ({
   name: "",

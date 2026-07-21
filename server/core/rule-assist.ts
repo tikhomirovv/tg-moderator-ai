@@ -27,19 +27,31 @@ export type RewriteRuleTextOptions = {
   config?: LlmConfig;
 };
 
+export function isRuleAssistDraftMode(
+  input: Pick<RuleAssistInput, "description" | "ai_prompt">
+): boolean {
+  return !input.description.trim() && !input.ai_prompt.trim();
+}
+
 export function buildRuleAssistSystemPrompt(): string {
-  return `You help chat moderators refine moderation rules for an AI moderator.
+  return `You help chat moderators write and refine moderation rules for an AI moderator.
 
 The operator provides:
 - optional rule name (context only)
-- current short description and current rule text (criteria the AI uses when checking messages)
-- a change request in plain language
+- current short description and current rule text (criteria the AI uses when checking messages) — either or both may be empty
+- a request in plain language
 
-Your job:
+When description and rule text are empty:
+- Treat the request as a specification for a new rule. Draft both fields from scratch in the requested language (Russian or English).
+
+When any current text exists:
 - Apply the requested changes while preserving the rule's intent unless the operator explicitly asks to change it.
-- Write clear plain-language text: what counts as a violation and what is allowed (use "Violation:" / "Not a violation:" sections when helpful, matching existing product templates).
-- Keep the same language as the current rule text (Russian stays Russian, English stays English).
-- Update both the short description (one line summary for humans) and the full rule text.
+- Keep the same language as the existing rule text.
+
+Always:
+- Write clear plain-language criteria: what counts as a violation and what is allowed (use "Violation:" / "Not a violation:" or "Нарушение:" / "Не нарушение:" sections when helpful, matching existing product templates).
+- Provide a short one-line description for humans and a fuller rule text for the moderation AI.
+- Start rule text with a clear framing line when appropriate (e.g. "Treat … as a violation" / "Считать нарушением …").
 
 Respond with JSON only, no markdown fences or extra text:
 {
@@ -53,7 +65,13 @@ export function buildRuleAssistUserPrompt(input: RuleAssistInput): string {
     ? `Rule name (context): ${input.name.trim()}\n`
     : "";
 
-  return `${nameBlock}Current description:
+  const mode = isRuleAssistDraftMode(input)
+    ? "Mode: create new rule from the operator request."
+    : "Mode: revise the existing rule per the operator request.";
+
+  return `${nameBlock}${mode}
+
+Current description:
 ${input.description.trim() || "(empty)"}
 
 Current rule text:

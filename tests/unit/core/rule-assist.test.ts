@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   buildRuleAssistUserPrompt,
+  isRuleAssistDraftMode,
   parseRuleAssistResponse,
   validateRuleAssistInput,
 } from "../../../server/core/rule-assist";
@@ -31,9 +32,23 @@ describe("rule-assist", () => {
       instruction: "allow personal tips",
     });
     expect(prompt).toContain("Rule name (context): Ads");
+    expect(prompt).toContain("Mode: revise");
     expect(prompt).toContain("No ads");
     expect(prompt).toContain("Ban ads");
     expect(prompt).toContain("allow personal tips");
+  });
+
+  test("buildRuleAssistUserPrompt uses create mode when fields are empty", () => {
+    expect(
+      isRuleAssistDraftMode({ description: "  ", ai_prompt: "" })
+    ).toBe(true);
+    const prompt = buildRuleAssistUserPrompt({
+      description: "",
+      ai_prompt: "",
+      instruction: "Ban politics",
+    });
+    expect(prompt).toContain("Mode: create new rule");
+    expect(prompt).toContain("(empty)");
   });
 
   test("parseRuleAssistResponse extracts description and ai_prompt", () => {

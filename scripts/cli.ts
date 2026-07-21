@@ -11,6 +11,15 @@ import {
   promptInteractivePromoCreate,
   validateDiscountPercent,
 } from "../server/core/operator/promo-create";
+import { CreditService } from "../server/core/credit-service";
+import {
+  CREDITS_GRANT_ERROR_MESSAGES,
+  formatCreditsGrantResult,
+  parseGrantAmount,
+  promptInteractiveCreditsGrant,
+  runCreditsGrantOperator,
+  validateGrantReason,
+} from "../server/core/operator/credits-grant";
 
 async function withDatabase<T>(fn: () => Promise<T>): Promise<T> {
   const connection = getDatabaseConnection();
@@ -89,6 +98,86 @@ async function runPromoCreate(options: {
   });
 }
 
+async function runCreditsGrant(options: {
+  botId?: string;
+  amount?: string;
+  reason?: string;
+  actorUserId?: string;
+  reference?: string;
+  note?: string;
+  dryRun?: boolean;
+}) {
+  if (!process.env.DATABASE_URL) {
+    exitWithError("DATABASE_URL is required");
+  }
+
+  let grantInput: {
+    bot_id: string;
+    amount: number;
+    reason: string;
+    actor_user_id?: string;
+    reference?: string;
+    operator_note?: string;
+  };
+
+  const hasFlags =
+    options.botId !== undefined ||
+    options.amount !== undefined ||
+    options.reason !== undefined;
+
+  if (hasFlags) {
+    if (!options.botId || options.amount === undefined || !options.reason) {
+      exitWithError(
+        "Non-interactive mode requires --bot-id, --amount, and --reason"
+      );
+    }
+    const amount = parseGrantAmount(options.amount);
+    if (amount === null) {
+      exitWithError(CREDITS_GRANT_ERROR_MESSAGES.invalid_amount);
+    }
+    const reason = validateGrantReason(options.reason);
+    if (!reason) {
+      exitWithError(CREDITS_GRANT_ERROR_MESSAGES.missing_reason);
+    }
+    grantInput = {
+      bot_id: options.botId.trim(),
+      amount,
+      reason,
+      ...(options.actorUserId?.trim()
+        ? { actor_user_id: options.actorUserId.trim() }
+        : {}),
+      ...(options.reference?.trim() ? { reference: options.reference.trim() } : {}),
+      ...(options.note?.trim() ? { operator_note: options.note.trim() } : {}),
+    };
+  } else {
+    try {
+      grantInput = await promptInteractiveCreditsGrant();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message === "Aborted") {
+        console.log("Aborted.");
+        process.exit(0);
+      }
+      exitWithError(message);
+    }
+  }
+
+  await withDatabase(async () => {
+    const service = new CreditService({ env: process.env });
+    const result = await runCreditsGrantOperator(grantInput, service, {
+      dryRun: Boolean(options.dryRun),
+    });
+
+    if (!result.ok) {
+      exitWithError(
+        result.message ?? CREDITS_GRANT_ERROR_MESSAGES[result.error]
+      );
+    }
+
+    console.log(formatCreditsGrantResult(result));
+  });
+}
+
 export function buildCliProgram(): Command {
   const program = new Command()
     .name("cli")
@@ -105,6 +194,24 @@ export function buildCliProgram(): Command {
     .option("--expires <iso>", "Expiry (ISO 8601) or omit for no expiry")
     .action(async (options) => {
       await runPromoCreate(options);
+    });
+
+  const credits = program
+    .command("credits")
+    .description("Bot credit wallet operations");
+
+  credits
+    .command("grant")
+    .description("Grant or deduct bot credits (admin_adjust ledger)")
+    .option("--bot-id <id>", "Target bot id")
+    .option("--amount <n>", "Signed integer (+ grant, − deduct)")
+    .option("--reason <text>", "Required reason (stored in ledger metadata)")
+    .option("--actor-user-id <userId>", "Optional actor user id")
+    .option("--reference <ref>", "Idempotency key; replays return existing row")
+    .option("--note <text>", "Optional operator note in metadata")
+    .option("--dry-run", "Validate and preview without writing", false)
+    .action(async (options) => {
+      await runCreditsGrant(options);
     });
 
   return program;

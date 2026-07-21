@@ -155,16 +155,23 @@ Non-interactive example:
 docker compose exec app cli promo create --code LAUNCH20 --percent 20
 ```
 
-Local dev (with `.env`):
+Local dev: `bun run cli -- promo create --code DEV10 --percent 15`
+
+**Manual credit grants** (SaaS, `admin_adjust` ledger):
 
 ```bash
-bun run cli -- promo create --code DEV10 --percent 15
-bun run cli -- --help
+docker compose exec -it app cli credits grant
+docker compose exec app cli credits grant \
+  --bot-id mybot \
+  --amount 5000 \
+  --reason "support compensation ticket #123"
 ```
 
-Not operator CLI: `scripts/db-migrate.mjs` (container entrypoint / `bun run db:migrate`), `bun run release:notes` (release workflow).
+Local: `bun run cli -- credits grant --bot-id mybot --amount 5000 --reason "…"`
 
-See [billing-design.md](billing-design.md) for promo redemption and checkout behavior. Future subcommands (e.g. `cli credits grant`) land in follow-up issues.
+Optional: `--reference` (idempotent replay), `--actor-user-id`, `--note`, `--dry-run`.
+
+See [billing-design.md](billing-design.md) for ledger rules. Future subcommands follow the same `cli` binary.
 
 ## Порты
 

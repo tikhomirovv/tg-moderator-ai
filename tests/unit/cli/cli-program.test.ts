@@ -25,6 +25,7 @@ describe("operator cli program", () => {
     });
 
     expect(help).toContain("promo");
+    expect(help).toContain("credits");
     expect(help).toContain("Operator CLI");
   });
 });

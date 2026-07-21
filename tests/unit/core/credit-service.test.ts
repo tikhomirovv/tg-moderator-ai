@@ -82,4 +82,75 @@ describe("CreditService", () => {
     expect(result.fixed).toBe(true);
     expect(await service.getBalance("bot-1")).toBe(100);
   });
+
+  test("grantAdminAdjust is no-op in self-hosted mode", async () => {
+    const { store, service } = createService({ DEPLOYMENT_MODE: "self-hosted" });
+    await store.setBalance("bot-1", 50);
+    const result = await service.grantAdminAdjust({
+      botId: "bot-1",
+      amount: 100,
+      reason: "support",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("not_saas");
+    }
+    expect(await service.getBalance("bot-1")).toBe(50);
+  });
+
+  test("grantAdminAdjust writes admin_adjust ledger row", async () => {
+    const { store, service } = createService();
+    await store.setBalance("bot-1", 10);
+    const result = await service.grantAdminAdjust({
+      botId: "bot-1",
+      amount: 5000,
+      reason: "support ticket",
+      reference: "admin-grant:test-1",
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.created).toBe(true);
+      expect(result.transaction.type).toBe("admin_adjust");
+      expect(result.transaction.amount).toBe(5000);
+      expect(result.transaction.metadata?.reason).toBe("support ticket");
+      expect(result.transaction.metadata?.source).toBe("cli");
+    }
+    expect(await service.getBalance("bot-1")).toBe(5010);
+  });
+
+  test("grantAdminAdjust rejects deduction below zero balance", async () => {
+    const { store, service } = createService();
+    await store.setBalance("bot-1", 5);
+    const result = await service.grantAdminAdjust({
+      botId: "bot-1",
+      amount: -10,
+      reason: "correction",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("insufficient_balance");
+    }
+  });
+
+  test("grantAdminAdjust is idempotent on reference", async () => {
+    const { service } = createService();
+    const first = await service.grantAdminAdjust({
+      botId: "bot-1",
+      amount: 100,
+      reason: "once",
+      reference: "admin-grant:dup",
+    });
+    const second = await service.grantAdminAdjust({
+      botId: "bot-1",
+      amount: 100,
+      reason: "once",
+      reference: "admin-grant:dup",
+    });
+    expect(first.ok && second.ok).toBe(true);
+    if (first.ok && second.ok) {
+      expect(second.created).toBe(false);
+      expect(second.transaction.id).toBe(first.transaction.id);
+    }
+    expect(await service.getBalance("bot-1")).toBe(100);
+  });
 });

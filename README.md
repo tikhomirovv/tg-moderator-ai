@@ -1,43 +1,45 @@
 # Telemodai 🪴
 
-**AI-модерация для здоровья сообществ** · *AI moderation for healthy communities*
+**English** · [Русский](README.ru.md)
 
-Self-hosted веб-админка и Telegram webhook для AI-модерации чатов. Правила настраиваются **per chat** — у одного бота в разных чатах могут быть разные наборы правил.
+**AI moderation for healthy communities**
 
-Репозиторий: [github.com/telemodai/app](https://github.com/telemodai/app)
+Self-hosted web admin and Telegram webhooks for AI chat moderation. Rules are configured **per chat** — one bot can use different rule sets in different chats.
 
-## Возможности
+Repository: [github.com/telemodai/app](https://github.com/telemodai/app)
 
-- **AI-модерация** — анализ сообщений через OpenAI-compatible API (OpenAI, OpenRouter, Polza и др.)
-- **Правила per chat** — свой набор правил на каждый чат; шаблоны из каталога; per-rule delete/ban/warnings
-- **Действия модератора** — предупреждения, удаление, бан по настройкам правила
-- **Silent mode** — только логи в приложении, без действий в Telegram
-- **Команда на боте** — owner/manager, join по access code
-- **Webhook под капотом** — статус «Working / Disabled / Problem»
-- **Логи, статистика, аудит** — действия модерации и решения модели по боту
-- **Интерфейс en/ru** — переключатель языка в футере
-- **Self-hosted LLM** — настройки модели в `/settings/llm` (если `LLM_API_KEY` не задан в env)
-- **Брендинг** — название продукта через `APP_NAME` (default `Telemodai`)
+## Features
 
-## Модель данных
+- **AI moderation** — message analysis via an OpenAI-compatible API (OpenAI, OpenRouter, Polza, etc.)
+- **Per-chat rules** — a dedicated rule set per chat; presets from a catalog; per-rule delete/ban/warnings
+- **Moderator actions** — warnings, deletion, and bans according to each rule
+- **Silent mode** — log decisions in the app only, no actions in Telegram
+- **Bot team** — owner/manager roles, join via access code
+- **Webhooks** — status: Working / Disabled / Problem
+- **Logs, statistics, audit** — moderation actions and model decisions per bot
+- **en/ru UI** — language switcher in the footer
+- **Self-hosted LLM** — model settings at `/settings/llm` (when `LLM_API_KEY` is not set in env)
+- **Branding** — product name via `APP_NAME` (default `Telemodai`)
+
+## Data model
 
 ```
 User (telegram_id) → Bot → bot_members → chats[] → rules[]
 ```
 
-Публичный endpoint: `POST /api/telegram/webhook/:botId`. Защита: per-bot `webhook_secret` + `X-Telegram-Bot-Api-Secret-Token`. Вход: Telegram OIDC.
+Public endpoint: `POST /api/telegram/webhook/:botId`. Protection: per-bot `webhook_secret` + `X-Telegram-Bot-Api-Secret-Token`. Sign-in: Telegram OIDC.
 
-## Стек
+## Stack
 
-| Слой | Технологии |
-|------|------------|
+| Layer | Technologies |
+|-------|----------------|
 | Runtime | [Bun](https://bun.sh/) |
 | App | [Nuxt 4](https://nuxt.com/), [Vue 3](https://vuejs.org/), [Tailwind CSS](https://tailwindcss.com/), [@nuxtjs/i18n](https://i18n.nuxtjs.org/) |
-| БД | [PostgreSQL](https://www.postgresql.org/), [Drizzle ORM](https://orm.drizzle.team/) |
+| Database | [PostgreSQL](https://www.postgresql.org/), [Drizzle ORM](https://orm.drizzle.team/) |
 | Auth | Telegram OIDC (`TELEGRAM_LOGIN_BOT_ID`, `TELEGRAM_LOGIN_CLIENT_SECRET`) |
-| LLM | OpenAI-compatible (`LLM_API_KEY`, опционально `LLM_BASE_URL`, `LLM_MODEL`) |
+| LLM | OpenAI-compatible (`LLM_API_KEY`, optional `LLM_BASE_URL`, `LLM_MODEL`) |
 
-## Быстрый старт (разработка)
+## Quick start (development)
 
 ```bash
 git clone https://github.com/telemodai/app.git
@@ -46,83 +48,83 @@ bun install
 cp .env.example .env
 ```
 
-Минимум в `.env`: `DATABASE_URL`, `TELEGRAM_LOGIN_BOT_ID`, `TELEGRAM_LOGIN_CLIENT_SECRET`, `LLM_API_KEY`, `BASE_URL` (HTTPS для webhook и OIDC callback).
+Minimum `.env`: `DATABASE_URL`, `TELEGRAM_LOGIN_BOT_ID`, `TELEGRAM_LOGIN_CLIENT_SECRET`, `LLM_API_KEY`, `BASE_URL` (HTTPS for webhooks and OIDC callback).
 
-Опционально: `APP_NAME` (название в UI), `SETTINGS_ENCRYPTION_KEY` (для сохранения LLM-ключа в БД на `/settings/llm`).
+Optional: `APP_NAME` (UI title), `SETTINGS_ENCRYPTION_KEY` (to store the LLM key in the DB on `/settings/llm`).
 
-**PostgreSQL локально:** `docker compose up -d postgres`
+**Local PostgreSQL:** `docker compose up -d postgres`
 
 **Dev HTTPS (OIDC + webhook):** `make tunnel` (cloudflared) → `BASE_URL=https://….trycloudflare.com`
 
 ```bash
-bun run dev   # порт 3001, миграции автоматически
+bun run dev   # port 3001, migrations on startup
 ```
 
-Полный список переменных — в [`.env.example`](.env.example).
+Full variable list: [`.env.example`](.env.example).
 
-После pull со сменой схемы: **`bun run db:migrate`** (incremental миграции, данные сохраняются). Политика: [.docs/database-migrations.md](.docs/database-migrations.md).
+After pulling schema changes: **`bun run db:migrate`** (incremental migrations, data preserved). Policy: [.docs/database-migrations.md](.docs/database-migrations.md).
 
-## Команды
+## Commands
 
 ```bash
-bun run dev          # dev + миграции (порт 3001)
+bun run dev          # dev + migrations (port 3001)
 bun run build
 bun test
 bun run db:migrate
-bun run db:generate   # после правки Drizzle schema
+bun run db:generate   # after editing Drizzle schema
 make docker-build
 ```
 
 ## Production
 
-Образ: `ghcr.io/telemodai/app:latest` (CI: git tag `v*` или ручной запуск workflow).
+Image: `ghcr.io/telemodai/app:latest` (CI: git tag `v*` or manual workflow run).
 
-До переноса репозитория теги `v1.3.1` и ранее публиковались как `ghcr.io/tikhomirovv/tg-moderator-ai` — GitHub перенаправляет старые ссылки на репозиторий, но для deploy лучше обновить `image:` в compose.
+Before the repo move, tags through `v1.3.1` were published as `ghcr.io/tikhomirovv/tg-moderator-ai` — GitHub redirects old links, but update `image:` in compose for deploy.
 
-Кратко: [deploy/README.md](deploy/README.md) · полная инструкция: [.docs/deploy.md](.docs/deploy.md)
+Short guide: [deploy/README.md](deploy/README.md) · full guide: [.docs/deploy.md](.docs/deploy.md)
 
-Health: `GET /api/health` → `{"ok":true}`. В контейнере порт **3000**.
+Health: `GET /api/health` → `{"ok":true}`. Container listens on port **3000**.
 
-## Документация
+## Documentation
 
-| Документ | Описание |
-|----------|----------|
-| [.docs/project-overview.md](.docs/project-overview.md) | Продукт, аудитория, статус |
-| [.docs/prd.md](.docs/prd.md) | Сценарии, требования, ограничения |
-| [.docs/technical-design.md](.docs/technical-design.md) | Стек, API, структура, dev tunnel |
-| [.docs/i18n.md](.docs/i18n.md) | Локализация admin UI (en/ru) |
-| [Production deploy](.docs/deploy.md) | GHCR, env, Traefik, проверки |
-| [Database migrations](.docs/database-migrations.md) | Incremental миграции |
-| [deploy/compose.example.yml](deploy/compose.example.yml) | Пример Traefik compose |
-| [AGENTS.md](AGENTS.md) | Контекст для AI-агентов |
-| [.docs/logging.md](.docs/logging.md) | Уровни логирования |
-| [.docs/archive/SPEC-legacy.md](.docs/archive/SPEC-legacy.md) | Архив ранней спецификации (MongoDB) |
+| Document | Description |
+|----------|-------------|
+| [.docs/project-overview.md](.docs/project-overview.md) | Product, audience, status |
+| [.docs/prd.md](.docs/prd.md) | Scenarios, requirements, constraints |
+| [.docs/technical-design.md](.docs/technical-design.md) | Stack, API, layout, dev tunnel |
+| [.docs/i18n.md](.docs/i18n.md) | Admin UI localization (en/ru) |
+| [Production deploy](.docs/deploy.md) | GHCR, env, Traefik, checks |
+| [Database migrations](.docs/database-migrations.md) | Incremental migrations |
+| [deploy/compose.example.yml](deploy/compose.example.yml) | Traefik compose example |
+| [AGENTS.md](AGENTS.md) | Context for AI agents |
+| [.docs/logging.md](.docs/logging.md) | Log levels |
+| [.docs/archive/SPEC-legacy.md](.docs/archive/SPEC-legacy.md) | Early spec archive (MongoDB) |
 
-## API (кратко)
+## API (summary)
 
-| Метод | Путь | Описание |
-|-------|------|----------|
-| `GET/POST` | `/api/bots` | Список / создание |
-| `GET/PUT` | `/api/bots/:id` | Детали / обновление |
-| `GET` | `/api/bots/:id/logs`, `.../statistics` | Логи, статистика |
-| `GET/POST` | `/api/bots/:id/chats/:chatId/rules` | Правила чата / создание |
-| `GET/POST` | `/api/bots/:id/chats/:chatId/rule-templates` | Каталог пресетов / добавление в чат |
-| `POST` | `/api/bots/join` | Join по access code |
-| `GET` | `/api/dashboard` | Дашборд по ботам пользователя |
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET/POST` | `/api/bots` | List / create |
+| `GET/PUT` | `/api/bots/:id` | Details / update |
+| `GET` | `/api/bots/:id/logs`, `.../statistics` | Logs, statistics |
+| `GET/POST` | `/api/bots/:id/chats/:chatId/rules` | Chat rules / create |
+| `GET/POST` | `/api/bots/:id/chats/:chatId/rule-templates` | Preset catalog / add to chat |
+| `POST` | `/api/bots/join` | Join via access code |
+| `GET` | `/api/dashboard` | Cross-bot dashboard |
 | `GET/PUT` | `/api/settings/llm` | LLM settings (self-hosted) |
-| `POST` | `/api/telegram/webhook/:botId` | Webhook Telegram |
-| `GET` | `/api/auth/telegram` | Старт Telegram OIDC |
-| `GET` | `/api/auth/session` | Текущая сессия |
-| `POST` | `/api/auth/sign-out` | Выход |
+| `POST` | `/api/telegram/webhook/:botId` | Telegram webhook |
+| `GET` | `/api/auth/telegram` | Start Telegram OIDC |
+| `GET` | `/api/auth/session` | Current session |
+| `POST` | `/api/auth/sign-out` | Sign out |
 
-## Устранение неполадок
+## Troubleshooting
 
-- **Webhook / бот Problem** — `BASE_URL` публичный HTTPS
-- **БД** — `DATABASE_URL`; после смены схемы — `bun run db:migrate` (см. [.docs/database-migrations.md](.docs/database-migrations.md))
-- **LLM** — `LLM_API_KEY` в env **или** `/settings/llm` (нужен `SETTINGS_ENCRYPTION_KEY`); env-ключ имеет приоритет
-- **Название в UI** — `APP_NAME` в `.env`; в Docker entrypoint мапит в `NUXT_PUBLIC_APP_NAME`
-- **Auth** — `BASE_URL` публичный HTTPS (`make tunnel` в dev); OIDC callback в BotFather
+- **Webhook / bot Problem** — `BASE_URL` must be public HTTPS
+- **Database** — `DATABASE_URL`; after schema changes — `bun run db:migrate` (see [.docs/database-migrations.md](.docs/database-migrations.md))
+- **LLM** — `LLM_API_KEY` in env **or** `/settings/llm` (requires `SETTINGS_ENCRYPTION_KEY`); env key wins
+- **UI product name** — `APP_NAME` in `.env`; Docker entrypoint maps it to `NUXT_PUBLIC_APP_NAME`
+- **Auth** — public HTTPS `BASE_URL` (`make tunnel` in dev); OIDC callback in BotFather
 
-## Лицензия
+## License
 
-Исходный код — [PolyForm Noncommercial 1.0.0](LICENSE): некоммерческое использование, изменение и распространение. Коммерческое использование — только по отдельному соглашению: [COMMERCIAL.md](COMMERCIAL.md).
+Source code — [PolyForm Noncommercial 1.0.0](LICENSE): noncommercial use, modification, and distribution. Commercial use only under a separate agreement: [COMMERCIAL.md](COMMERCIAL.md).

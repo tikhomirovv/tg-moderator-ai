@@ -68,7 +68,10 @@ bun run dev
 bun run build
 bun test
 bun run db:migrate
+bun run cli -- --help          # operator CLI (local, needs DATABASE_URL for subcommands)
 ```
+
+**Operator CLI (prod):** `docker compose exec app cli …` — bundled `commander` binary in the image (`cli promo create`, etc.). Not the same as `db:migrate` (entrypoint) or `release:notes` (agents).
 
 ## Миграции БД
 

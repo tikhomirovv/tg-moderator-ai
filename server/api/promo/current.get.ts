@@ -1,10 +1,9 @@
 import { isSaasMode } from "../../core/deployment-mode";
 import {
   PromoService,
-  promoValidationErrorMessage,
 } from "../../core/promo-service";
 import { requireSession } from "../../utils/session";
-import { readPromoCookie } from "../../utils/promo-cookie";
+import { readPromoCookie, clearPromoCookie } from "../../utils/promo-cookie";
 import { CREDIT_PACKAGES } from "../../../lib/credit-packages";
 
 function buildPackagePreview(discountPercent: number) {
@@ -37,14 +36,8 @@ export default defineEventHandler(async (event) => {
   const promoService = new PromoService();
   const validation = await promoService.validateForUser(code, user.id);
   if (!validation.ok) {
-    return {
-      success: true,
-      data: {
-        code,
-        valid: false,
-        error: promoValidationErrorMessage(validation.error),
-      },
-    };
+    clearPromoCookie(event);
+    return { success: true, data: null };
   }
 
   return {

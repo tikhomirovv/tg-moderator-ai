@@ -159,7 +159,16 @@
       "label": "Promo code",
       "placeholder": "Enter code",
       "apply": "Apply",
-      "applied": "Code {code} applied — {percent}% off"
+      "applied": "Code {code} applied — {percent}% off",
+      "errors": {
+        "generic": "Could not apply this promo code. Check the code and try again.",
+        "required": "Enter a promo code",
+        "notFound": "This promo code was not found",
+        "inactive": "This promo code is not active",
+        "expired": "This promo code has expired",
+        "alreadyRedeemed": "You have already used this promo code",
+        "notSaas": "Promo codes are not available in this deployment"
+      }
     },
     "envOverrideHint": "Environment LLM variables override these settings.",
     "packages": {

@@ -212,6 +212,7 @@
 </template>
 
 <script setup lang="ts">
+import { readFetchError } from "~/lib/fetch-error";
 import { ref, computed, onMounted } from "vue";
 import type { BotListItem, BotMemberRole } from "~/types/bot";
 
@@ -305,21 +306,6 @@ function closeAddModal() {
   showAddModal.value = false;
   createError.value = "";
   joinError.value = "";
-}
-
-function readFetchError(error: unknown, fallback: string) {
-  const fetchError = error as {
-    data?: { statusMessage?: string; message?: string };
-    statusMessage?: string;
-    message?: string;
-  };
-  return (
-    fetchError.data?.statusMessage ||
-    fetchError.statusMessage ||
-    fetchError.data?.message ||
-    fetchError.message ||
-    fallback
-  );
 }
 
 async function load() {

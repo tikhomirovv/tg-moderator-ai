@@ -3,6 +3,7 @@ import {
   computeDiscountedAmountRub,
   normalizePromoCode,
 } from "./billing/promo-discount";
+import { PROMO_VALIDATION_STATUS_MESSAGES } from "../../lib/promo-validation-messages";
 import type { PromoCode } from "../database/models/promo-code";
 import {
   isPromoCodeCurrentlyValid,
@@ -125,18 +126,5 @@ export class PromoService {
 }
 
 export function promoValidationErrorMessage(error: PromoValidationError): string {
-  switch (error) {
-    case "not_saas":
-      return "Promo codes are only available in SaaS mode";
-    case "empty_code":
-      return "Promo code is required";
-    case "not_found":
-      return "Promo code not found";
-    case "inactive":
-      return "Promo code is not active";
-    case "expired":
-      return "Promo code has expired";
-    case "already_redeemed":
-      return "You have already used this promo code";
-  }
+  return PROMO_VALIDATION_STATUS_MESSAGES[error];
 }

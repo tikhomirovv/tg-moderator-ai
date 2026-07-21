@@ -59,9 +59,6 @@
           })
         }}
       </p>
-      <p v-else-if="appliedPromo && !appliedPromo.valid" class="mt-2 text-sm text-amber-700">
-        {{ appliedPromo.error }}
-      </p>
       <p v-if="promoError" class="mt-2 text-sm text-red-600">{{ promoError }}</p>
     </div>
 
@@ -111,7 +108,6 @@ import { CREDIT_PACKAGES, type CreditPackageId } from "~/lib/credit-packages";
 import { readFetchError } from "~/lib/fetch-error";
 import {
   resolvePromoApplyFetchError,
-  resolvePromoUserMessage,
 } from "~/lib/promo-validation-ui";
 
 const { t } = useI18n();
@@ -147,19 +143,12 @@ type PromoPackagePreview = {
   credits: number;
 };
 
-type AppliedPromo =
-  | {
-      code: string;
-      valid: true;
-      discount_percent: number;
-      packages: PromoPackagePreview[];
-    }
-  | {
-      code: string;
-      valid: false;
-      error: string;
-    }
-  | null;
+type AppliedPromo = {
+  code: string;
+  valid: true;
+  discount_percent: number;
+  packages: PromoPackagePreview[];
+} | null;
 
 const balance = ref(0);
 const error = ref("");
@@ -225,19 +214,11 @@ function noticeForSyncStatus(status: PaymentSyncStatus | null | undefined) {
 async function loadCurrentPromo() {
   try {
     const response = await $fetch<{
-      data:
-        | {
-            code: string;
-            valid: true;
-            discount_percent: number;
-            packages: PromoPackagePreview[];
-          }
-        | {
-            code: string;
-            valid: false;
-            error: string;
-          }
-        | null;
+      data: {
+        code: string;
+        discount_percent: number;
+        packages: PromoPackagePreview[];
+      } | null;
     }>("/api/promo/current");
 
     if (!response.data) {
@@ -245,23 +226,13 @@ async function loadCurrentPromo() {
       return;
     }
 
-    if ("valid" in response.data && response.data.valid === false) {
-      appliedPromo.value = {
-        ...response.data,
-        error: resolvePromoUserMessage(response.data.error, t),
-      };
-      return;
-    }
-
-    if ("discount_percent" in response.data) {
-      appliedPromo.value = {
-        code: response.data.code,
-        valid: true,
-        discount_percent: response.data.discount_percent,
-        packages: response.data.packages,
-      };
-      promoInput.value = response.data.code;
-    }
+    appliedPromo.value = {
+      code: response.data.code,
+      valid: true,
+      discount_percent: response.data.discount_percent,
+      packages: response.data.packages,
+    };
+    promoInput.value = response.data.code;
   } catch {
     // Non-blocking — user can still purchase at list price.
   }

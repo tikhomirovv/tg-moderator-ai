@@ -1,5 +1,5 @@
 import type { H3Event } from "h3";
-import { getCookie, setCookie } from "h3";
+import { deleteCookie, getCookie, setCookie } from "h3";
 import { normalizePromoCode } from "../core/billing/promo-discount";
 
 export const PROMO_COOKIE_NAME = "tg_promo_code";
@@ -23,4 +23,11 @@ export function readPromoCookie(event: H3Event): string | undefined {
     return undefined;
   }
   return normalizePromoCode(raw);
+}
+
+/** Drop sticky promo cookie when validation fails (expired, redeemed, etc.). */
+export function clearPromoCookie(event: H3Event): void {
+  deleteCookie(event, PROMO_COOKIE_NAME, {
+    path: "/",
+  });
 }

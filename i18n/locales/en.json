@@ -11,6 +11,8 @@
     "author": "Author",
     "docs": "Docs",
     "terms": "Terms",
+    "github": "GitHub",
+    "productSite": "telemodai.ru",
     "localeEn": "EN",
     "localeRu": "RU",
     "tagline": "🪴 AI moderation for healthy communities"

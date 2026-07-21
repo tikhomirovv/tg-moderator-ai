@@ -4,6 +4,17 @@
       <NuxtLink to="/release-notes" class="hover:text-gray-800 hover:underline">
         {{ t("footer.releaseNotes") }}
       </NuxtLink>
+      <template v-if="isSaas">
+        <span class="text-gray-300">·</span>
+        <a
+          :href="APP_LINKS.productSite"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:text-gray-800 hover:underline"
+        >
+          {{ t("footer.productSite") }}
+        </a>
+      </template>
       <span class="text-gray-300">·</span>
       <a
         :href="APP_LINKS.authorSite"
@@ -21,6 +32,17 @@
       <NuxtLink to="/terms" class="hover:text-gray-800 hover:underline">
         {{ t("footer.terms") }}
       </NuxtLink>
+      <template v-if="isSelfHosted">
+        <span class="text-gray-300">·</span>
+        <a
+          :href="APP_LINKS.githubRepo"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:text-gray-800 hover:underline"
+        >
+          {{ t("footer.github") }}
+        </a>
+      </template>
     </div>
     <div class="mt-2 flex flex-wrap items-center justify-center gap-x-2 text-sm text-gray-500">
       <span>
@@ -45,4 +67,8 @@ const appName = useAppName();
 
 const runtimeConfig = useRuntimeConfig();
 const appVersion = computed(() => runtimeConfig.public.appVersion as string);
+const isSelfHosted = computed(
+  () => runtimeConfig.public.deploymentMode === "self-hosted"
+);
+const isSaas = computed(() => runtimeConfig.public.deploymentMode === "saas");
 </script>

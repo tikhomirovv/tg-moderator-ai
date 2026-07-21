@@ -28,7 +28,7 @@
           <time class="text-sm text-gray-500">{{ formatDate(release.date) }}</time>
         </div>
 
-        <p class="mb-5 text-sm">
+        <p v-if="isSelfHosted" class="mb-5 text-sm">
           <a
             :href="release.githubReleaseUrl"
             target="_blank"
@@ -95,6 +95,10 @@ type ReleaseSection = {
 };
 
 const { t, locale } = useI18n();
+const runtimeConfig = useRuntimeConfig();
+const isSelfHosted = computed(
+  () => runtimeConfig.public.deploymentMode === "self-hosted"
+);
 
 usePageTitle(() => t("page.releaseNotes.documentTitle"));
 

@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { githubReleaseUrl } from "../../lib/app-config";
 
 export type ReleaseNoteSection = {
   title: string;
@@ -24,9 +25,6 @@ export type PaginatedReleaseNotes = {
     total_pages: number;
   };
 };
-
-const REPO_RELEASE_BASE =
-  "https://github.com/telemodai/app/releases/tag";
 
 /** Release markdown files live in repo root — not next to bundled Nitro output. */
 export const RELEASES_DIR = "data/releases";
@@ -102,7 +100,7 @@ export function parseReleaseFile(filePath: string): ReleaseNote {
     date,
     sections: parseReleaseSections(body),
     bodyMarkdown: body,
-    githubReleaseUrl: `${REPO_RELEASE_BASE}/${tag}`,
+    githubReleaseUrl: githubReleaseUrl(tag),
   };
 }
 

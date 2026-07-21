@@ -9,7 +9,13 @@ export function resolveAppName(
   return trimmed || DEFAULT_APP_NAME;
 }
 
-/** External links for footer; app name comes from APP_NAME / runtimeConfig.public.appName. */
+/** External links for footer and release notes; app name from APP_NAME / runtimeConfig.public.appName. */
 export const APP_LINKS = {
   authorSite: "https://tikhomirov.me",
+  githubRepo: "https://github.com/telemodai/app",
+  productSite: "https://telemodai.ru",
 } as const;
+
+export function githubReleaseUrl(tag: string): string {
+  return `${APP_LINKS.githubRepo}/releases/tag/${tag}`;
+}

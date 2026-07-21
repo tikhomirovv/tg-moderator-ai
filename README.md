@@ -1,4 +1,4 @@
-# Telemodai (tg-moderator-ai)
+# Telemodai
 
 🪴 **AI-модерация для здоровья сообществ** · *AI moderation for healthy communities*
 

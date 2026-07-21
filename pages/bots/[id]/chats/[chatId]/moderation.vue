@@ -415,6 +415,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { readFetchError } from "~/lib/fetch-error";
 
 const { t } = useI18n();
 
@@ -577,21 +578,6 @@ async function load() {
   } finally {
     loading.value = false;
   }
-}
-
-function readFetchError(error: unknown, fallback: string) {
-  const fetchError = error as {
-    data?: { statusMessage?: string; message?: string };
-    statusMessage?: string;
-    message?: string;
-  };
-  return (
-    fetchError.data?.statusMessage ||
-    fetchError.statusMessage ||
-    fetchError.data?.message ||
-    fetchError.message ||
-    fallback
-  );
 }
 
 async function loadTemplateCatalog() {

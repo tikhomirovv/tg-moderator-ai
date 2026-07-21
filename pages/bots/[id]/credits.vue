@@ -108,6 +108,11 @@
 
 <script setup lang="ts">
 import { CREDIT_PACKAGES, type CreditPackageId } from "~/lib/credit-packages";
+import { readFetchError } from "~/lib/fetch-error";
+import {
+  resolvePromoApplyFetchError,
+  resolvePromoUserMessage,
+} from "~/lib/promo-validation-ui";
 
 const { t } = useI18n();
 const config = useRuntimeConfig();
@@ -241,7 +246,10 @@ async function loadCurrentPromo() {
     }
 
     if ("valid" in response.data && response.data.valid === false) {
-      appliedPromo.value = response.data;
+      appliedPromo.value = {
+        ...response.data,
+        error: resolvePromoUserMessage(response.data.error, t),
+      };
       return;
     }
 
@@ -287,7 +295,7 @@ async function applyPromo() {
     };
   } catch (e: unknown) {
     appliedPromo.value = null;
-    promoError.value = e instanceof Error ? e.message : t("common.unknown");
+    promoError.value = resolvePromoApplyFetchError(e, t);
   } finally {
     applyingPromo.value = false;
   }
@@ -314,7 +322,7 @@ async function refreshBalance() {
     const syncStatus = await syncOpenPayments();
     noticeForSyncStatus(syncStatus);
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : t("common.unknown");
+    error.value = readFetchError(e, t("common.unknown"));
   } finally {
     refreshing.value = false;
   }
@@ -332,7 +340,7 @@ async function startCheckout(packageId: CreditPackageId) {
     });
     window.location.href = response.data.checkout_url;
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : t("common.unknown");
+    error.value = readFetchError(e, t("common.unknown"));
     checkoutPackageId.value = null;
   }
 }
@@ -352,7 +360,7 @@ onMounted(async () => {
       : await syncOpenPayments();
     noticeForSyncStatus(syncStatus);
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : t("common.unknown");
+    error.value = readFetchError(e, t("common.unknown"));
   }
 
   const shouldPoll = route.query.payment === "return";

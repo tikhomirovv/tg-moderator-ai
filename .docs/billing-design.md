@@ -69,6 +69,8 @@ interface BillingWebhookEvent {
 
 `bots.credit_balance` — denormalized cache for fast pre-check.
 
+**`admin_adjust`:** operator-only manual grants/deductions via `cli credits grant` (SaaS). Metadata includes required `reason`, `source: cli`, optional `operator_note`. Idempotent when `--reference` repeats; default reference is `admin-grant:{uuid}`.
+
 ### Balance updates
 
 **Hot path (success):**
@@ -185,6 +187,14 @@ docker compose exec app cli promo create --code SAVE10 --percent 10
 ```
 
 Local dev: `bun run cli -- promo create …` (see `.docs/deploy.md` § Operator CLI).
+
+### Manual credit grants (operator)
+
+```bash
+docker compose exec app cli credits grant --bot-id mybot --amount 5000 --reason "support"
+```
+
+Ledger type `admin_adjust`; no YooKassa payment row. Self-hosted: CLI exits with error (billing disabled).
 
 ## Product referrals (SaaS only)
 

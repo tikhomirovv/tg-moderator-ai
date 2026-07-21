@@ -1,4 +1,5 @@
 import { eq, sql, and } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 import { isSaasMode } from "./deployment-mode";
 import { logger } from "./logger";
 import { SIGNUP_CREDIT_GRANT } from "./credit-packages";
@@ -93,6 +94,17 @@ type CreditServiceOptions = {
   ledger?: CreditLedger;
 };
 
+export type GrantAdminAdjustError =
+  | "not_saas"
+  | "invalid_amount"
+  | "missing_reason"
+  | "bot_not_found"
+  | "insufficient_balance";
+
+export type GrantAdminAdjustResult =
+  | { ok: true; transaction: CreditTransaction; created: boolean }
+  | { ok: false; error: GrantAdminAdjustError };
+
 export class CreditService {
   private env: NodeJS.ProcessEnv;
   private store: CreditStore;
@@ -159,6 +171,71 @@ export class CreditService {
       reference: input.providerPaymentId,
       metadata,
     });
+  }
+
+  async grantAdminAdjust(input: {
+    botId: string;
+    amount: number;
+    reason: string;
+    actorUserId?: string;
+    reference?: string;
+    operatorNote?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<GrantAdminAdjustResult> {
+    if (!this.isBillingEnabled()) {
+      return { ok: false, error: "not_saas" };
+    }
+
+    const reason = input.reason.trim();
+    if (!reason) {
+      return { ok: false, error: "missing_reason" };
+    }
+
+    if (!Number.isInteger(input.amount) || input.amount === 0) {
+      return { ok: false, error: "invalid_amount" };
+    }
+
+    const reference = input.reference?.trim() || `admin-grant:${randomUUID()}`;
+
+    const existing = await this.ledger.findByReferenceAndType?.(
+      reference,
+      "admin_adjust"
+    );
+    if (existing) {
+      return { ok: true, transaction: existing, created: false };
+    }
+
+    const balance = await this.getBalance(input.botId);
+    if (input.amount < 0 && balance + input.amount < 0) {
+      return { ok: false, error: "insufficient_balance" };
+    }
+
+    const metadata: Record<string, unknown> = {
+      reason,
+      source: "cli",
+      ...input.metadata,
+    };
+    const operatorNote = input.operatorNote?.trim();
+    if (operatorNote) {
+      metadata.operator_note = operatorNote;
+    }
+
+    try {
+      const transaction = await this.applyCreditDelta({
+        botId: input.botId,
+        amount: input.amount,
+        type: "admin_adjust",
+        actorUserId: input.actorUserId,
+        reference,
+        metadata,
+      });
+      return { ok: true, transaction, created: true };
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith("Bot not found:")) {
+        return { ok: false, error: "bot_not_found" };
+      }
+      throw error;
+    }
   }
 
   async grantReferralBonus(input: {

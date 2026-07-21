@@ -23,20 +23,7 @@ User (telegram_id)
 
 Подробнее: [`.docs/project-overview.md`](.docs/project-overview.md) · [`.docs/technical-design.md`](.docs/technical-design.md) · [`.docs/i18n.md`](.docs/i18n.md) (admin UI locales)
 
-## README репозитория (GitHub)
-
-Публичное описание репо — **два файла**, не путать с admin UI i18n:
-
-| Файл | Язык | Назначение |
-|------|------|------------|
-| [`README.md`](README.md) | **English** | Default на GitHub; cross-link на русскую версию в шапке |
-| [`README.ru.md`](README.ru.md) | **Русский** | Полный перевод; cross-link на `README.md` в шапке |
-
-При изменении setup, features, API summary, deploy hints в README — **обновляй оба** (смысл одинаковый, язык свой). Header links (`English` · `Русский`) не ломать.
-
-**GitHub About → Description** — только **English** (кратко про продукт/self-hosted, без стека в скобках). Меняется через `gh repo edit telemodai/app --description "…"`, не коммитится. Homepage: `https://telemodai.ru`.
-
-Внутри приложения (`i18n/locales/`, release notes в `data/releases/`) — отдельная политика ниже.
+Репозиторий на GitHub: **`README.md` (EN)** и **`README.ru.md` (RU)** — при правках README обновляй оба.
 
 ## Стек
 

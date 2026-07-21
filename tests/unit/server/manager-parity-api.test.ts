@@ -14,6 +14,7 @@ const OWNER_ONLY_ROUTES = [
 const MANAGER_OPERATIONAL_ROUTES = [
   "[id]/chats/pending.post.ts",
   "[id]/chats/pending/[pendingId].get.ts",
+  "[id]/chats/[chatId]/rules/assist.post.ts",
   "[id]/team/members.get.ts",
 ] as const;
 

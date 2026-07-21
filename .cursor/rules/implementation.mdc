@@ -64,3 +64,12 @@ alwaysApply: false
 - В locale JSON: экранировать литеральные `{user_mention}`, `@username` — см. [`.docs/i18n.md`](.docs/i18n.md).
 - После правок локалей: `bun test tests/unit/i18n/locale-key-parity.test.ts` + `bun run build`.
 - **Не переводить:** per-bot warn/ban шаблоны, `RULE_TEMPLATES`, API `statusMessage`, тела release notes.
+
+## Repository README (GitHub)
+
+When editing repo onboarding / feature lists / quick start in README:
+
+- Update **`README.md` (EN)** and **`README.ru.md` (RU)** together — same facts, native wording.
+- Keep header language switcher links intact.
+- GitHub **Description** (English only) — update manually if the one-line product summary changes; see `AGENTS.md` § README репозитория.
+- Do **not** conflate with `i18n/locales/` (admin UI only).

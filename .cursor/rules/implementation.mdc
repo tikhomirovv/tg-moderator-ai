@@ -1,67 +1,67 @@
 ---
-description: Поведение при реализации — код, миграции, dev-setup. Не для обсуждений и планирования без правок кода.
+description: Implementation behavior — code, migrations, dev setup. Not for discussion or planning without code changes.
 alwaysApply: false
 ---
 
 # Implementation workflow
 
-## Автономность
+## Autonomy
 
-- Не задавай лишних вопросов, если ответ есть в коде, `AGENTS.md` или issues.
-- Делай разумные default; спрашивай только при реальном продуктовом выборе.
-- Сам запускай команды, проверки, тесты — не останавливайся «попроси пользователя».
+- Do not ask unnecessary questions if the answer is in the code, `AGENTS.md`, or issues.
+- Use reasonable defaults; ask only for real product decisions.
+- Run commands, checks, and tests yourself — do not stop with “ask the user”.
 
 ## Bun
 
-- Только **Bun** (`bun install`, `bun run`, `bun test`) — не npm/yarn/pnpm.
+- **Bun only** (`bun install`, `bun run`, `bun test`) — not npm/yarn/pnpm.
 
-## Код
+## Code
 
-- **Без legacy** — при смене стека удаляй старые deps, файлы, compose-сервисы в том же change.
-- **Минимальный diff** — не трогай несвязанное.
-- **Коммиты** — только по явной просьбе пользователя.
+- **No legacy** — when changing stack, remove old deps, files, compose services in the same change.
+- **Minimal diff** — do not touch unrelated code.
+- **Commits** — only when the user explicitly asks.
 
 ## `.env`
 
-- **Читать и редактировать** `.env` самостоятельно, когда нужно для dev (ключи, `DATABASE_URL`, `TELEGRAM_LOGIN_*`, `BASE_URL`).
-- **Не коммитить** `.env` — в git только `.env.example` без секретов.
-- Shell не видит `.env` автоматически → `bun --env-file=.env test` или `bun run dev` (Nuxt подхватывает).
-- Dev HTTPS: `make tunnel` (cloudflared). **Не localtunnel.** См. [`.docs/technical-design.md`](.docs/technical-design.md).
+- **Read and edit** `.env` yourself when needed for dev (keys, `DATABASE_URL`, `TELEGRAM_LOGIN_*`, `BASE_URL`).
+- **Do not commit** `.env` — only `.env.example` in git, no secrets.
+- Shell does not load `.env` automatically → `bun --env-file=.env test` or `bun run dev` (Nuxt loads it).
+- Dev HTTPS: `make tunnel` (cloudflared). **Not localtunnel.** See [`.docs/technical-design.md`](.docs/technical-design.md).
 
-## Миграции БД
+## DB migrations
 
-- Схема меняется **только** incremental миграциями: `db:generate` → `db:migrate`.
-- **Запрещено:** `DROP SCHEMA`, truncate, пересборка `0000_init.sql` для «обновления» существующей БД, скрипт `db:reset`.
-- Политика: [`.docs/database-migrations.md`](.docs/database-migrations.md).
+- Schema changes **only** via incremental migrations: `db:generate` → `db:migrate`.
+- **Forbidden:** `DROP SCHEMA`, truncate, rebuilding `0000_init.sql` to “refresh” an existing DB, `db:reset` script.
+- Policy: [`.docs/database-migrations.md`](.docs/database-migrations.md).
 
 ## Operator CLI
 
-- Новые **ручные** ops-команды для prod → subcommand в `scripts/cli.ts` (`commander`), логика в `server/core/operator/` или переиспользование `server/` services/repos.
-- Сборка: `bun run build:cli` → `.output/cli.cjs`; Docker копирует в `/usr/local/bin/cli`.
-- Документация: `.docs/deploy.md` (§ Operator CLI), при billing — `.docs/billing-design.md`; локально `bun run cli -- …`.
+- New **manual** prod ops commands → subcommand in `scripts/cli.ts` (`commander`), logic in `server/core/operator/` or reuse `server/` services/repos.
+- Build: `bun run build:cli` → `.output/cli.cjs`; Docker copies to `/usr/local/bin/cli`.
+- Docs: `.docs/deploy.md` (Operator CLI section), for billing — `.docs/billing-design.md`; locally `bun run cli -- …`.
 
-## Тесты
+## Tests
 
-При правках `server/**` — см. правило `unit-tests` (отдельный glob).
+When changing `server/**` — see `unit-tests` rule (separate glob).
 
 ## Logging (`server/**`)
 
-При правках `logger.*` в `server/**`:
+When changing `logger.*` in `server/**`:
 
-- **debug** — частый operational trace (updates, LLM prompt/response, lookups); **info** — редкие business events (moderation outcome, webhook lifecycle).
-- На `LOG_LEVEL=info` одно модерированное сообщение → несколько info-строк, не пошаговый trace.
-- LLM prompts/responses только **debug**; не префикс `"Debug:"` — выбирай правильный level.
-- Политика: [`.docs/logging.md`](.docs/logging.md).
+- **debug** — frequent operational trace (updates, LLM prompt/response, lookups); **info** — rare business events (moderation outcome, webhook lifecycle).
+- At `LOG_LEVEL=info`, one moderated message → a few info lines, not step-by-step trace.
+- LLM prompts/responses **debug** only; no `"Debug:"` prefix — pick the right level.
+- Policy: [`.docs/logging.md`](.docs/logging.md).
 
 ## i18n (admin UI)
 
-При правках **user-facing UI** (`pages/`, `components/`, `layouts/`, клиентские composables):
+When changing **user-facing UI** (`pages/`, `components/`, `layouts/`, client composables):
 
-- Строки только через **`$t()` / `t()`** — ключи в `i18n/locales/en.json` + **паритет** в `ru.json`.
-- Именование: nested JSON, dot keys (`nav.bots`, `bot.chats.addChat`, `common.save`).
+- Strings only via **`$t()` / `t()`** — keys in `i18n/locales/en.json` + **parity** in `ru.json`.
+- Naming: nested JSON, dot keys (`nav.bots`, `bot.chats.addChat`, `common.save`).
 - Document title: `usePageTitle(() => t('page.*.documentTitle'))`; app name — `useAppName()` (`APP_NAME` env).
-- Breadcrumbs: переведённые `label` из `t()`, не литералы.
-- В locale JSON: экранировать литеральные `{user_mention}`, `@username` — см. [`.docs/i18n.md`](.docs/i18n.md).
-- После правок локалей: `bun test tests/unit/i18n/locale-key-parity.test.ts` + `bun run build`.
-- **Не переводить:** per-bot warn/ban шаблоны, `RULE_TEMPLATES`, API `statusMessage`, тела release notes.
-- README: правки в **`README.md` и `README.ru.md`** вместе (не путать с `i18n/locales/`).
+- Breadcrumbs: translated `label` from `t()`, not literals.
+- In locale JSON: escape literal `{user_mention}`, `@username` — see [`.docs/i18n.md`](.docs/i18n.md).
+- After locale edits: `bun test tests/unit/i18n/locale-key-parity.test.ts` + `bun run build`.
+- **Do not translate:** per-bot warn/ban templates, `RULE_TEMPLATES`, API `statusMessage`, release note bodies.
+- README: edit **`README.md` and `README.ru.md`** together (not the same as `i18n/locales/`).

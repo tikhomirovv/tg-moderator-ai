@@ -1,12 +1,12 @@
 # AGENTS.md — tg-moderator-ai (Telemodai)
 
-Репозиторий: [github.com/telemodai/app](https://github.com/telemodai/app). Стабильный контекст проекта. Задачи — GitHub Issues. Поведение при разработке — `.cursor/rules/`.
+Repository: [github.com/telemodai/app](https://github.com/telemodai/app). Stable project context. Tasks — GitHub Issues. Implementation behavior — `.cursor/rules/`.
 
-## Проект
+## Project
 
-Self-hosted админка + Telegram webhook: AI-модерация чатов по настраиваемым правилам (LLM).
+Self-hosted admin UI + Telegram webhook: AI moderation of chats via configurable rules (LLM).
 
-**Доменная модель:**
+**Domain model:**
 
 ```
 User (telegram_id)
@@ -17,52 +17,52 @@ User (telegram_id)
           → rules[] (per chat)
 ```
 
-Правила хранятся **per chat**; пресеты — константы в `rule-templates.ts`, добавляются из каталога на странице модерации чата. Доступ к боту: owner или manager через `bot_members`; manager — операционный доступ (чаты, правила, модерация), без удаления бота и управления командой; join по access code.
+Rules are stored **per chat**; presets are constants in `rule-templates.ts`, added from the catalog on the chat moderation page. Bot access: owner or manager via `bot_members`; manager has operational access (chats, rules, moderation) but cannot delete the bot or manage the team; join via access code.
 
-Публичный endpoint без session: `POST /api/telegram/webhook/*` (Telegram). Защита: per-bot `webhook_secret` в БД + заголовок `X-Telegram-Bot-Api-Secret-Token`.
+Public endpoint without session: `POST /api/telegram/webhook/*` (Telegram). Protection: per-bot `webhook_secret` in the DB + header `X-Telegram-Bot-Api-Secret-Token`.
 
-Подробнее: [`.docs/project-overview.md`](.docs/project-overview.md) · [`.docs/technical-design.md`](.docs/technical-design.md) · [`.docs/i18n.md`](.docs/i18n.md) (admin UI locales)
+More: [`.docs/project-overview.md`](.docs/project-overview.md) · [`.docs/technical-design.md`](.docs/technical-design.md) · [`.docs/i18n.md`](.docs/i18n.md) (admin UI locales)
 
-Репозиторий на GitHub: **`README.md` (EN)** и **`README.ru.md` (RU)** — при правках README обновляй оба.
+GitHub repo: **`README.md` (EN)** and **`README.ru.md` (RU)** — when editing README, update both.
 
-## Стек
+## Stack
 
 - Bun, Nuxt 4, Nitro, Vue 3, Tailwind, **@nuxtjs/i18n** (admin UI: en + ru)
 - PostgreSQL, Drizzle
 - Telegram OIDC login (`TELEGRAM_LOGIN_BOT_ID`, `TELEGRAM_LOGIN_CLIENT_SECRET`, `BASE_URL`)
 - LLM: OpenAI-compatible API via `LLM_API_KEY`, optional `LLM_BASE_URL` (OpenRouter/Polza), `LLM_MODEL`
 
-Код и коммиты: **English**. Общение с пользователем: **RU**.
+Code and commits: **English**. User communication: **RU**.
 
-## Коммуникация с пользователем
+## User communication
 
-Агент объясняет так, будто говорит с **джуниор-разработчиком**, который хорошо знает основы, но не погружён в контекст этого проекта.
+Explain as if talking to a **junior developer** who knows the basics but is not steeped in this project’s context.
 
-**Как писать:**
+**How to write:**
 
-- **Человеческий язык** — полные предложения, без телеграфного стиля и сухих списков без пояснений.
-- **Подробно** — не ограничиваться одной строкой «можно взять #19». Объяснять, *что* за задача, *зачем* она, *что примерно придётся делать*, *есть ли подводные камни*.
-- **Контекст** — если упоминаешь файл, API, issue или термин проекта — кратко поясни, что это и почему важно. Не предполагай, что пользователь уже читал issue или помнит прошлый разговор.
-- **Структура** — сначала короткий вывод (1–2 предложения), потом детали. Сложное — простыми словами; жаргон — с расшифровкой при первом упоминании.
-- **Практичность** — в конце ответа по возможности: что из этого следует, с чего логичнее начать, если пользователь хочет продолжить.
+- **Plain language** — full sentences; no telegraphic style or dry lists without explanation.
+- **Thorough** — do not stop at one line like “take #19”. Explain *what* the task is, *why* it matters, *roughly what to do*, and *pitfalls* if any.
+- **Context** — when you mention a file, API, issue, or project term, briefly say what it is and why it matters. Do not assume the user read the issue or remembers the last chat.
+- **Structure** — short takeaway first (1–2 sentences), then details. Hard topics in simple words; jargon explained on first use.
+- **Practical** — when possible at the end: what follows from this, where to start if they want to continue.
 
-**Чего избегать:**
+**Avoid:**
 
-- Скупых ответов вроде «4 actionable, бери #19» без объяснения.
-- Каскадов аббревиатур и имён файлов без контекста.
-- Отсылок «как в прошлый раз» без напоминания сути.
+- Thin answers like “4 actionable, take #19” with no explanation.
+- Cascades of acronyms and file names without context.
+- “As last time” without restating what that was.
 
-Персона (лёгкий, дружелюбный тон) сохраняется, но **ясность важнее краткости**.
+Keep a light, friendly tone, but **clarity beats brevity**.
 
-## Dev-окружение
+## Dev environment
 
-- App: `bun run dev` → порт **3001** (`nuxt.config.ts`)
-- PostgreSQL на Orange Pi: `pi.home` / `192.168.0.200`, порт **54321**, db/user `tgmoderator`
+- App: `bun run dev` → port **3001** (`nuxt.config.ts`)
+- PostgreSQL on Orange Pi: `pi.home` / `192.168.0.200`, port **54321**, db/user `tgmoderator`
 - Dev HTTPS tunnel: `make tunnel` (cloudflared, HTTP/2) → `BASE_URL=https://….trycloudflare.com`
-- Клиентский `$fetch` с `method: "POST"` без тела → **HTTP 400** через cloudflared; если payload нет — `body: {}`
-- Переменные: `.env.example` → локальный `.env`
+- Client `$fetch` with `method: "POST"` and no body → **HTTP 400** through cloudflared; if there is no payload — use `body: {}`
+- Env: `.env.example` → local `.env`
 
-## Команды
+## Commands
 
 ```bash
 bun install
@@ -75,25 +75,25 @@ bun run cli -- --help          # operator CLI (local, needs DATABASE_URL for sub
 
 **Operator CLI (prod):** `docker compose exec app cli …` — bundled `commander` binary in the image (`cli promo create`, etc.). Not the same as `db:migrate` (entrypoint) or `release:notes` (agents).
 
-## Миграции БД
+## DB migrations
 
-Только **incremental** Drizzle migrations (`db:generate` → `db:migrate`). **Запрещено:** `DROP SCHEMA`, truncate, `db:reset`. Политика: [`.docs/database-migrations.md`](.docs/database-migrations.md).
+**Incremental** Drizzle migrations only (`db:generate` → `db:migrate`). **Forbidden:** `DROP SCHEMA`, truncate, `db:reset`. Policy: [`.docs/database-migrations.md`](.docs/database-migrations.md).
 
-## Логирование
+## Logging
 
-Уровни и правила: [`.docs/logging.md`](.docs/logging.md). Переменная `LOG_LEVEL` (`info` по умолчанию, `debug` для отладки).
+Levels and rules: [`.docs/logging.md`](.docs/logging.md). Env `LOG_LEVEL` (`info` default, `debug` for troubleshooting).
 
-## Релизы и release notes
+## Releases and release notes
 
-Два артефакта — **разная аудитория, не смешивать содержимое**:
+Two artifacts — **different audiences, do not mix content**:
 
-| Аудитория | Где | Содержание |
-|-----------|-----|------------|
-| **Пользователь** | `data/releases/vX.Y.Z.md` → страница `/release-notes` в приложении | **Русский, человеческий язык** — что изменилось в продукте (боты, правила, модерация, UI). Без API, таблиц БД, миграций, CI, имён файлов, номеров issue |
-| **Разработчики** | `.docs/releases/` (archive + `github-v*.md`), **git tag**, **GitHub Release** | **English** — conventional commits, linked hashes/issues; GitHub file **без frontmatter** |
+| Audience | Where | Content |
+|----------|-------|---------|
+| **End user** | `data/releases/vX.Y.Z.md` → `/release-notes` in the app | **Russian, plain language** — product changes (bots, rules, moderation, UI). No API, DB tables, migrations, CI, file names, issue numbers |
+| **Developers** | `.docs/releases/` (archive + `github-v*.md`), **git tag**, **GitHub Release** | **English** — conventional commits, linked hashes/issues; GitHub file **without frontmatter** |
 
-Файлы в `data/releases/` — **только при публикации релиза** (тег `v*` + коммит). До первого релиза страница пустая.
+Files under `data/releases/` — **only when publishing a release** (tag `v*` + commit). Until the first release, the page is empty.
 
-Сбор черновиков: `bun run release:notes vX.Y.Z --write`. User-файл **переписать вручную**; если для пользователя нечего конкретного — нейтральное описание (см. skill). Technical — в репо, на GitHub Release и в аннотацию тега.
+Draft collection: `bun run release:notes vX.Y.Z --write`. User-facing file **rewrite manually**; if nothing concrete for users — neutral copy (see skill). Technical — in repo, GitHub Release, and tag annotation.
 
-Процесс: [`.agents/skills/release/SKILL.md`](.agents/skills/release/SKILL.md).
+Process: [`.agents/skills/release/SKILL.md`](.agents/skills/release/SKILL.md).

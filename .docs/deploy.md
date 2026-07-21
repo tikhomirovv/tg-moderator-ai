@@ -137,12 +137,14 @@ docker run --rm -p 3000:3000 --env-file .env ghcr.io/telemodai/app:local
 | Миграции / БД | `DATABASE_URL` доступен; логи entrypoint при старте |
 | LLM не отвечает | `LLM_API_KEY`, при gateway — `LLM_BASE_URL` + `LLM_MODEL` |
 
-## 10. SaaS promo codes (operators)
+## 10. Operator CLI (SaaS)
 
-When `DEPLOYMENT_MODE=saas`, create purchase promo codes inside the running app container:
+When `DEPLOYMENT_MODE=saas`, run maintenance commands inside the running app container. The binary is **`cli`** on `PATH` (`/usr/local/bin/cli`).
+
+**Promo codes** — create purchase discount codes:
 
 ```bash
-docker compose exec -it app node scripts/promo-create.mjs
+docker compose exec -it app cli promo create
 ```
 
 `-it` is required for interactive prompts. `DATABASE_URL` is already in the container env.
@@ -150,10 +152,19 @@ docker compose exec -it app node scripts/promo-create.mjs
 Non-interactive example:
 
 ```bash
-docker compose exec app node scripts/promo-create.mjs --code LAUNCH20 --percent 20
+docker compose exec app cli promo create --code LAUNCH20 --percent 20
 ```
 
-See [billing-design.md](billing-design.md) for redemption rules and checkout behavior.
+Local dev (with `.env`):
+
+```bash
+bun run cli -- promo create --code DEV10 --percent 15
+bun run cli -- --help
+```
+
+Not operator CLI: `scripts/db-migrate.mjs` (container entrypoint / `bun run db:migrate`), `bun run release:notes` (release workflow).
+
+See [billing-design.md](billing-design.md) for promo redemption and checkout behavior. Future subcommands (e.g. `cli credits grant`) land in follow-up issues.
 
 ## Порты
 

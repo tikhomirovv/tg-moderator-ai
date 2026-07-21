@@ -175,16 +175,16 @@ Percent-discount promo codes for credit package checkout. Self-hosted: no promo 
 Create codes in production (Node runtime image):
 
 ```bash
-docker compose exec -it app node scripts/promo-create.mjs
+docker compose exec -it app cli promo create
 ```
 
 Non-interactive:
 
 ```bash
-docker compose exec app node scripts/promo-create.mjs --code SAVE10 --percent 10
+docker compose exec app cli promo create --code SAVE10 --percent 10
 ```
 
-Local dev: `bun run promo:create`
+Local dev: `bun run cli -- promo create …` (see `.docs/deploy.md` § Operator CLI).
 
 ## Product referrals (SaaS only)
 

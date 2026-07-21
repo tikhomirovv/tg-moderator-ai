@@ -51,11 +51,12 @@ describe("rule-assist", () => {
     expect(prompt).toContain("(empty)");
   });
 
-  test("parseRuleAssistResponse extracts description and ai_prompt", () => {
+  test("parseRuleAssistResponse extracts name, description and ai_prompt", () => {
     const result = parseRuleAssistResponse(
-      `Here you go:\n{"description":"Short","ai_prompt":"Long rule text"}`
+      `Here you go:\n{"name":"Ads","description":"Short","ai_prompt":"Long rule text"}`
     );
     expect(result).toEqual({
+      name: "Ads",
       description: "Short",
       ai_prompt: "Long rule text",
     });
@@ -63,7 +64,7 @@ describe("rule-assist", () => {
 
   test("parseRuleAssistResponse rejects missing fields", () => {
     expect(() =>
-      parseRuleAssistResponse('{"description":"only desc"}')
-    ).toThrow(/missing description or ai_prompt/);
+      parseRuleAssistResponse('{"description":"only desc","ai_prompt":"x"}')
+    ).toThrow(/missing name, description, or ai_prompt/);
   });
 });

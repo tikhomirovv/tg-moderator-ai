@@ -17,6 +17,7 @@ export type RuleAssistInput = {
 };
 
 export type RuleAssistResult = {
+  name: string;
   description: string;
   ai_prompt: string;
 };
@@ -49,12 +50,14 @@ When any current text exists:
 - Keep the same language as the existing rule text.
 
 Always:
+- Provide a short rule **name** for the rules list (few words, same language as the rule).
 - Write clear plain-language criteria: what counts as a violation and what is allowed (use "Violation:" / "Not a violation:" or "Нарушение:" / "Не нарушение:" sections when helpful, matching existing product templates).
 - Provide a short one-line description for humans and a fuller rule text for the moderation AI.
 - Start rule text with a clear framing line when appropriate (e.g. "Treat … as a violation" / "Считать нарушением …").
 
 Respond with JSON only, no markdown fences or extra text:
 {
+  "name": "short rule title",
   "description": "short one-line summary",
   "ai_prompt": "full rule text for the moderation AI"
 }`;
@@ -88,20 +91,22 @@ export function parseRuleAssistResponse(raw: string): RuleAssistResult {
   }
 
   const parsed = JSON.parse(jsonMatch[0]) as {
+    name?: unknown;
     description?: unknown;
     ai_prompt?: unknown;
   };
 
+  const name = typeof parsed.name === "string" ? parsed.name.trim() : "";
   const description =
     typeof parsed.description === "string" ? parsed.description.trim() : "";
   const ai_prompt =
     typeof parsed.ai_prompt === "string" ? parsed.ai_prompt.trim() : "";
 
-  if (!description || !ai_prompt) {
-    throw new Error("LLM response missing description or ai_prompt");
+  if (!name || !description || !ai_prompt) {
+    throw new Error("LLM response missing name, description, or ai_prompt");
   }
 
-  return { description, ai_prompt };
+  return { name, description, ai_prompt };
 }
 
 export function validateRuleAssistInput(

@@ -21,7 +21,7 @@
     "typescript"
   ],
   "scripts": {
-    "build": "bun run build:cli && nuxt build",
+    "build": "nuxt build && bun run build:cli",
     "build:cli": "bun scripts/build-cli.ts",
     "cli": "bun --env-file=.env scripts/cli-entry.ts",
     "dev": "bun --env-file=.env run db:migrate && nuxt dev",

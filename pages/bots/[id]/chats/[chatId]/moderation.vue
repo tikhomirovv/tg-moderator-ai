@@ -356,9 +356,15 @@
             <div class="mt-2">
               <button
                 type="button"
-                class="text-sm text-blue-600 hover:underline"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium transition-colors"
+                :class="
+                  showAiAssist
+                    ? 'bg-[#f3d4ea] text-[#9d2b7a] ring-1 ring-[#c43d96]/35'
+                    : 'bg-[#fce8f4] text-[#b53592] hover:bg-[#f5d9eb]'
+                "
                 @click="showAiAssist = !showAiAssist"
               >
+                <span aria-hidden="true">🪄</span>
                 {{ t("moderation.ruleModal.aiAssistToggle") }}
               </button>
 

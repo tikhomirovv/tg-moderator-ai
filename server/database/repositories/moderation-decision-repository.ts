@@ -1,4 +1,4 @@
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt, sql } from "drizzle-orm";
 import { getDatabaseConnection } from "../connection";
 import {
   CreateModerationDecisionRequest,

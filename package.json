@@ -1,6 +1,6 @@
 {
   "name": "tg-moderator-ai",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Telegram AI Moderator Bot - автоматическая модерация чатов с помощью искусственного интеллекта",
   "type": "module",
   "private": true,
